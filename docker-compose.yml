@@ -1,0 +1,30 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: school-postgres
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: rubixdev
+      POSTGRES_PASSWORD: rubix123456
+      POSTGRES_DB: school
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
+
+
+  app:
+    build: .
+    container_name: school-app
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgres://rubixdev:rubix123456@postgres:5432/school
+    depends_on:
+      - postgres

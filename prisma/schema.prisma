@@ -1,0 +1,238 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Admin {
+  id       String @id
+  username String @unique
+}
+
+model Student {
+  id          String       @id
+  username    String       @unique
+  name        String
+  surname     String
+  email       String?      @unique
+  phone       String?      @unique
+  address     String
+  img         String?
+  bloodType   String
+  sex         UserSex
+  createdAt   DateTime     @default(now())
+  parentId    String?
+  classId     Int
+  gradeId     Int
+  attendances Attendance[]
+  results     Result[]
+  class       Class        @relation(fields: [classId], references: [id])
+  grade       Grade        @relation(fields: [gradeId], references: [id])
+  parent      Parent?     @relation(fields: [parentId], references: [id])
+  birthday    DateTime
+}
+
+model Teacher {
+  id        String    @id
+  username  String    @unique
+  name      String
+  surname   String
+  email     String?   @unique
+  phone     String?   @unique
+  address   String
+  img       String?
+  bloodType String
+  sex       UserSex
+  createdAt DateTime  @default(now())
+  classes   Class[]
+  lessons   Lesson[]
+  subjects  Subject[] @relation("SubjectToTeacher")
+  birthday   DateTime
+}
+
+model Parent {
+  id        String    @id
+  username  String    @unique
+  name      String
+  surname   String
+  email     String?   @unique
+  phone     String    @unique
+  address   String
+  createdAt DateTime  @default(now())
+  students  Student[]
+}
+
+model Grade {
+  id       Int       @id @default(autoincrement())
+  level    Int       @unique
+  classes  Class[]
+  students Student[]
+}
+
+model Class {
+  id            Int            @id @default(autoincrement())
+  name          String         @unique
+  capacity      Int
+
+  supervisorId  String?
+  gradeId       Int
+  announcements Announcement[]
+  grade         Grade          @relation(fields: [gradeId], references: [id])
+  supervisor    Teacher?       @relation(fields: [supervisorId], references: [id])
+  events        Event[]
+  lessons       Lesson[]
+  students      Student[]
+}
+
+model Subject {
+  id       Int       @id @default(autoincrement())
+  name     String    @unique
+  lessons  Lesson[]
+  teachers Teacher[] @relation("SubjectToTeacher")
+}
+
+model Lesson {
+  id         Int          @id @default(autoincrement())
+  name       String
+  day        Day
+  startTime  DateTime
+  endTime    DateTime
+
+  subjectId  Int
+  classId    Int
+  teacherId  String
+  assignment Assignment[]
+  attendance Attendance[]
+  exams      Exam[]
+  class      Class        @relation(fields: [classId], references: [id])
+  subject    Subject      @relation(fields: [subjectId], references: [id])
+  teacher    Teacher      @relation(fields: [teacherId], references: [id])
+}
+
+model Exam {
+  id        Int      @id @default(autoincrement())
+  title     String
+  startTime DateTime
+  endTime   DateTime
+  lessonId  Int
+  lesson    Lesson   @relation(fields: [lessonId], references: [id])
+  result    Result[]
+}
+
+model Assignment {
+  id        Int      @id @default(autoincrement())
+  title     String
+  startDate DateTime
+  dueDate   DateTime
+  lessonId  Int
+  lesson    Lesson   @relation(fields: [lessonId], references: [id])
+  result    Result[]
+}
+
+model Result {
+  id           Int         @id @default(autoincrement())
+  score        Int
+  
+  examId       Int?
+  assignmentId Int?
+  studentId    String
+  assignment   Assignment? @relation(fields: [assignmentId], references: [id])
+  exam         Exam?       @relation(fields: [examId], references: [id])
+  student      Student     @relation(fields: [studentId], references: [id])
+
+
+@@unique([studentId, examId])
+}
+
+model Attendance {
+  id        Int      @id @default(autoincrement())
+  date      DateTime
+  present   Boolean
+  
+  studentId String
+  lessonId  Int
+  lesson    Lesson   @relation(fields: [lessonId], references: [id])
+  student   Student  @relation(fields: [studentId], references: [id])
+}
+
+model Event {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  startTime   DateTime
+  endTime     DateTime
+  classId     Int?
+  class       Class?   @relation(fields: [classId], references: [id])
+}
+
+model Announcement {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  date        DateTime
+  classId     Int?
+  class       Class?   @relation(fields: [classId], references: [id])
+}
+
+model Income {
+  id      Int      @id @default(autoincrement())
+  title   String
+  amount  Float
+  date    DateTime @default(now())
+}
+
+model Expense {
+  id      Int      @id @default(autoincrement())
+  title   String
+  amount  Float
+  date    DateTime @default(now())
+}
+
+model SchoolSettings {
+  id            Int      @id @default(1)
+  schoolName    String   @default("Rubix Academy")
+  schoolLogo    String?
+  currentTerm   String   @default("Term 1")
+  currentYear   String   @default("2025-2026")
+  passingGrade  Int      @default(50)
+  attendanceThreshold Int  @default(75) // Min % needed to pass
+  updatedAt     DateTime @updatedAt
+}
+
+model Message {
+  id         Int      @id @default(autoincrement())
+  content    String
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  
+  // 1. The actual column in the DB
+  senderId   String
+  receiverId String
+
+  // 2. THE FIX: Define the virtual relations
+  // This tells Prisma: "The 'sender' field uses 'senderId' to find a 'User'"
+  sender     User     @relation("SentMessages", fields: [senderId], references: [id])
+  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
+}
+
+// 3. Make sure your User model (or Teacher/Student) points back
+model User {
+  id               String    @id 
+  username         String    @unique
+  sentMessages     Message[] @relation("SentMessages")
+  receivedMessages Message[] @relation("ReceivedMessages")
+}
+enum UserSex {
+  MALE
+  FEMALE
+}
+
+enum Day {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+}

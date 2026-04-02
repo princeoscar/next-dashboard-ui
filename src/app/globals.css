@@ -1,0 +1,106 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* --- CUSTOM UTILITIES --- */
+@layer components {
+  /* Sidebar & Content Thin Scrollbar */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 5px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #e2e8f0;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #cbd5e1;
+  }
+}
+
+/* --- REACT CALENDAR (Small Widget) --- */
+.react-calendar {
+  width: 100% !important;
+  border: none !important;
+  font-family: inherit !important;
+  background: white !important;
+  border-radius: 12px;
+  padding: 10px;
+}
+
+.react-calendar__tile--active {
+  background-color: #6366f1 !important; /* Indigo-500 */
+  color: white !important;
+  border-radius: 8px;
+}
+
+.react-calendar__tile--now {
+  background: #f1f5f9 !important;
+  border-radius: 8px;
+  font-weight: bold;
+  color: #6366f1 !important;
+}
+
+/* --- REACT BIG CALENDAR (Main Schedule) --- */
+.rbc-btn-group:first-child {
+  display: none !important; /* Hides the 'Today/Prev/Next' if you're using custom nav */
+}
+
+.rbc-toolbar-label {
+  text-align: right !important;
+  padding: 0px 20px !important;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.rbc-btn-group:last-child button {
+  border: 1px solid #e2e8f0 !important;
+  background-color: white !important;
+  border-radius: 6px !important;
+  margin-left: 4px !important;
+  transition: all 0.2s;
+}
+
+.rbc-toolbar button.rbc-active {
+  background-color: #6366f1 !important;
+  color: white !important;
+  box-shadow: none !important;
+}
+
+/* Event Styling - Better logic than nth-child */
+.rbc-event {
+  border: none !important;
+  border-left: 4px solid !important; /* Adds a nice color accent bar */
+  color: #1e293b !important;
+  padding: 8px !important;
+  font-size: 11px;
+  border-radius: 4px !important;
+}
+
+/* Assigning semantic colors to the accent bars */
+.rbc-event:nth-child(odd) {
+  background-color: #f0f9ff !important;
+  border-left-color: #0ea5e9 !important;
+}
+.rbc-event:nth-child(even) {
+  background-color: #fefce8 !important;
+  border-left-color: #eab308 !important;
+}
+
+.rbc-time-content {
+  border-top: 1px solid #f1f5f9 !important;
+}
+
+.rbc-timeslot-group {
+  min-height: 60px !important;
+  background-color: transparent !important;
+  border-bottom: 1px solid #f8fafc !important;
+}
+
+/* Helper to hide the "All Day" row if you don't need it */
+.rbc-allday-cell {
+  display: none !important;
+}
