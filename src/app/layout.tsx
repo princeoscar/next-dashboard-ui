@@ -4,6 +4,7 @@ import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
 
 // 1. Optimized Font Loading
 const inter = Inter({ 

@@ -1,4 +1,4 @@
-"use client";
+
 
 import { useListData } from "@/hooks/useListData";
 import Pagination from "@/components/Pagination";

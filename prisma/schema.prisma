@@ -205,14 +205,14 @@ model Message {
   id         Int      @id @default(autoincrement())
   content    String
   isRead     Boolean  @default(false)
+  readAt     DateTime?
   createdAt  DateTime @default(now())
   
   // 1. The actual column in the DB
   senderId   String
   receiverId String
 
-  // 2. THE FIX: Define the virtual relations
-  // This tells Prisma: "The 'sender' field uses 'senderId' to find a 'User'"
+  
   sender     User     @relation("SentMessages", fields: [senderId], references: [id])
   receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
 }

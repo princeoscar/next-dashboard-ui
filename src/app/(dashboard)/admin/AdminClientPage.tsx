@@ -1,4 +1,4 @@
-"use client";
+
 
 import Announcements from "@/components/Announcements";
 import FinanceChart from "@/components/FinanceChart";

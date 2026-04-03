@@ -1,20 +1,43 @@
 import Image from "next/image";
 import prisma from "@/lib/prisma";
-import AttendanceChart from "./AttendanceChart";
+import dynamic from "next/dynamic";
+
+// 1. DEFINE THE PROPS INTERFACE
+// Your map produces an array of objects with name, present, and absent.
+interface AttendanceChartProps {
+  data: {
+    name: string;
+    present: number;
+    absent: number;
+  }[];
+}
+
+// 2. IMPORT THE CHART DYNAMICALLY
+// This stops the "createContext" error by disabling SSR for this client-side component.
+const AttendanceChart = dynamic<AttendanceChartProps>(
+  () => import("./AttendanceChart"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-full flex items-center justify-center bg-slate-50/50 rounded-xl animate-pulse">
+        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Loading Weekly Data...</span>
+      </div>
+    ),
+  }
+);
 
 const AttendanceChartContainer = async () => {
   const today = new Date();
   const dayOfWeek = today.getDay(); // 0 (Sun) to 6 (Sat)
   
   // Calculate days since the most recent Monday
-  // If it's Sunday (0), we go back 6 days. Otherwise, (day - 1).
   const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
 
   const lastMonday = new Date(today);
   lastMonday.setDate(today.getDate() - daysSinceMonday);
   lastMonday.setHours(0, 0, 0, 0);
 
-  // 1. Fetch attendance records from this week (Monday onwards)
+  // 1. Fetch attendance records from this week
   const attendanceData = await prisma.attendance.findMany({
     where: {
       date: {
@@ -28,9 +51,9 @@ const AttendanceChartContainer = async () => {
   });
 
   // 2. Initialize the Weekly Map
-  const daysOfWeek = ["Mon", "Tue", "Wed", "Thu", "Fri"];
+  const daysOfWeekLabels = ["Mon", "Tue", "Wed", "Thu", "Fri"];
   
-  const attendanceMap = daysOfWeek.map((day) => ({
+  const attendanceMap = daysOfWeekLabels.map((day) => ({
     name: day,
     present: 0,
     absent: 0,
@@ -41,7 +64,6 @@ const AttendanceChartContainer = async () => {
     const itemDate = new Date(item.date);
     const dayIndex = itemDate.getDay() - 1; // Adjusting for 0-indexed Monday
 
-    // We only track Monday (0) through Friday (4)
     if (dayIndex >= 0 && dayIndex < 5) {
       if (item.present) {
         attendanceMap[dayIndex].present += 1;
@@ -68,10 +90,11 @@ const AttendanceChartContainer = async () => {
 
       {/* CHART AREA */}
       <div className="flex-1 w-full min-h-[300px]">
+        {/* Pass the mapped data to the dynamic component */}
         <AttendanceChart data={attendanceMap} />
       </div>
       
-      {/* BOTTOM LEGEND/STATS (Optional but adds value) */}
+      {/* BOTTOM LEGEND */}
       <div className="flex items-center gap-4 mt-2 pt-2 border-t border-slate-50">
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 bg-rubixYellow rounded-sm" />
