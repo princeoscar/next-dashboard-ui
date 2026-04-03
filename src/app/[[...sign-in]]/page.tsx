@@ -5,21 +5,22 @@ import * as SignIn from '@clerk/elements/sign-in'
 import { useUser } from '@clerk/nextjs'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
-import { ShieldCheck, KeyRound } from 'lucide-react'
+import { useEffect, useState } from 'react' // Added useState
+import { ShieldCheck, KeyRound, Eye, EyeOff } from 'lucide-react' // Added Eye icons
 
 const LoginPage = () => {
     const { isLoaded, isSignedIn, user } = useUser()
     const router = useRouter()
+    
+    // 👁️ State to toggle password visibility
+    const [showPassword, setShowPassword] = useState(false)
 
     useEffect(() => {
-        // Only redirect if the user is fully loaded and signed in
         if (isLoaded && isSignedIn && user) {
             const role = user.publicMetadata?.role as string
             if (role) {
                 router.push(`/${role}`)
             } else {
-                // Fallback if no role is defined yet
                 router.push('/dashboard')
             }
         }
@@ -27,25 +28,22 @@ const LoginPage = () => {
 
     return (
         <div className='relative h-screen w-full flex items-center justify-center overflow-hidden font-sans'>
-            {/* 🏫 BACKGROUND IMAGE WRAPPER */}
             <div className='absolute inset-0 -z-10'>
                 <Image 
                     src="/school.jpg" 
                     alt="School Building"
                     fill
                     priority
-                    className='object-cover scale-105 blur-[2px]' // Slight blur for focus
+                    className='object-cover scale-105 blur-[2px]' 
                 />
                 <div className='absolute inset-0 bg-slate-900/60 backdrop-overlay' />
             </div>
 
-            {/* 🔑 LOGIN CARD */}
             <SignIn.Root>
                 <SignIn.Step 
                     name='start' 
                     className='relative bg-white/10 backdrop-blur-xl p-10 md:p-14 rounded-[2.5rem] border border-white/20 shadow-2xl flex flex-col gap-6 w-[90%] max-w-[450px] transition-all animate-in fade-in zoom-in duration-500'
                 >
-                    {/* Header Section */}
                     <div className='flex flex-col items-center text-center gap-4 mb-2'>
                         <div className='p-4 bg-white rounded-3xl shadow-xl'>
                             <Image src="/logo.png" alt="Logo" width={40} height={40} className="object-contain" />
@@ -62,20 +60,17 @@ const LoginPage = () => {
 
                     <Clerk.GlobalError className='text-xs text-rose-400 font-bold bg-rose-400/10 p-3 rounded-xl border border-rose-400/20 text-center' />
 
-                    {/* Form Fields */}
                     <div className='space-y-4'>
                         <Clerk.Field name='identifier' className='flex flex-col gap-2'>
                             <Clerk.Label className='text-[10px] font-black text-white/70 uppercase tracking-widest ml-1'>
                                 Username / Email
                             </Clerk.Label>
-                            <div className='relative group'>
-                                <Clerk.Input 
-                                    type='text' 
-                                    required 
-                                    className='w-full p-4 rounded-2xl bg-black/40 text-white border border-white/10 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all placeholder:text-white/20'
-                                    placeholder='Enter your ID'
-                                />
-                            </div>
+                            <Clerk.Input 
+                                type='text' 
+                                required 
+                                className='w-full p-4 rounded-2xl bg-black/40 text-white border border-white/10 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all placeholder:text-white/20'
+                                placeholder='Enter your ID'
+                            />
                             <Clerk.FieldError className='text-[10px] font-bold text-rose-400 ml-1' />
                         </Clerk.Field>
 
@@ -83,12 +78,22 @@ const LoginPage = () => {
                             <Clerk.Label className='text-[10px] font-black text-white/70 uppercase tracking-widest ml-1'>
                                 Password
                             </Clerk.Label>
-                            <Clerk.Input 
-                                type='password' 
-                                required 
-                                className='w-full p-4 rounded-2xl bg-black/40 text-white border border-white/10 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all'
-                                placeholder='••••••••'
-                            />
+                            {/* 👁️ Wrapper for the toggle */}
+                            <div className='relative'>
+                                <Clerk.Input 
+                                    type={showPassword ? 'text' : 'password'} // Switches type
+                                    required 
+                                    className='w-full p-4 rounded-2xl bg-black/40 text-white border border-white/10 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all pr-12'
+                                    placeholder='••••••••'
+                                />
+                                <button
+                                    type="button" // CRITICAL: keeps button from submitting form
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className='absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors'
+                                >
+                                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                </button>
+                            </div>
                             <Clerk.FieldError className='text-[10px] font-bold text-rose-400 ml-1' />
                         </Clerk.Field>
                     </div>
@@ -98,7 +103,6 @@ const LoginPage = () => {
                         Authorize Session
                     </SignIn.Action>
 
-                    {/* Footer Decoration */}
                     <div className='flex items-center justify-center gap-2 mt-2 opacity-30'>
                         <ShieldCheck size={12} className='text-white' />
                         <span className='text-[9px] font-bold text-white uppercase tracking-tighter'>
