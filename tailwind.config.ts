@@ -13,14 +13,15 @@ const config: Config = {
         "gradient-conic":
           "conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))",
       },
-      colors:{
-        rubixSky:"#C3EBFA",
-        rubixSkyLight:"#EDF9FD",
-        rubixPurple:"#CFCEFF",
-        rubixPurpleLight:"#F1F0FF",
-        rubixYellow:"#FAE27C",
-        rubixYellowLight: "#FEFCE8"
-      }
+      colors: {
+  rubixTeal: "#99F6E4",       // Use for primary highlights/buttons
+  rubixTealLight: "#F0FDFA",  // Use for background panels
+  rubixRose: "#FBCFE8",       // Use for secondary accents/badges
+  rubixRoseLight: "#FFF1F2",  // Use for hover states
+  rubixAmber: "#FDE68A",      // Use for warnings/alerts
+  rubixAmberLight: "#FFFBEB"  // Use for background callouts
+}
+
     },
   },
   plugins: [],
