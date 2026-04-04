@@ -62,12 +62,12 @@ const AttendanceChart = ({ data }: { data: AttendanceData[] }) => {
           />
           
           {/* LEGEND: Positioned at the top */}
-          <Legend
+          {/* <Legend
             align="left"
             verticalAlign="top"
             wrapperStyle={{ paddingTop: "10px", paddingBottom: "30px", fontSize: "12px" }}
             iconType="circle"
-          />
+          /> */}
           
           {/* BARS: Present (Yellow) & Absent (Blue/Purple) */}
           <Bar
