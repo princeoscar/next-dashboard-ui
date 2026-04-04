@@ -1,4 +1,4 @@
-
+"use client";
 
 import { RadialBarChart, RadialBar, ResponsiveContainer } from "recharts";
 import Image from "next/image";
