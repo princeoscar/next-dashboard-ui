@@ -1,12 +1,12 @@
 import prisma from "@/lib/prisma";
 import FormModal from "./FormModal";
 import { FormContainerProps } from "@/lib/types";
-import { useAuth } from "@clerk/nextjs";
+import { auth } from "@clerk/nextjs/server";
 
 const FormContainer = async ({ table, type, data, id }: FormContainerProps) => {
   let relatedData = {};
 
-  const { userId, sessionClaims } = useAuth();
+  const { userId, sessionClaims } = await auth();
   const role = (sessionClaims?.metadata as { role?: string })?.role;
   const currentUserId = userId;
 
@@ -150,7 +150,8 @@ const FormContainer = async ({ table, type, data, id }: FormContainerProps) => {
         const mStudents = await prisma.student.findMany({
           select: { id: true, name: true, surname: true },
         });
-        const mAdmins = await prisma.admin.findMany({
+        const mAdmins = await prisma.user.findMany({
+          where: { role: "ADMIN" },
           select: { id: true, username: true }, // Changed to username to avoid "Known Properties" error
         });
         relatedData = { teachers: mTeachers, students: mStudents, admins: mAdmins };

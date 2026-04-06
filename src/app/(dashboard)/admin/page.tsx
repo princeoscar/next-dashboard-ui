@@ -21,10 +21,10 @@ interface SearchParamsProps {
 const AdminPage = async ({ searchParams }: SearchParamsProps) => {
   try {
     const [studentCount, teacherCount, parentCount, adminCount] = await Promise.all([
-      prisma.student.count(),
-      prisma.teacher.count(),
-      prisma.parent.count(),
-      prisma.admin.count(),
+     prisma.user.count({ where: { role: "STUDENT" } }),
+  prisma.user.count({ where: { role: "TEACHER" } }),
+  prisma.user.count({ where: { role: "PARENT" } }),
+      prisma.user.count({ where: { role: "ADMIN" } }),
     ]);
 
     return (

@@ -4,15 +4,24 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  
 }
 
-model Admin {
-  id       String @id
-  username String @unique
+
+
+
+enum Role {
+  ADMIN
+  TEACHER
+  STUDENT
+  PARENT
 }
 
 model Student {
   id          String       @id
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id])
+
   username    String       @unique
   name        String
   surname     String
@@ -36,7 +45,10 @@ model Student {
 
 model Teacher {
   id        String    @id
+  userId      String   @unique
   username  String    @unique
+  user      User     @relation(fields: [userId], references: [id])
+
   name      String
   surname   String
   email     String?   @unique
@@ -55,6 +67,9 @@ model Teacher {
 model Parent {
   id        String    @id
   username  String    @unique
+  userId      String   @unique
+  user      User     @relation(fields: [userId], references: [id])
+
   name      String
   surname   String
   email     String?   @unique
@@ -219,8 +234,23 @@ model Message {
 
 // 3. Make sure your User model (or Teacher/Student) points back
 model User {
-  id               String    @id 
-  username         String    @unique
+  id        String   @id
+  username  String   @unique
+  name      String?  // Add this
+  surname   String?  // Add this
+  email     String   @unique
+  phone     String?  // Add this
+  address   String?  // Add this
+  bloodType String?  // Add this
+  sex       UserSex? // Add this
+  birthday  DateTime? // Add this
+  role      Role
+
+  // Relations
+  student          Student?
+  teacher          Teacher?
+  parent           Parent?
+
   sentMessages     Message[] @relation("SentMessages")
   receivedMessages Message[] @relation("ReceivedMessages")
 }
