@@ -53,7 +53,7 @@ const ProfilePage = async () => {
       },
     });
   } else {
-    dbUser = await prisma.admin.findUnique({ where: { id: userId } });
+    dbUser = await prisma.user.findUnique({ where: { id: userId } });
   }
 
   if (!dbUser) return <div className="p-12 text-slate-400 font-black text-center uppercase tracking-widest">Database Record Sync Required</div>;
