@@ -34,44 +34,38 @@ const Navbar = ({ role, messageCount, announcementCount }: any) => {
       </div>
       
       <div className="flex items-center gap-6 justify-end w-full">
-        <div className="bg-white rounded-full w-7 h-7 flex items-center
-         justify-center cursor-pointer relative hover:bg-slate-100
-          transition"
-          onClick={() => console.log("Navigate to messages")}>
-          <Image src="/message.png" alt="" width={20} height={20} />
-        </div>
-        <div className="bg-white rounded-full w-7 h-7 flex items-center justify-center cursor-pointer relative">
-          <Image src="/announcement.png" alt="" width={20} height={20} />
-          {messageCount > 0 && (
-            <div className="absolute -top-3 -right-3 w-5 h-5 flex items-center justify-center bg-purple-500 text-white rounded-full text-xs">
-              {messageCount}
-            </div>
-          )}
-        </div>
+        {/* MESSAGES */}
+  <div className="bg-white rounded-full w-7 h-7 flex items-center justify-center cursor-pointer relative hover:bg-slate-100 transition"
+    onClick={() => console.log("Navigate to messages")}>
+    {/* Corrected Image to message.png */}
+    <Image src="/message.png" alt="messages" width={20} height={20} />
+    {messageCount > 0 && (
+      <div className="absolute -top-3 -right-3 w-5 h-5 flex items-center justify-center bg-purple-500 text-white rounded-full text-xs">
+        {messageCount}
+      </div>
+    )}
+  </div>
 
-         {/* ANNOUNCEMENTS */}
-        <div 
-          className="bg-white rounded-full w-8 h-8 flex items-center justify-center cursor-pointer relative hover:bg-slate-100 transition"
-          onClick={() => console.log("Navigate to announcements")}
-        >
-          <Image src="/announcement.png" alt="announcements" width={20} height={20} />
-          {announcementCount > 0 && (
-            <div className="absolute -top-2 -right-2 w-5 h-5 flex items-center justify-center bg-purple-500 text-white rounded-full text-[10px]">
-              {announcementCount}
-            </div>
-          )}
-        </div>
+  {/* ANNOUNCEMENTS */}
+  <div className="bg-white rounded-full w-7 h-7 flex items-center justify-center cursor-pointer relative hover:bg-slate-100 transition"
+    onClick={() => console.log("Navigate to announcements")}>
+    <Image src="/announcement.png" alt="announcements" width={20} height={20} />
+    {announcementCount > 0 && (
+      <div className="absolute -top-3 -right-3 w-5 h-5 flex items-center justify-center bg-purple-500 text-white rounded-full text-[10px]">
+        {announcementCount}
+      </div>
+    )}
+  </div>
 
-
-        <div className="flex flex-col">
-          <span className="text-xs leading-3 font-medium">
-            {user?.firstName} {user?.lastName || "User"}
-            </span>
-            
-          <span className="text-[10px] text-gray-500 text-right">
-            {user?.publicMetadata?.role as string}
-          </span>
-        </div>
+  {/* USER INFO */}
+  <div className="flex flex-col text-right">
+    <span className="text-xs leading-3 font-medium">
+      {user?.firstName} {user?.lastName || ""}
+    </span>
+    <span className="text-[10px] text-gray-500 capitalize">
+      {(user?.publicMetadata?.role as string) || "Guest"}
+    </span>
+  </div>
         {/* <Image src="/avatar.png" alt="" width={36} height={36} className="rounded-full"/> */}
         <UserButton  />
       </div>
