@@ -43,7 +43,7 @@ const MobileMenu = ({ role }: { role: string }) => {
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto w-full">
               {/* Pass isMobile={true} here */}
               <Menu role={role} isMobile={true} />
             </div>

@@ -135,11 +135,22 @@ const Menu = ({ role, isMobile = false }: { role: string; isMobile?: boolean }) 
                 <Link
                   href={item.href}
                   key={item.label}
-                  className={`flex items-center ${
-                    isMobile ? "justify-start" : "justify-center lg:justify-start"
-                  } gap-4 text-gray-500 py-2 px-2 rounded-md hover:bg-lamaSkyLight`}
+                  className={`flex items-center gap-4 text-gray-500 py-2 px-2 rounded-md hover:bg-rubixSkyLight ${isMobile ? "justify-start" : "justify-center lg:justify-start"
+                    }`}
+
                 >
-                  <Image src={item.icon} alt={item.label} width={20} height={20} />
+                  <div className="flex-shrink-0 w-5 h-5 flex items-center justify-center">
+                    <Image
+                      src={item.icon}
+                      alt=""
+                      width={20}
+                      height={20}
+                      className="object-contain"
+                    />
+                  </div>
+
+
+
                   <span className={isMobile ? "block" : "hidden lg:block"}>
                     {item.label}
                   </span>
