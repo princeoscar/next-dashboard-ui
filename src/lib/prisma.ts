@@ -1,24 +1,29 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import pg from "pg";
-import "dotenv/config";
 
-const connectionString = `${process.env.DATABASE_URL}`;
+// 1. Setup the connection string with pooling parameters
+const connectionString = `${process.env.DATABASE_URL}?pgbouncer=true&connect_timeout=30`;
+
 const pool = new pg.Pool({ 
   connectionString,
-  max: 10, // Limit maximum connections
-  idleTimeoutMillis: 30000, // Close idle connections after 30 seconds
-  connectionTimeoutMillis: 2000, // Fail fast if a connection can't be made
+  max: 10, // Limit the number of concurrent connections
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 5000, 
 });
+
 const adapter = new PrismaPg(pool);
 
-// Use globalThis for better compatibility with Next.js environments
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
+// 2. Prevent multiple instances of Prisma Client in development
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined;
+};
 
 export const prisma =
-  globalForPrisma.prisma ||
+  globalForPrisma.prisma ??
   new PrismaClient({
     adapter,
+    log: ['query', 'error', 'warn'], // Helps you see what's happening in the terminal
   });
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;

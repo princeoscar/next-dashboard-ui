@@ -36,6 +36,8 @@ export default function RootLayout({
       fontFamily: "var(--font-inter)", // Uses your optimized Inter font
     },
   }}
+  afterSignOutUrl="/" 
+  signInFallbackRedirectUrl="/dashboard"
 >
       <html lang="en" className="scroll-smooth">
         <body className={`${inter.variable} font-sans antialiased bg-slate-50 text-slate-900`}>
