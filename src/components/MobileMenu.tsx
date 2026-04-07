@@ -10,47 +10,56 @@ const MobileMenu = ({ role }: { role: string }) => {
 
   return (
     <>
-      {/* THE TRIGGER: Logo + Hamburger */}
+      {/* TRIGGER BUTTON */}
       <button
         onClick={() => setIsOpen(true)}
-        className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+        className="flex items-center gap-2 hover:opacity-80 transition-opacity lg:hidden"
       >
         <Image src="/logo.png" alt="logo" width={32} height={32} />
-        {/* Optional: Add a small hamburger icon next to it */}
-        <div className="lg:hidden p-1 bg-slate-100 rounded">
-
+        
+        {/* Hamburger */}
+        <div className="flex flex-col gap-[3px]">
+          <span className="w-5 h-[2px] bg-slate-700"></span>
+          <span className="w-5 h-[2px] bg-slate-700"></span>
+          <span className="w-5 h-[2px] bg-slate-700"></span>
         </div>
       </button>
 
-      {/* FULL SCREEN DRAWER */}
+      {/* MOBILE DRAWER */}
       {isOpen && (
         <div className="fixed inset-0 z-[9999] flex">
-          {/* Dark Background Overlay */}
+          
+          {/* OVERLAY */}
           <div
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={() => setIsOpen(false)}
           />
 
-          {/* Sidebar Panel */}
+          {/* SIDEBAR */}
           <div className="relative w-72 h-full bg-white p-6 shadow-xl flex flex-col animate-in slide-in-from-left duration-300">
+            
+            {/* HEADER */}
             <div className="flex items-center justify-between mb-8">
-              <Link href="/" className="flex items-center gap-2" onClick={() => setIsOpen(false)}>
+              <Link
+                href="/"
+                onClick={() => setIsOpen(false)}
+                className="flex items-center gap-2"
+              >
                 <Image src="/logo.png" alt="logo" width={32} height={32} />
-                <span className="font-bold text-xl">Rubix Schools</span>
+                <span className="font-bold text-lg">Rubix Schools</span>
               </Link>
-              <button onClick={() => setIsOpen(false)} className="text-2xl text-slate-500">
-                &times;
+
+              <button
+                onClick={() => setIsOpen(false)}
+                className="text-2xl text-slate-500"
+              >
+                ×
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto w-full">
-              {/* Pass isMobile={true} here */}
-              <Menu role={role} isMobile={true} />
-            </div>
-
-            {/* Menu items show with labels here because the drawer is wide (w-72) */}
+            {/* MENU (ONLY ONCE — FIXED) */}
             <div className="flex-1 overflow-y-auto">
-              <Menu role={role} />
+              <Menu role={role} isMobile />
             </div>
           </div>
         </div>
