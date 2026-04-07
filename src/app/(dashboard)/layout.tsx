@@ -4,11 +4,12 @@ import Link from "next/link";
 import Image from "next/image";
 import prisma from "@/lib/prisma";
 import dynamic from "next/dynamic";
+import Menu from "@/components/Menu";
+import Navbar from "@/components/Navbar";
 
 // ✅ DYNAMIC IMPORTS: These must be outside the function scope.
 // This tells Next.js to ignore these on the server-side render (SSR).
-const Menu = dynamic(() => import("@/components/Menu"), { ssr: false });
-const Navbar = dynamic(() => import("@/components/Navbar"), { ssr: false });
+
 
 export default async function DashboardLayout({
   children,
@@ -21,16 +22,17 @@ export default async function DashboardLayout({
   const role = (sessionClaims?.metadata as { role?: string })?.role || "student";
 
   // Fetching data safely
-  const [unreadMessages, activeAnnouncements] = await Promise.all([
-    prisma.message.count({
-      where: { receiverId: userId, isRead: false },
-    }),
-    prisma.announcement.count({
-      where: {
-        date: { gte: new Date(new Date().setDate(new Date().getDate() - 7)) },
-      },
-    }),
-  ]);
+ const lastWeek = new Date();
+lastWeek.setDate(lastWeek.getDate() - 7);
+
+const [unreadMessages, activeAnnouncements] = await Promise.all([
+  prisma.message.count({
+    where: { receiverId: userId, isRead: false },
+  }),
+  prisma.announcement.count({
+    where: { date: { gte: lastWeek } },
+  }),
+]);
 
   return (
     <div className="h-screen flex overflow-hidden">
