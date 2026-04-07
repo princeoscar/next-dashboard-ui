@@ -19,10 +19,10 @@ const SettingsPage = async () => {
   let userData = null;
 
   const queryMap: Record<string, any> = {
-    admin: prisma.admin,
-    teacher: prisma.teacher,
-    student: prisma.student,
-    parent: prisma.parent,
+    admin: prisma.user,
+    teacher: prisma.user,
+    student: prisma.user,
+    parent: prisma.user,
   };
 
   if (role && queryMap[role]) {

@@ -15,22 +15,59 @@ const ProfilePage = async () => {
 
   try {
     let dbUser: any = null;
+    const currentRole = role?.toLowerCase();
 
     // Fetching with specific relations based on role
-    if (role === "admin") {
-      dbUser = await prisma.admin.findUnique({ where: { id: userId } });
-    } else if (role === "teacher") {
-      dbUser = await prisma.teacher.findUnique({
+    if (currentRole === "admin") {
+      dbUser = await prisma.user.findUnique({ where: { id: userId } });
+    } 
+    
+    else if (currentRole === "teacher") {
+      // Use the User model to get the base info + the Teacher professional info
+      const userWithTeacher = await prisma.user.findUnique({
         where: { id: userId },
-        include: { subjects: true, classes: true },
+        include: {
+          teacher: {
+            include: {
+              subjects: true,
+              classes: true,
+            },
+          },
+        },
       });
-    } else if (role === "student") {
-      dbUser = await prisma.student.findUnique({
-        where: { id: userId },
-        include: { class: true, grade: true },
-      });
-    }
 
+      if (userWithTeacher) {
+        dbUser = {
+          ...userWithTeacher,
+          // Flattening the data so the rest of your JSX doesn't need to change
+          subjects: userWithTeacher.teacher?.subjects || [],
+          classes: userWithTeacher.teacher?.classes || [],
+        };
+      }
+    } 
+    
+    else if (currentRole === "student") {
+      const userWithStudent = await prisma.user.findUnique({
+        where: { id: userId },
+        include: {
+          student: {
+            include: {
+              class: true,
+              grade: true,
+            },
+          },
+        },
+      });
+
+      if (userWithStudent) {
+        dbUser = {
+          ...userWithStudent,
+          // Flattening for the JSX
+          class: userWithStudent.student?.class || null,
+          grade: userWithStudent.student?.grade || null,
+        };
+      }
+    }
     if (!dbUser) {
       return (
         <div className="p-8 text-center text-slate-500 italic">
@@ -60,7 +97,7 @@ const ProfilePage = async () => {
           <div className="flex-1 text-center md:text-left space-y-2">
             <div className="flex items-center justify-center md:justify-start gap-3">
               <h1 className="text-3xl font-black text-slate-800 tracking-tight">
-                {dbUser.name} {dbUser.surname}
+                {dbUser.name || "User"}
               </h1>
               <span className="bg-slate-100 text-slate-500 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">
                 {role}

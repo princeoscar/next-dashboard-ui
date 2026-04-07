@@ -181,6 +181,9 @@ export const createTeacher = async (
 
     await prisma.teacher.create({
       data: {
+        user: {
+      connect: { id: user.id }, 
+    },
         id: user.id,
         username: data.username,
         name: data.name,
@@ -279,55 +282,70 @@ export const deleteTeacher = async (
 
 export const createStudent = async (
   
-  currentState: CurrentState,
-  data: StudentSchema
+currentState: CurrentState,
+data: StudentSchema
 ) => {
-  try {
-    const classItem = await prisma.class.findUnique({
-      where: { id: data.classId },
-      include: { _count: { select: { students: true } } },
-    });
+try {
+const classItem = await prisma.class.findUnique({
+ where: { id: data.classId },
+ include: { _count: { select: { students: true } } },
+});
 
-    if (classItem && classItem.capacity === classItem._count.students) {
-      return { success: false, error: true };
-    }
+ if (classItem && classItem.capacity === classItem._count.students) {
+return { success: false, error: true }; }
 
-    const client = await clerkClient();
+ const client = await clerkClient();
 
-    const user = await client.users.createUser({
-      username: data.username,
-      password: data.password,
-      firstName: data.name,
-      lastName: data.surname,
-      ...(data.email && { emailAddress: [data.email] }),
-      publicMetadata: { role: "student" },
-    });
+ const user = await client.users.createUser({
+username: data.username,
+ password: data.password,
+ firstName: data.name,
+ lastName: data.surname,
+...(data.email && { emailAddress: [data.email] }),
+ publicMetadata: { role: "student" },
+ });
 
-    await prisma.student.create({
-      data: {
-        id: user.id,
-        username: data.username,
-        name: data.name,
-        surname: data.surname,
-        email: data.email || null,
-        phone: data.phone || null,
-        address: data.address,
-        img: data.img || null,
-        bloodType: data.bloodType,
-        sex: data.sex,
-        birthday: data.birthday,
-        gradeId: data.gradeId,
-        classId: data.classId,
-        parentId: data.parentId,
-      },
-    });
+await prisma.student.create({
+  data: {
+    // 1. RELATIONS (The "Connect" style)
+    id: user.id,
+    user: {
+      connect: { id: user.id },
+    },
+    grade: {
+      connect: { id: data.gradeId },
+    },
 
-    revalidatePath("/list/students");
-    return { success: true, error: false };
-  } catch (err) {
-    console.log(err);
-    return { success: false, error: true };
-  }
+    parent: {
+      connect: { id: data.parentId }, 
+    },
+    // Only connect class if it exists
+    ...(data.classId && {
+      class: {
+        connect: { id: data.classId },
+      },
+    }),
+
+ 
+ username: data.username,
+ name: data.name,
+ surname: data.surname,
+ email: data.email || null,
+ phone: data.phone || null,
+ address: data.address,
+ img: data.img || null,
+ bloodType: data.bloodType,
+ sex: data.sex,
+ birthday: data.birthday,
+ },
+});
+
+ revalidatePath("/list/students");
+ return { success: true, error: false };
+ } catch (err) {
+console.log(err);
+return { success: false, error: true };
+}
 };
 
 export const updateStudent = async (
@@ -483,7 +501,12 @@ export const createParent = async (
 
     await prisma.parent.create({
       data: {
-        id: user.id,
+       id: user.id,
+
+    // 2. RELATIONS (Connect via the relationship name)
+    user: {
+      connect: { id: user.id },
+    },
         username: data.username,
         name: data.name,
         surname: data.surname,

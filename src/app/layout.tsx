@@ -40,7 +40,8 @@ export default function RootLayout({
   signInFallbackRedirectUrl="/dashboard"
 >
       <html lang="en" className="scroll-smooth">
-        <body className={`${inter.variable} font-sans antialiased bg-slate-50 text-slate-900`}>
+        <body className={`${inter.variable} font-sans antialiased bg-slate-50 text-slate-900`}
+        suppressHydrationWarning={true}>
           {children}
           
           {/* Global Notification System */}

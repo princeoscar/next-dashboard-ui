@@ -70,12 +70,12 @@ const ParentPage = async () => {
                   </h2>
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-[10px] font-black text-rubixSky uppercase tracking-widest bg-rubixSky/5 px-2 py-0.5 rounded-md border border-rubixSky/10">
-                      Class {student.class.name}
+                      Class {student.class?.name || "Unassigned"}
                     </span>
                   </div>
                 </div>
               </div>
-              
+
               <Link
                 href={`/list/results?studentId=${student.id}`}
                 className="flex items-center gap-2 bg-slate-900 text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg shadow-slate-200 self-start md:self-center"
@@ -92,7 +92,16 @@ const ParentPage = async () => {
                 <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Weekly Academic Schedule</span>
               </div>
               <div className="h-[600px]">
-                <BigCalendarContainer type="classId" id={student.classId} />
+                {student.classId ? (
+                  <BigCalendarContainer type="classId" id={student.classId} />
+                ) : (
+                  <div className="h-full flex flex-col items-center justify-center bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-200">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                      No Schedule Available
+                    </p>
+                    <span className="text-xs text-slate-400 italic">This student is not yet assigned to a class.</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>

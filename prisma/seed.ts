@@ -1,4 +1,5 @@
-import { prisma } from "./prisma.config";
+
+import prisma from "../src/lib/prisma";
 import { Day, UserSex } from "@prisma/client";
 
 async function main() {
