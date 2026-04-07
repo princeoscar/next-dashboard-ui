@@ -1,10 +1,25 @@
-
-
+"use client";
+import dynamic from "next/dynamic";
 import Announcements from "@/components/Announcements";
 import FinanceChart from "@/components/FinanceChart";
 import UserCard from "@/components/UserCard";
 import EventCalendarContainer from "@/components/EventCalenderContainer";
-import React from "react";
+import React, { use } from "react";
+
+
+// 2. Replace static imports with dynamic imports
+const CountChartContainer = dynamic(() => import("@/components/CountChartContainer"), { 
+  ssr: false,
+  loading: () => <div className="h-64 w-full bg-slate-100 animate-pulse rounded-xl" /> // Optional loading state
+});
+
+const AttendanceChartContainer = dynamic(() => import("@/components/AttendanceChartContainer"), { 
+  ssr: false,
+  loading: () => <div className="h-64 w-full bg-slate-100 animate-pulse rounded-xl" />
+});
+
+
+
 
 // 1. Defined precise types (Removed 'any')
 interface AdminClientProps {

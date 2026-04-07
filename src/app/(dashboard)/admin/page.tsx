@@ -1,18 +1,9 @@
 import prisma from "@/lib/prisma";
 import AdminClientPage from "./AdminClientPage";
-// 1. Import 'dynamic' from Next.js
-import dynamic from "next/dynamic";
+import CountChartContainer from "@/components/CountChartContainer";
+import AttendanceChartContainer from "@/components/AttendanceChartContainer";
 
-// 2. Replace static imports with dynamic imports
-const CountChartContainer = dynamic(() => import("@/components/CountChartContainer"), { 
-  ssr: false,
-  loading: () => <div className="h-64 w-full bg-slate-100 animate-pulse rounded-xl" /> // Optional loading state
-});
 
-const AttendanceChartContainer = dynamic(() => import("@/components/AttendanceChartContainer"), { 
-  ssr: false,
-  loading: () => <div className="h-64 w-full bg-slate-100 animate-pulse rounded-xl" />
-});
 
 interface SearchParamsProps {
   searchParams: { [key: string]: string | undefined };
