@@ -26,6 +26,8 @@ const LoginPage = () => {
         }
     }, [isLoaded, isSignedIn, user, router])
 
+    if (!isLoaded) return null;
+
     return (
         <div className='relative h-screen w-full flex items-center justify-center overflow-hidden font-sans'>
             <div className='absolute inset-0 -z-10'>
