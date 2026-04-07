@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 const menuItems = [
   {
@@ -34,39 +35,44 @@ const menuItems = [
 ];
 
 const Menu = ({ role, isMobile = false }: { role: string; isMobile?: boolean }) => {
+    const pathname = usePathname();
+
   return (
-    <div className="h-screen overflow-y-auto px-2 pb-10">
+    <div className="text-sm">
       {menuItems.map((section) => (
-        <div key={section.title} className="flex flex-col gap-2">
+        <div key={section.title} className="mb-4">
           
           {/* SECTION TITLE */}
-          <span className="text-gray-400 text-xs font-semibold tracking-widest mt-4 mb-2 px-2">
+         <p className={`${isMobile ? "block" : "hidden lg:block"} text-gray-400 text-xs mb-2`}>
             {section.title}
-          </span>
+          </p>
+
 
           {/* MENU ITEMS */}
           {section.items.map((item) => {
             if (!item.visible.includes(role)) return null;
 
+
+            const active = pathname === item.href;
+
             return (
               <Link
                 href={item.href}
                 key={item.label}
-                className="flex items-center gap-4 px-3 py-3 rounded-xl text-gray-600 hover:bg-rubixSkyLight transition-all duration-200 active:scale-[0.98]"
+               className={`flex items-center gap-3 p-2 rounded-md transition ${
+                  active
+                    ? "bg-indigo-50 text-indigo-600 font-semibold"
+                    : "text-gray-500 hover:bg-gray-100"
+                }`}
               >
-                {/* ICON */}
-                <div className="w-5 h-5 flex items-center justify-center">
-                  <Image
-                    src={item.icon}
-                    alt={item.label}
-                    width={20}
-                    height={20}
-                    className="object-contain"
-                  />
-                </div>
 
-                {/* LABEL (Always visible now) */}
-                <span className="text-sm font-medium">{item.label}</span>
+                {/* ICON */}
+                
+                  <Image src={item.icon} alt="" width={18} height={18} />
+                <span className={isMobile ? "block" : "hidden lg:block"}>
+                  {item.label}
+                </span>
+
               </Link>
             );
           })}

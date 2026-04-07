@@ -27,17 +27,15 @@ const Navbar = ({
   if (!mounted || !isLoaded) return null;
 
   return (
-    <div className="flex items-center justify-between p-4 bg-white border-b">
-      
+    <div className="flex items-center justify-between px-4 py-3 bg-white border-b sticky top-0 z-50">
+
       {/* LEFT SIDE */}
       <div className="flex items-center gap-3">
-        
-        {/* ✅ MOBILE MENU (THIS FIXES YOUR ISSUE) */}
         <MobileMenu role={role} />
 
         {/* SEARCH (HIDDEN ON SMALL SCREENS) */}
         <div className="hidden md:flex items-center gap-2 text-xs rounded-full 
-        ring-[1.5px] ring-gray-300 px-2">
+        ring-1 ring-gray-300 px-2">
           <Image src="/search.png" alt="search" width={14} height={14} />
           <input
             type="text"
@@ -48,27 +46,13 @@ const Navbar = ({
       </div>
 
       {/* RIGHT SIDE */}
-      <div className="flex items-center gap-4 md:gap-6">
-        
+      <div className="flex items-center gap-4">
+
         {/* MESSAGES */}
-        <div className="bg-white rounded-full w-8 h-8 flex items-center justify-center cursor-pointer relative hover:bg-slate-100 transition">
-          <Image src="/message.png" alt="messages" width={20} height={20} />
-          {messageCount > 0 && (
-            <div className="absolute -top-2 -right-2 min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-purple-500 text-white rounded-full text-[10px] font-bold">
-              {messageCount}
-            </div>
-          )}
-        </div>
+        <IconWithBadge icon="/message.png" count={messageCount} />
 
         {/* ANNOUNCEMENTS */}
-        <div className="bg-white rounded-full w-8 h-8 flex items-center justify-center cursor-pointer relative hover:bg-slate-100 transition">
-          <Image src="/announcement.png" alt="announcements" width={20} height={20} />
-          {announcementCount > 0 && (
-            <div className="absolute -top-2 -right-2 min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-purple-500 text-white rounded-full text-[10px] font-bold">
-              {announcementCount}
-            </div>
-          )}
-        </div>
+        <IconWithBadge icon="/announcement.png" count={announcementCount} />
 
         {/* USER INFO (HIDE ON SMALL SCREENS FOR CLEAN UI) */}
         <div className="hidden sm:flex flex-col text-right">
@@ -88,3 +72,22 @@ const Navbar = ({
 };
 
 export default Navbar;
+
+
+/* 🔹 Reusable Component */
+const IconWithBadge = ({
+  icon,
+  count,
+}: {
+  icon: string;
+  count: number;
+}) => (
+  <div className="relative w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 cursor-pointer transition">
+    <Image src={icon} alt="" width={18} height={18} />
+    {count > 0 && (
+      <span className="absolute -top-1 -right-1 bg-purple-500 text-white text-[10px] px-1 rounded-full">
+        {count}
+      </span>
+    )}
+  </div>
+);
