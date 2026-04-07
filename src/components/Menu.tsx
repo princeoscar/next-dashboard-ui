@@ -3,143 +3,43 @@
 import Image from "next/image";
 import Link from "next/link";
 
-const menuItems = [
-  {
-    title: "MENU",
-    items: [
-      {
-        icon: "/home.png",
-        label: "Home",
-        href: "/",
-        visible: ["admin", "teacher", "student", "parent"],
-      },
-      {
-        icon: "/teacher.png",
-        label: "Teachers",
-        href: "/list/teachers",
-        visible: ["admin", "teacher"],
-      },
-      {
-        icon: "/student.png",
-        label: "Students",
-        href: "/list/students",
-        visible: ["admin", "teacher"],
-      },
-      {
-        icon: "/parent.png",
-        label: "Parents",
-        href: "/list/parents",
-        visible: ["admin", "teacher"],
-      },
-      {
-        icon: "/subject.png",
-        label: "Subjects",
-        href: "/list/subjects",
-        visible: ["admin"],
-      },
-      {
-        icon: "/class.png",
-        label: "Classes",
-        href: "/list/classes",
-        visible: ["admin", "teacher"],
-      },
-      {
-        icon: "/lesson.png",
-        label: "Lessons",
-        href: "/list/lessons",
-        visible: ["admin", "teacher"],
-      },
-      {
-        icon: "/exam.png",
-        label: "Exams",
-        href: "/list/exams",
-        visible: ["admin", "teacher", "student", "parent"],
-      },
-      {
-        icon: "/assignment.png",
-        label: "Assignments",
-        href: "/list/assignments",
-        visible: ["admin", "teacher", "student", "parent"],
-      },
-      {
-        icon: "/result.png",
-        label: "Results",
-        href: "/list/results",
-        visible: ["admin", "teacher", "student", "parent"],
-      },
-      {
-        icon: "/attendance.png",
-        label: "Attendance",
-        href: "/list/attendance",
-        visible: ["admin", "teacher", "student", "parent"],
-      },
-      {
-        icon: "/calendar.png",
-        label: "Events",
-        href: "/list/events",
-        visible: ["admin", "teacher", "student", "parent"],
-      },
-      {
-        icon: "/message.png",
-        label: "Messages",
-        href: "/list/messages",
-        visible: ["admin", "teacher", "student", "parent"],
-      },
-      {
-        icon: "/announcement.png",
-        label: "Announcements",
-        href: "/list/announcements",
-        visible: ["admin", "teacher", "student", "parent"],
-      },
-    ],
-  },
-  {
-    title: "OTHER",
-    items: [
-      {
-        icon: "/profile.png",
-        label: "Profile",
-        href: "/profile",
-        visible: ["admin", "teacher", "student", "parent"],
-      },
-      {
-        icon: "/setting.png",
-        label: "Settings",
-        href: "/settings",
-        visible: ["admin", "teacher", "student", "parent"],
-      },
-      {
-        icon: "/logout.png",
-        label: "Logout",
-        href: "/logout",
-        visible: ["admin", "teacher", "student", "parent"],
-      },
-    ],
-  },
-];
+// ... (keep your menuItems array exactly as it is) ...
 
-const Menu = ({ role }: { role: string }) => {
+// Added isMobile prop to handle visibility logic
+const Menu = ({ role, isMobile = false }: { role: string; isMobile?: boolean }) => {
   return (
     <div className="mt-4 text-sm">
       {menuItems.map((i) => (
         <div className="flex flex-col gap-2" key={i.title}>
-          {/* 3. Logic for Drawer: We remove 'hidden lg:block' inside the Mobile Drawer */}
-          <span className="hidden lg:block text-gray-400 font-light my-4">
+          {/* 
+             If isMobile is true, we show the title. 
+             If not, we only show it on Large screens (lg:block).
+          */}
+          <span className={`${isMobile ? "block" : "hidden lg:block"} text-gray-400 font-light my-4`}>
             {i.title}
           </span>
+
           {i.items.map((item) => {
             if (item.visible.includes(role)) {
               return (
                 <Link
                   href={item.href}
                   key={item.label}
-                  className="flex items-center justify-center lg:justify-start gap-4 text-gray-500 py-2 md:px-2 rounded-md hover:bg-lamaSkyLight"
+                  // On mobile/drawer, we always want justify-start and gap-4
+                  className={`flex items-center ${
+                    isMobile ? "justify-start" : "justify-center lg:justify-start"
+                  } gap-4 text-gray-500 py-2 px-2 rounded-md hover:bg-lamaSkyLight`}
                 >
                   <Image src={item.icon} alt="" width={20} height={20} />
-                  {/* IMPORTANT: If this is inside the drawer, we want the label visible */}
-                  <span className="hidden lg:block">{item.label}</span>
-                  {/* Add this temporary line to test mobile visibility: */}
-                  <span className="lg:hidden">{item.label}</span>
+                  
+                  {/* 
+                     The Label Fix: 
+                     If isMobile is true, show the text. 
+                     Otherwise, hide it until 'lg' screens.
+                  */}
+                  <span className={isMobile ? "block" : "hidden lg:block"}>
+                    {item.label}
+                  </span>
                 </Link>
               );
             }

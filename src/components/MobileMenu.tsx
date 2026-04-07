@@ -11,14 +11,14 @@ const MobileMenu = ({ role }: { role: string }) => {
   return (
     <>
       {/* THE TRIGGER: Logo + Hamburger */}
-      <button 
-        onClick={() => setIsOpen(true)} 
+      <button
+        onClick={() => setIsOpen(true)}
         className="flex items-center gap-2 hover:opacity-80 transition-opacity"
       >
         <Image src="/logo.png" alt="logo" width={32} height={32} />
         {/* Optional: Add a small hamburger icon next to it */}
         <div className="lg:hidden p-1 bg-slate-100 rounded">
-           
+
         </div>
       </button>
 
@@ -26,9 +26,9 @@ const MobileMenu = ({ role }: { role: string }) => {
       {isOpen && (
         <div className="fixed inset-0 z-[9999] flex">
           {/* Dark Background Overlay */}
-          <div 
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm" 
-            onClick={() => setIsOpen(false)} 
+          <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setIsOpen(false)}
           />
 
           {/* Sidebar Panel */}
@@ -39,13 +39,18 @@ const MobileMenu = ({ role }: { role: string }) => {
                 <span className="font-bold text-xl">Rubix Schools</span>
               </Link>
               <button onClick={() => setIsOpen(false)} className="text-2xl text-slate-500">
-                &times; 
+                &times;
               </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto">
+              {/* Pass isMobile={true} here */}
+              <Menu role={role} isMobile={true} />
             </div>
 
             {/* Menu items show with labels here because the drawer is wide (w-72) */}
             <div className="flex-1 overflow-y-auto">
-               <Menu role={role}/>
+              <Menu role={role} />
             </div>
           </div>
         </div>
