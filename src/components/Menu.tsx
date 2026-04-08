@@ -35,7 +35,14 @@ const menuItems = [
   },
 ];
 
-const Menu = ({ role, isMobile = false }: { role: string; isMobile?: boolean }) => {
+const Menu = ({ role,
+   isMobile = false,
+   onClose,
+  }: { 
+    role: string;
+     isMobile?: boolean;
+     onClose?: () => void;
+    }) => {
   const pathname = usePathname();
 
 

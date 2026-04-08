@@ -21,6 +21,9 @@ const MobileMenu = ({ role }: { role: string }) => {
     };
   }, [isOpen]);
 
+  // CORRECTION: Function to handle closing the menu
+  const handleClose = () => setIsOpen(false);
+
   return (
     <>
       {/* TRIGGER BUTTON */}
@@ -37,18 +40,18 @@ const MobileMenu = ({ role }: { role: string }) => {
           
           {/* OVERLAY */}
           <div
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={() => setIsOpen(false)}
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300"
+            onClick={handleClose}
           />
 
-          {/* SIDEBAR - CORRECTION: Added h-screen, max-h-screen, and overflow-hidden */}
+          {/* SIDEBAR */}
           <div className="relative w-72 h-screen max-h-screen bg-white flex flex-col overflow-hidden animate-in slide-in-from-left duration-300 shadow-2xl">
             
-            {/* HEADER - CORRECTION: Added flex-shrink-0 so it never collapses */}
+            {/* HEADER */}
             <div className="flex items-center justify-between p-5 border-b flex-shrink-0 bg-white z-10">
               <Link
                 href="/"
-                onClick={() => setIsOpen(false)}
+                onClick={handleClose}
                 className="flex items-center gap-2"
               >
                 <Image src="/logo.png" alt="logo" width={32} height={32} />
@@ -56,18 +59,18 @@ const MobileMenu = ({ role }: { role: string }) => {
               </Link>
 
               <button 
-                onClick={() => setIsOpen(false)}
-                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors"
+                onClick={handleClose}
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors text-slate-500"
               >
                 ✕
               </button>
             </div>
 
-            {/* SCROLLABLE MENU AREA - CORRECTION: Added flex-1 and custom height calculation */}
+            {/* SCROLLABLE MENU AREA */}
             <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
-              <Menu role={role} isMobile />
+              {/* CORRECTION: Passing handleClose as a prop to Menu */}
+              <Menu role={role} isMobile onClose={handleClose} />
               
-              {/* Extra padding at the bottom to ensure the last item is visible above phone navigation bars */}
               <div className="h-20" /> 
             </div>
           </div>
