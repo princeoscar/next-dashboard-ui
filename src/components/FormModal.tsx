@@ -1,4 +1,4 @@
-"use server";
+"use client";
 
 import { 
   deleteClass, deleteSubject, deleteTeacher, deleteStudent, 
@@ -79,7 +79,14 @@ const FormModal = ({
   const [open, setOpen] = useState(false);
   const router = useRouter();
 
-  const [state, formAction] = useFormState(deleteActionMap[table], {
+  // 1. Define the wrapper inside the component
+  const deleteActionWithId = async (currentState: any, formData: FormData) => {
+    const action = deleteActionMap[table];
+    return action(currentState, formData);
+  };
+
+  // 2. ONLY ONE useFormState call here
+  const [state, formAction] = useFormState(deleteActionWithId, {
     success: false,
     error: false,
   });
