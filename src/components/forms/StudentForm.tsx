@@ -11,7 +11,16 @@ import { createStudent, updateStudent } from "@/lib/actions";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { CldUploadWidget } from "next-cloudinary";
-import { UserPlus, ShieldCheck, UserCircle, UploadCloud, GraduationCap, School } from "lucide-react";
+import { 
+  UserPlus, 
+  ShieldCheck, 
+  UserCircle, 
+  UploadCloud, 
+  GraduationCap, 
+  School,
+  XCircle,
+  CheckCircle2
+} from "lucide-react";
 
 const StudentForm = ({
   type,
@@ -61,160 +70,165 @@ const StudentForm = ({
 
   if (type === "create" && (!relatedData || grades.length === 0)) {
     return (
-      <div className="p-12 flex flex-col items-center justify-center gap-4 text-slate-400">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-        <p className="text-xs font-black uppercase tracking-widest">Syncing Classroom Data...</p>
+      <div className="p-16 flex flex-col items-center justify-center gap-4 text-slate-400">
+        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-600"></div>
+        <p className="text-[10px] font-black uppercase tracking-[0.2em]">Syncing Academy Data...</p>
       </div>
     );
   }
 
   return (
-    <form className="flex flex-col gap-8 p-2" onSubmit={onSubmit}>
-      {/* HEADER */}
-      <div className="flex items-center gap-4 mb-2">
-        <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl shadow-sm">
-          <UserPlus size={24} />
-        </div>
-        <div>
-          <h1 className="text-2xl font-black text-slate-800 tracking-tighter uppercase leading-none">
-            {type === "create" ? "Enroll Student" : "Update Student"}
-          </h1>
-          <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-1">
-            Student Information System
-          </p>
-        </div>
-      </div>
-
-      {/* AUTH SECTION - Wider Single Column Layout */}
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center gap-2 px-1">
-          <ShieldCheck size={14} className="text-slate-400" />
-          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Credentials</span>
-        </div>
-        <div className="grid grid-cols-1 gap-6 bg-slate-50/50 p-6 rounded-[2rem] border border-slate-100">
-          <InputField label="Username" name="username" defaultValue={data?.username} register={register} error={errors?.username} />
-          <InputField label="Email" name="email" defaultValue={data?.email} register={register} error={errors?.email} />
-          <InputField label="Password" name="password" type="password" register={register} error={errors?.password} />
-        </div>
-      </div>
-
-      {/* PERSONAL SECTION - Two Column Layout for better visibility */}
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center gap-2 px-1">
-          <UserCircle size={14} className="text-slate-400" />
-          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Profile Details</span>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50/50 p-6 rounded-[2rem] border border-slate-100 shadow-inner">
-
-          {/* PHOTO UPLOAD - Full width on small, joins grid on medium */}
-          <div className="md:col-span-2 flex flex-col gap-3 justify-center items-center p-6 bg-white rounded-2xl border border-dashed border-slate-200 mb-2">
-            <CldUploadWidget
-              uploadPreset="school"
-              onSuccess={(result, { widget }) => {
-                setImg(result.info);
-                widget.close();
-              }}
-            >
-              {({ open }) => { // 1. Added opening curly brace
-                const isReady = !!open;
-
-                return ( // 2. Added explicit return
-                  <div
-                    className={`text-center group ${isReady ? "cursor-pointer" : "opacity-50 cursor-not-allowed"}`} onClick={() => open?.()}>
-                    <div className="relative w-20 h-20 mx-auto mb-2 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center border-2 border-white shadow-md group-hover:border-blue-400 transition-all">
-                      {img ? (
-                        <Image src={img.secure_url || img} alt="Preview" fill className="object-cover" />
-                      ) : (
-                        <UploadCloud size={28} className="text-slate-300 group-hover:text-blue-500" />
-                      )}
-                    </div>
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter group-hover:text-blue-600 transition-colors">
-                      {isReady ? (img ? "Change Photo" : "Upload Photo") : "Loading..."}
-                    </span>
-                  </div>
-                ); // 3. Closed return
-              }}
-            </CldUploadWidget>
+    <form className="flex flex-col gap-10 p-4 max-w-5xl mx-auto" onSubmit={onSubmit}>
+      {/* HEADER SECTION */}
+      <div className="flex items-center justify-between border-b border-slate-100 pb-8">
+        <div className="flex items-center gap-6">
+          <div className="p-4 bg-blue-600 text-white rounded-2xl shadow-xl shadow-blue-100">
+            <UserPlus size={32} />
           </div>
-
-          <InputField label="First Name" name="name" defaultValue={data?.name} register={register} error={errors.name} />
-          <InputField label="Last Name" name="surname" defaultValue={data?.surname} register={register} error={errors.surname} />
-          <InputField label="Contact Number" name="phone" defaultValue={data?.phone} register={register} error={errors.phone} />
-          <InputField label="Blood Type" name="bloodType" defaultValue={data?.bloodType} register={register} error={errors.bloodType} />
-          <InputField
-            label="Birthday"
-            name="birthday"
-            type="date"
-            defaultValue={data?.birthday ? new Date(data.birthday).toISOString().split("T")[0] : ""}
-            register={register}
-            error={errors.birthday}
-          />
-          <InputField label="Parent ID Reference" name="parentId" defaultValue={data?.parentId} register={register} error={errors.parentId} />
-
-          {/* Address made wider to accommodate long strings */}
-          <div className="md:col-span-2">
-            <InputField label="Residential Address" name="address" defaultValue={data?.address} register={register} error={errors.address} />
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Sex</label>
-            <select className="p-4 rounded-2xl bg-white border border-slate-200 text-sm font-medium focus:ring-4 focus:ring-blue-500/10 outline-none appearance-none" {...register("sex")} defaultValue={data?.sex}>
-              <option value="MALE">Male</option>
-              <option value="FEMALE">Female</option>
-            </select>
+          <div>
+            <h1 className="text-3xl font-black text-slate-800 tracking-tighter uppercase leading-none">
+              {type === "create" ? "Enroll Student" : "Update Profile"}
+            </h1>
+            <p className="text-[11px] text-slate-400 font-black uppercase tracking-[0.3em] mt-2 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
+              Student Information System
+            </p>
           </div>
         </div>
       </div>
 
-      {/* ENROLLMENT SECTION */}
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center gap-2 px-1">
-          <School size={14} className="text-slate-400" />
-          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Academic Placement</span>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50/50 p-6 rounded-[2rem] border border-slate-100">
+      <div className="space-y-12">
+        {/* SECTION 1: CREDENTIALS */}
+        <section>
+          <div className="flex items-center gap-4 mb-8">
+            <ShieldCheck size={18} className="text-blue-500" />
+            <h2 className="text-xs font-black text-slate-500 uppercase tracking-widest">Account Access</h2>
+            <div className="h-px flex-1 bg-gradient-to-r from-slate-100 to-transparent"></div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 bg-slate-50/50 p-8 rounded-[2.5rem] border border-slate-100 shadow-inner">
+            <InputField label="Username" name="username" defaultValue={data?.username} register={register} error={errors?.username} />
+            <InputField label="Email Address" name="email" defaultValue={data?.email} register={register} error={errors?.email} />
+            <InputField label="Password" name="password" type="password" register={register} error={errors?.password} placeholder="••••••••" />
+          </div>
+        </section>
 
-          <div className="flex flex-col gap-2">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Grade Level</label>
-            <div className="relative group">
-              <select className="w-full p-4 rounded-2xl bg-white border border-slate-200 text-sm font-medium focus:ring-4 focus:ring-blue-500/10 outline-none appearance-none" {...register("gradeId", { valueAsNumber: true })} defaultValue={data?.gradeId}>
-                {grades.map((grade: any) => (
-                  <option value={grade.id} key={grade.id}>Grade {grade.level}</option>
-                ))}
+        {/* SECTION 2: PERSONAL PROFILE */}
+        <section>
+          <div className="flex items-center gap-4 mb-8">
+            <UserCircle size={18} className="text-blue-500" />
+            <h2 className="text-xs font-black text-slate-500 uppercase tracking-widest">Personal Profile</h2>
+            <div className="h-px flex-1 bg-gradient-to-r from-slate-100 to-transparent"></div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-8">
+            <InputField label="First Name" name="name" defaultValue={data?.name} register={register} error={errors.name} />
+            <InputField label="Last Name" name="surname" defaultValue={data?.surname} register={register} error={errors.surname} />
+            <InputField label="Phone Number" name="phone" defaultValue={data?.phone} register={register} error={errors.phone} />
+            <InputField label="Blood Type" name="bloodType" defaultValue={data?.bloodType} register={register} error={errors.bloodType} />
+            <InputField
+              label="Date of Birth"
+              name="birthday"
+              type="date"
+              defaultValue={data?.birthday ? new Date(data.birthday).toISOString().split("T")[0] : ""}
+              register={register}
+              error={errors.birthday}
+            />
+            <InputField label="Parent ID" name="parentId" defaultValue={data?.parentId} register={register} error={errors.parentId} />
+            
+            <div className="lg:col-span-2">
+              <InputField label="Residential Address" name="address" defaultValue={data?.address} register={register} error={errors.address} />
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Sex</label>
+              <select 
+                className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-sm font-medium focus:ring-4 focus:ring-blue-500/10 outline-none transition-all cursor-pointer hover:border-slate-300" 
+                {...register("sex")} 
+                defaultValue={data?.sex}
+              >
+                <option value="MALE">Male</option>
+                <option value="FEMALE">Female</option>
               </select>
-              <GraduationCap className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none" size={18} />
             </div>
           </div>
+        </section>
 
-          <div className="flex flex-col gap-2">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Class Assigned</label>
-            <select className="p-4 rounded-2xl bg-white border border-slate-200 text-sm font-medium focus:ring-4 focus:ring-blue-500/10 outline-none appearance-none" {...register("classId", { valueAsNumber: true })} defaultValue={data?.classId}>
-              {classes.map((c: any) => (
-                <option value={c.id} key={c.id}>
-                  {c.name} ({c._count.students}/{c.capacity} Enrolled)
-                </option>
-              ))}
-            </select>
+        {/* SECTION 3: ACADEMICS & PHOTO */}
+        <section className="bg-slate-50/80 p-8 rounded-[2.5rem] border border-slate-100">
+          <div className="flex items-center gap-4 mb-8">
+            <School size={18} className="text-blue-500" />
+            <h2 className="text-xs font-black text-slate-500 uppercase tracking-widest">Academic Placement</h2>
+            <div className="h-px flex-1 bg-slate-200/50"></div>
           </div>
-        </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-end">
+            {/* GRADE */}
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Grade Level</label>
+              <div className="relative">
+                <select className="w-full p-4 rounded-2xl bg-white border border-slate-200 text-sm font-medium focus:ring-4 focus:ring-blue-500/10 outline-none appearance-none" {...register("gradeId", { valueAsNumber: true })} defaultValue={data?.gradeId}>
+                  {grades.map((grade: any) => (
+                    <option value={grade.id} key={grade.id}>Grade {grade.level}</option>
+                  ))}
+                </select>
+                <GraduationCap className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none" size={18} />
+              </div>
+            </div>
+
+            {/* CLASS */}
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Class Assigned</label>
+              <select className="p-4 rounded-2xl bg-white border border-slate-200 text-sm font-medium focus:ring-4 focus:ring-blue-500/10 outline-none" {...register("classId", { valueAsNumber: true })} defaultValue={data?.classId}>
+                {classes.map((c: any) => (
+                  <option value={c.id} key={c.id}>{c.name} ({c._count.students}/{c.capacity})</option>
+                ))}
+              </select>
+            </div>
+
+            {/* PHOTO UPLOAD */}
+            <CldUploadWidget
+              uploadPreset="school"
+              onSuccess={(result, { widget }) => { setImg(result.info); widget.close(); }}
+            >
+              {({ open }) => (
+                <div 
+                  onClick={() => open?.()} 
+                  className={`flex items-center justify-center gap-3 cursor-pointer p-3.5 rounded-2xl border-2 border-dashed transition-all bg-white h-[55px] ${img ? "border-emerald-200 bg-emerald-50/30" : "border-slate-200 hover:border-blue-400 hover:bg-slate-50"}`}
+                >
+                  {img ? <CheckCircle2 size={20} className="text-emerald-500" /> : <UploadCloud size={20} className="text-slate-400" />}
+                  <span className={`text-[10px] font-black uppercase tracking-tighter ${img ? "text-emerald-600" : "text-slate-500"}`}>
+                    {img ? "Photo Attached" : "Upload Profile"}
+                  </span>
+                </div>
+              )}
+            </CldUploadWidget>
+          </div>
+        </section>
       </div>
 
-      <div className="flex flex-col gap-4 mt-2">
-        {state.error && (
-          <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl text-center">
-            <span className="text-rose-600 text-[10px] font-black uppercase tracking-widest">Validation Error: Please check required fields</span>
-          </div>
-        )}
+      {/* ERROR FEEDBACK */}
+      {state.error && (
+        <div className="flex items-center gap-4 p-5 bg-rose-50 rounded-2xl border border-rose-100 animate-in fade-in slide-in-from-top-2">
+          <XCircle size={20} className="text-rose-500" />
+          <p className="text-[11px] font-bold text-rose-600 uppercase tracking-wider">
+            {state.message || "Entry Error: Please verify all mandatory student data."}
+          </p>
+        </div>
+      )}
 
-        {state.error && (
-          <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl text-center">
-            <span className="text-rose-600 text-[10px] font-black uppercase tracking-widest">
-              {state.message || "Validation Error: Please check required fields"}
-            </span>
-          </div>
-        )}
-        <button type="submit" className="bg-slate-900 hover:bg-blue-600 text-white py-4 px-10 rounded-2xl font-black text-[12px] uppercase tracking-widest shadow-xl shadow-slate-200 transition-all active:scale-95 self-end">
-          {type === "create" ? "Complete Enrollment" : "Update Record"}
+      {/* FOOTER ACTIONS */}
+      <div className="flex items-center justify-between border-t border-slate-100 pt-10">
+        <button 
+          type="button"
+          onClick={() => setOpen(false)}
+          className="text-slate-400 hover:text-slate-800 font-black text-[10px] uppercase tracking-[0.2em] transition-colors"
+        >
+          Cancel Enrollment
+        </button>
+        
+        <button type="submit" className="bg-slate-900 hover:bg-blue-600 text-white py-5 px-12 rounded-[2rem] font-black text-[11px] uppercase tracking-[0.2em] shadow-2xl shadow-blue-200 transition-all active:scale-95">
+          {type === "create" ? "Complete Enrollment" : "Update Records"}
         </button>
       </div>
     </form>

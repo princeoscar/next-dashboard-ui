@@ -9,13 +9,12 @@ import {
 import { FormContainerProps } from "@/lib/types";
 import { Pencil, Plus, Trash2, X } from "lucide-react";
 import dynamic from "next/dynamic";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { useFormState } from "react-dom";
 import { toast } from "react-toastify";
 
-
+// Action Map for Deletion
 const deleteActionMap = {
   subject: deleteSubject,
   class: deleteClass,
@@ -26,28 +25,26 @@ const deleteActionMap = {
   lesson: deleteLesson,
   assignment: deleteAssignment,
   result: deleteResult,
-  attendance: deleteSubject, // Check if this needs its own action
+  attendance: deleteSubject, 
   event: deleteEvent,
   announcement: deleteAnnouncement,
   message: deleteMessage,
-   // Check if this needs its own action
 };
 
-// Lazy Loading Imports
-const TeacherForm = dynamic(() => import("./forms/TeacherForm"), { loading: () => <h1>Loading...</h1> });
-const StudentForm = dynamic(() => import("./forms/StudentForm"), { loading: () => <h1>Loading...</h1> });
-const SubjectForm = dynamic(() => import("./forms/SubjectForm"), { loading: () => <h1>Loading...</h1> });
-const ClassForm = dynamic(() => import("./forms/ClassForm"), { loading: () => <h1>Loading...</h1> });
-const ExamForm = dynamic(() => import("./forms/ExamForm"), { loading: () => <h1>Loading...</h1> });
-const ParentForm = dynamic(() => import("./forms/ParentForm"), { loading: () => <h1>Loading...</h1> });
-const AnnouncementForm = dynamic(() => import("./forms/AnnouncementForm"), { loading: () => <h1>Loading...</h1> });
-const EventForm = dynamic(() => import("./forms/EventForm"), { loading: () => <h1>Loading...</h1> });
-const AssignmentForm = dynamic(() => import("./forms/AssignmentForm"), { loading: () => <h1>Loading...</h1> });
-const LessonForm = dynamic(() => import("./forms/LessonForm"), { loading: () => <h1>Loading...</h1> });
-const ResultForm = dynamic(() => import("./forms/ResultForm"), { loading: () => <h1>Loading...</h1> });
-const AttendanceForm = dynamic(() => import("./forms/AttendanceForm"), { loading: () => <h1>Loading...</h1> });
-const MessageForm = dynamic(() => import("./forms/MessageForm"), { loading: () => <h1>Loading...</h1> });
-
+// Lazy Loading Forms
+const TeacherForm = dynamic(() => import("./forms/TeacherForm"), { loading: () => <h1 className="p-4 text-center font-bold">Loading Form...</h1> });
+const StudentForm = dynamic(() => import("./forms/StudentForm"), { loading: () => <h1 className="p-4 text-center font-bold">Loading Form...</h1> });
+const SubjectForm = dynamic(() => import("./forms/SubjectForm"), { loading: () => <h1 className="p-4 text-center font-bold">Loading Form...</h1> });
+const ClassForm = dynamic(() => import("./forms/ClassForm"), { loading: () => <h1 className="p-4 text-center font-bold">Loading Form...</h1> });
+const ExamForm = dynamic(() => import("./forms/ExamForm"), { loading: () => <h1 className="p-4 text-center font-bold">Loading Form...</h1> });
+const ParentForm = dynamic(() => import("./forms/ParentForm"), { loading: () => <h1 className="p-4 text-center font-bold">Loading Form...</h1> });
+const AnnouncementForm = dynamic(() => import("./forms/AnnouncementForm"), { loading: () => <h1 className="p-4 text-center font-bold">Loading Form...</h1> });
+const EventForm = dynamic(() => import("./forms/EventForm"), { loading: () => <h1 className="p-4 text-center font-bold">Loading Form...</h1> });
+const AssignmentForm = dynamic(() => import("./forms/AssignmentForm"), { loading: () => <h1 className="p-4 text-center font-bold">Loading Form...</h1> });
+const LessonForm = dynamic(() => import("./forms/LessonForm"), { loading: () => <h1 className="p-4 text-center font-bold">Loading Form...</h1> });
+const ResultForm = dynamic(() => import("./forms/ResultForm"), { loading: () => <h1 className="p-4 text-center font-bold">Loading Form...</h1> });
+const AttendanceForm = dynamic(() => import("./forms/AttendanceForm"), { loading: () => <h1 className="p-4 text-center font-bold">Loading Form...</h1> });
+const MessageForm = dynamic(() => import("./forms/MessageForm"), { loading: () => <h1 className="p-4 text-center font-bold">Loading Form...</h1> });
 
 const forms: {
   [key: string]: (
@@ -69,8 +66,7 @@ const forms: {
   lesson: (setOpen, type, data, relatedData) => <LessonForm type={type} data={data} setOpen={setOpen} relatedData={relatedData} />,
   result: (setOpen, type, data, relatedData) => <ResultForm type={type} data={data} setOpen={setOpen} relatedData={relatedData} />,
   attendance: (setOpen, type, data, relatedData) => <AttendanceForm type={type} data={data} setOpen={setOpen} relatedData={relatedData} />,
-   message: (setOpen, type, data,  relatedData) => ( <MessageForm type={type} data={data} setOpen={setOpen} relatedData={relatedData} />
-  ),
+  message: (setOpen, type, data, relatedData) => <MessageForm type={type} data={data} setOpen={setOpen} relatedData={relatedData} />,
 };
 
 const FormModal = ({
@@ -83,7 +79,6 @@ const FormModal = ({
   const [open, setOpen] = useState(false);
   const router = useRouter();
 
-  // Fix: Move useFormState outside of the nested Form() component
   const [state, formAction] = useFormState(deleteActionMap[table], {
     success: false,
     error: false,
@@ -91,33 +86,40 @@ const FormModal = ({
 
   useEffect(() => {
     if (state.success) {
-      toast(`${table} has been deleted!`);
+      toast.success(`${table} has been deleted!`);
       setOpen(false);
       router.refresh();
     }
     if (state.error) {
-       toast.error("Something went wrong!");
+      toast.error("An error occurred during deletion.");
     }
   }, [state, router, table]);
 
-  const size = type === "create" ? "w-8 h-8" : "w-7 h-7";
-  const bgColor = 
-  type === "create" ? "bg-rubixYellow" : 
-  type === "update" ? "bg-rubixSky" : "bg-rubixPurple";
+  // Size logic for the trigger button
+  const size = type === "create" ? "w-8 h-8" : "w-8 h-8";
 
-  // Simplified Form Rendering Logic
+  // Color logic for the trigger button
+  const bgColor = 
+    type === "create" ? "bg-rubixYellow" : 
+    type === "update" ? "bg-rubixSky" : "bg-red-500"; // Red is safer for Delete visually
+
   const renderForm = () => {
     if (type === "delete" && id) {
       return (
-        <form action={formAction} className="p-4 flex flex-col gap-4">
+        <form action={formAction} className="p-8 flex flex-col gap-6 items-center">
           <input type="hidden" name="id" value={id} />
-          <span className="text-center font-medium text-slate-700">
-            All data will be lost. Are you sure you want to delete this {table}?
-          </span>
-          <button className="bg-red-700 text-white py-2 px-4 rounded-md border-none w-max self-center 
-          font-bold hover:bg-red-800 transition-colors">
-            Confirm Delete
-
+          <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center text-red-600 mb-2">
+            <Trash2 size={32} />
+          </div>
+          <div className="text-center">
+            <h2 className="text-xl font-bold text-slate-800">Confirm Deletion</h2>
+            <p className="text-slate-500 text-sm mt-2 leading-relaxed">
+              All data related to this {table} will be permanently removed. <br/>
+              This action cannot be undone.
+            </p>
+          </div>
+          <button className="bg-red-600 hover:bg-red-700 text-white py-3 px-8 rounded-xl font-bold transition-all shadow-lg shadow-red-100 active:scale-95">
+            Yes, Delete it
           </button>
         </form>
       );
@@ -127,7 +129,9 @@ const FormModal = ({
       return forms[table] ? (
         forms[table](setOpen, type, data, relatedData)
       ) : (
-        <span>Form for {table} is under development!</span>
+        <div className="p-10 text-center font-bold text-slate-400 uppercase tracking-widest">
+           Form Under Development
+        </div>
       );
     }
 
@@ -137,23 +141,24 @@ const FormModal = ({
   return (
     <>
       <button
-        className={`${size} flex items-center justify-center rounded-full 
-        ${bgColor} text-white shadow-md hover:opacity-80 transition-opacity`}
+        className={`${size} flex items-center justify-center rounded-full ${bgColor} hover:brightness-95 transition-all shadow-sm active:scale-90`}
         onClick={() => setOpen(true)}
+        title={type.charAt(0).toUpperCase() + type.slice(1)}
       >
-         {/* USING LUCIDE ICONS INSTEAD OF IMAGES */}
-        {type === "create" && <Plus size={16} />}
-        {type === "update" && <Pencil size={14} />}
-        {type === "delete" && <Trash2 size={14} />}
-
+        {type === "create" && <Plus size={18} className="text-slate-800" />}
+        {type === "update" && <Pencil size={14} className="text-slate-800" />}
+        {type === "delete" && <Trash2 size={14} className="text-white" />}
       </button>
+
       {open && (
-        <div className="fixed inset-0 bg-black/60  backdrop-blur-sm 
-        z-[9999] flex items-center justify-center p-4">
-          <div className="bg-white p-8 rounded-2xl relative w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-200">
-            {renderForm()}
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+          <div className="bg-white rounded-[2.5rem] relative w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl animate-in fade-in zoom-in-95 duration-300">
+            <div className="p-2">
+              {renderForm()}
+            </div>
+            
             <button
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors"
+              className="absolute top-6 right-6 p-2 bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-slate-800 rounded-full transition-all"
               onClick={() => setOpen(false)}
             >
               <X size={20} />
