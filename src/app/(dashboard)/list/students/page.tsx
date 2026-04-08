@@ -81,7 +81,7 @@ const StudentListPage = async ({
     { header: "Contact", accessor: "phone", className: "hidden lg:table-cell" },
     { header: "Location", accessor: "address", className: "hidden lg:table-cell" },
     // Fix 1: Added text-right and padding to the header
-    { header: "Actions", accessor: "action", className: "text-right pr-4 md:pr-10" },
+    { header: "Actions", accessor: "action", className: "text-right pr-4" },
   ];
 
   const renderRow = (item: StudentList) => (
@@ -132,7 +132,8 @@ const StudentListPage = async ({
       </td>
       {/* Fix 2: Prevent buttons from wrapping or disappearing on mobile */}
       <td className="p-4">
-        <div className="flex items-center gap-2 justify-end flex-nowrap min-w-[120px]">
+        <div className="flex items-center gap-2 justify-end">
+          <span className="text-red-500 font-bold">HERE!</span>
           <Link href={`/list/students/${item.id}`}>
             <button className="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-xl
              bg-sky-50 text-sky-600 hover:bg-sky-600 hover:text-white transition-all border border-sky-100 shadow-sm">

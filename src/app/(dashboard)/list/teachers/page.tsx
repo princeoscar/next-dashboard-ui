@@ -56,7 +56,7 @@ const TeacherListPage = async ({
     { header: "Classes", accessor: "classes", className: "hidden md:table-cell" },
     { header: "Contact", accessor: "phone", className: "hidden lg:table-cell" },
     // "min-w-max" ensures the header doesn't shrink smaller than the text
-    { header: "Actions", accessor: "action", className: "text-right pr-4 min-w-max" },
+    { header: "Actions", accessor: "action", className: "text-right pr-4 min-w-[120px]" },
   ];
 
   const renderRow = (item: TeacherList) => (
@@ -118,7 +118,7 @@ const TeacherListPage = async ({
           - flex-nowrap prevents buttons from dropping to a new line.
       */}
       <td className="p-4 min-w-max">
-        <div className="flex items-center gap-2 justify-end flex-nowrap">
+        <div className="flex items-center gap-2 justify-end flex-nowrap min-w-max">
           <Link href={`/list/teachers/${item.id}`}>
             <button className="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-xl bg-sky-50 text-sky-600 hover:bg-sky-600 hover:text-white transition-all border border-sky-100 shadow-sm">
               <Eye size={16} />
@@ -157,8 +157,10 @@ const TeacherListPage = async ({
         </div>
       </div>
 
-      <div className="rounded-3xl border border-slate-50 overflow-x-auto bg-white">
-        <Table columns={columns} renderRow={renderRow} data={data} />
+      <div className="w-full overflow-x-auto">
+        <div className="min-w-[700px]">
+          <Table columns={columns} renderRow={renderRow} data={data} />
+        </div>
       </div>
 
       <div className="mt-8 border-t border-slate-50 pt-6">

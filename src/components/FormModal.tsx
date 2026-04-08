@@ -1,50 +1,26 @@
 "use client";
 
-import { 
-  deleteClass, deleteSubject, deleteTeacher, deleteStudent, 
-  deleteExam, deleteParent, deleteAnnouncement, deleteEvent, 
-  deleteResult, deleteAssignment, deleteLesson,
-  deleteMessage
-} from "@/lib/actions";
 import { FormContainerProps } from "@/lib/types";
 import { Pencil, Plus, Trash2, X } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
-import { useFormState } from "react-dom";
+import { Dispatch, SetStateAction, useState } from "react";
 import { toast } from "react-toastify";
 
-// Action Map for Deletion
-const deleteActionMap = {
-  subject: deleteSubject,
-  class: deleteClass,
-  teacher: deleteTeacher,
-  student: deleteStudent,
-  exam: deleteExam,
-  parent: deleteParent,
-  lesson: deleteLesson,
-  assignment: deleteAssignment,
-  result: deleteResult,
-  attendance: deleteSubject, 
-  event: deleteEvent,
-  announcement: deleteAnnouncement,
-  message: deleteMessage,
-};
-
-// Lazy Loading Forms
-const TeacherForm = dynamic(() => import("./forms/TeacherForm"), { loading: () => <h1 className="p-4 text-center font-bold">Loading Form...</h1> });
-const StudentForm = dynamic(() => import("./forms/StudentForm"), { loading: () => <h1 className="p-4 text-center font-bold">Loading Form...</h1> });
-const SubjectForm = dynamic(() => import("./forms/SubjectForm"), { loading: () => <h1 className="p-4 text-center font-bold">Loading Form...</h1> });
-const ClassForm = dynamic(() => import("./forms/ClassForm"), { loading: () => <h1 className="p-4 text-center font-bold">Loading Form...</h1> });
-const ExamForm = dynamic(() => import("./forms/ExamForm"), { loading: () => <h1 className="p-4 text-center font-bold">Loading Form...</h1> });
-const ParentForm = dynamic(() => import("./forms/ParentForm"), { loading: () => <h1 className="p-4 text-center font-bold">Loading Form...</h1> });
-const AnnouncementForm = dynamic(() => import("./forms/AnnouncementForm"), { loading: () => <h1 className="p-4 text-center font-bold">Loading Form...</h1> });
-const EventForm = dynamic(() => import("./forms/EventForm"), { loading: () => <h1 className="p-4 text-center font-bold">Loading Form...</h1> });
-const AssignmentForm = dynamic(() => import("./forms/AssignmentForm"), { loading: () => <h1 className="p-4 text-center font-bold">Loading Form...</h1> });
-const LessonForm = dynamic(() => import("./forms/LessonForm"), { loading: () => <h1 className="p-4 text-center font-bold">Loading Form...</h1> });
-const ResultForm = dynamic(() => import("./forms/ResultForm"), { loading: () => <h1 className="p-4 text-center font-bold">Loading Form...</h1> });
-const AttendanceForm = dynamic(() => import("./forms/AttendanceForm"), { loading: () => <h1 className="p-4 text-center font-bold">Loading Form...</h1> });
-const MessageForm = dynamic(() => import("./forms/MessageForm"), { loading: () => <h1 className="p-4 text-center font-bold">Loading Form...</h1> });
+// Lazy Forms
+const TeacherForm = dynamic(() => import("./forms/TeacherForm"));
+const StudentForm = dynamic(() => import("./forms/StudentForm"));
+const SubjectForm = dynamic(() => import("./forms/SubjectForm"));
+const ClassForm = dynamic(() => import("./forms/ClassForm"));
+const ExamForm = dynamic(() => import("./forms/ExamForm"));
+const ParentForm = dynamic(() => import("./forms/ParentForm"));
+const AnnouncementForm = dynamic(() => import("./forms/AnnouncementForm"));
+const EventForm = dynamic(() => import("./forms/EventForm"));
+const AssignmentForm = dynamic(() => import("./forms/AssignmentForm"));
+const LessonForm = dynamic(() => import("./forms/LessonForm"));
+const ResultForm = dynamic(() => import("./forms/ResultForm"));
+const AttendanceForm = dynamic(() => import("./forms/AttendanceForm"));
+const MessageForm = dynamic(() => import("./forms/MessageForm"));
 
 const forms: {
   [key: string]: (
@@ -79,96 +55,85 @@ const FormModal = ({
   const [open, setOpen] = useState(false);
   const router = useRouter();
 
-  // 1. Define the wrapper inside the component
-  const deleteActionWithId = async (currentState: any, formData: FormData) => {
-    const action = deleteActionMap[table];
-    return action(currentState, formData);
-  };
+  const handleDelete = async () => {
+    const res = await fetch("/api/delete", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ table, id }),
+    });
 
-  // 2. ONLY ONE useFormState call here
-  const [state, formAction] = useFormState(deleteActionWithId, {
-    success: false,
-    error: false,
-  });
+    const result = await res.json();
 
-  useEffect(() => {
-    if (state.success) {
-      toast.success(`${table} has been deleted!`);
+    if (result.success) {
+      toast.success(`${table} deleted successfully`);
       setOpen(false);
       router.refresh();
+    } else {
+      toast.error("Delete failed");
     }
-    if (state.error) {
-      toast.error("An error occurred during deletion.");
-    }
-  }, [state, router, table]);
-
-  // Size logic for the trigger button
-  const size = type === "create" ? "w-8 h-8" : "w-8 h-8";
-
-  // Color logic for the trigger button
-  const bgColor = 
-    type === "create" ? "bg-rubixYellow" : 
-    type === "update" ? "bg-rubixSky" : "bg-red-500"; // Red is safer for Delete visually
+  };
 
   const renderForm = () => {
     if (type === "delete" && id) {
       return (
-        <form action={formAction} className="p-8 flex flex-col gap-6 items-center">
-          <input type="hidden" name="id" value={id} />
-          <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center text-red-600 mb-2">
-            <Trash2 size={32} />
-          </div>
-          <div className="text-center">
-            <h2 className="text-xl font-bold text-slate-800">Confirm Deletion</h2>
-            <p className="text-slate-500 text-sm mt-2 leading-relaxed">
-              All data related to this {table} will be permanently removed. <br/>
-              This action cannot be undone.
-            </p>
-          </div>
-          <button className="bg-red-600 hover:bg-red-700 text-white py-3 px-8 rounded-xl font-bold transition-all shadow-lg shadow-red-100 active:scale-95">
-            Yes, Delete it
-          </button>
-        </form>
-      );
-    }
+        <div className="p-8 flex flex-col gap-6 items-center">
+          <Trash2 size={32} className="text-red-500" />
 
-    if (type === "create" || type === "update") {
-      return forms[table] ? (
-        forms[table](setOpen, type, data, relatedData)
-      ) : (
-        <div className="p-10 text-center font-bold text-slate-400 uppercase tracking-widest">
-           Form Under Development
+          <h2 className="text-xl font-bold">Confirm Deletion</h2>
+          <p className="text-sm text-gray-500 text-center">
+            This action cannot be undone.
+          </p>
+
+          <button
+            onClick={handleDelete}
+            className="bg-red-600 text-white px-6 py-2 rounded-xl"
+          >
+            Yes, Delete
+          </button>
         </div>
       );
     }
 
-    return "Form not found!";
+    if (type === "create" || type === "update") {
+      return forms[table]
+        ? forms[table](setOpen, type, data, relatedData)
+        : <p>Form not found</p>;
+    }
+
+    return null;
   };
+
+  const size = "w-8 h-8";
+  const bgColor =
+    type === "create"
+      ? "bg-yellow-400"
+      : type === "update"
+      ? "bg-blue-400"
+      : "bg-red-500";
 
   return (
     <>
       <button
-        className={`${size} flex items-center justify-center rounded-full ${bgColor} hover:brightness-95 transition-all shadow-sm active:scale-90`}
+        className={`${size} flex items-center justify-center rounded-full ${bgColor}`}
         onClick={() => setOpen(true)}
-        title={type.charAt(0).toUpperCase() + type.slice(1)}
       >
-        {type === "create" && <Plus size={18} className="text-slate-800" />}
-        {type === "update" && <Pencil size={14} className="text-slate-800" />}
-        {type === "delete" && <Trash2 size={14} className="text-white" />}
+        {type === "create" && <Plus size={18} />}
+        {type === "update" && <Pencil size={14} />}
+        {type === "delete" && <Trash2 size={14} />}
       </button>
 
       {open && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
-          <div className="bg-white rounded-[2.5rem] relative w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl animate-in fade-in zoom-in-95 duration-300">
-            <div className="p-2">
-              {renderForm()}
-            </div>
-            
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-xl relative w-[90%] max-w-lg">
+            {renderForm()}
+
             <button
-              className="absolute top-6 right-6 p-2 bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-slate-800 rounded-full transition-all"
+              className="absolute top-3 right-3"
               onClick={() => setOpen(false)}
             >
-              <X size={20} />
+              <X />
             </button>
           </div>
         </div>

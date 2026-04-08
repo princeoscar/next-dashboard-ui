@@ -1,23 +1,19 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    // 1. Clerk Elements Fix: Ensures the beta package is compiled correctly
-    transpilePackages: ["@clerk/elements"],
-    
-    images: {
-        unoptimized: true, 
-        remotePatterns: [
-            {
-                hostname: "images.pexels.com",
-            },
-            {
-                hostname: "res.cloudinary.com",
-            },
-        ],
-    },
-    // 2. Production Stability: Prevents build failure on minor linting/TS issues
-    typescript: {
-        ignoreBuildErrors: false, // Keep this false to ensure code quality
-    },
+  // Add this section
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve.fallback = {
+        fs: false,
+        net: false,
+        tls: false,
+        child_process: false,
+        perf_hooks: false,
+        dns: false,
+      };
+    }
+    return config;
+  },
 };
 
 export default nextConfig;
