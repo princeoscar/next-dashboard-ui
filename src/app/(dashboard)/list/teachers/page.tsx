@@ -31,6 +31,7 @@ const TeacherListPage = async ({
       { name: { contains: queryParams.search, mode: "insensitive" } },
       { surname: { contains: queryParams.search, mode: "insensitive" } },
       { email: { contains: queryParams.search, mode: "insensitive" } },
+      { username: { contains: queryParams.search, mode: "insensitive" } },
       { subjects: { some: { name: { contains: queryParams.search, mode: "insensitive" } } } },
     ];
   }

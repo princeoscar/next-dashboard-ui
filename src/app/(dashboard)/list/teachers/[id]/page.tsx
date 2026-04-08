@@ -9,22 +9,21 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { 
-  Mail, 
-  Phone, 
-  Droplet, 
-  Cake, 
-  BookOpen, 
-  Layers, 
+import {
+  Mail,
+  Phone,
+  Droplet,
+  Cake,
+  BookOpen,
+  Layers,
   School,
   Activity
 } from "lucide-react";
 
-const SingleTeacherPage = async ({
-  params: { id },
-}: {
-  params: { id: string };
+const SingleTeacherPage = async (props: {
+  params: Promise<{ id: string }>;
 }) => {
+  const { id } = await props.params;
   const { sessionClaims } = await auth();
   const role = (sessionClaims?.metadata as { role?: string })?.role?.toLowerCase();
 
@@ -56,7 +55,7 @@ const SingleTeacherPage = async ({
           <div className="bg-sky-500 p-8 rounded-[2.5rem] flex-1 flex flex-col sm:flex-row gap-8 shadow-xl shadow-sky-100 relative overflow-hidden">
             {/* Decorative Glassmorphism Element */}
             <div className="absolute top-[-10%] right-[-10%] w-40 h-40 bg-white/20 rounded-full blur-3xl" />
-            
+
             <div className="sm:w-1/3 flex items-center justify-center relative z-10">
               <div className="relative w-32 h-32 md:w-40 md:h-40 group">
                 <Image
@@ -67,16 +66,25 @@ const SingleTeacherPage = async ({
                 />
               </div>
             </div>
-            
+
             <div className="sm:w-2/3 flex flex-col justify-center relative z-10">
               <div className="flex items-center gap-4 mb-2">
                 <h1 className="text-3xl font-black text-white tracking-tighter uppercase leading-none">
                   {teacher.name} {teacher.surname}
                 </h1>
                 {role === "admin" && (
-                  <div className="p-1 bg-slate-900 rounded-xl shadow-lg hover:scale-110 transition-transform">
-                    <FormContainer table="teacher" type="update" data={teacher} />
+                  <div className="flex items-center gap-2">
+                    {/* UPDATE BUTTON */}
+                    <div className="p-1 bg-slate-900 rounded-xl shadow-lg hover:scale-110 transition-transform">
+                      <FormContainer table="teacher" type="update" data={teacher} />
+                    </div>
+
+                    {/* DELETE BUTTON - ADD THIS PART */}
+                    <div className="p-1 bg-rose-600 rounded-xl shadow-lg hover:scale-110 transition-transform">
+                      <FormContainer table="teacher" type="delete" id={teacher.id} />
+                    </div>
                   </div>
+
                 )}
               </div>
               <p className="text-[10px] font-black text-sky-100 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
@@ -95,25 +103,25 @@ const SingleTeacherPage = async ({
 
           {/* QUICK STATS GRID */}
           <div className="flex-1 grid grid-cols-2 gap-4">
-            <StatCard 
-              icon={<Activity className="text-emerald-500" />} 
-              title={<Suspense fallback={<span className="animate-pulse">--%</span>}><TeacherAttendanceCard id={teacher.id} /></Suspense>} 
-              label="Attendance" 
+            <StatCard
+              icon={<Activity className="text-emerald-500" />}
+              title={<Suspense fallback={<span className="animate-pulse">--%</span>}><TeacherAttendanceCard id={teacher.id} /></Suspense>}
+              label="Attendance"
             />
-            <StatCard 
-              icon={<BookOpen className="text-indigo-600" />} 
-              title={teacher._count.subjects.toString()} 
-              label="Subjects" 
+            <StatCard
+              icon={<BookOpen className="text-indigo-600" />}
+              title={teacher._count.subjects.toString()}
+              label="Subjects"
             />
-            <StatCard 
-              icon={<Layers className="text-amber-500" />} 
-              title={teacher._count.lessons.toString()} 
-              label="Lessons" 
+            <StatCard
+              icon={<Layers className="text-amber-500" />}
+              title={teacher._count.lessons.toString()}
+              label="Lessons"
             />
-            <StatCard 
-              icon={<School className="text-rose-500" />} 
-              title={teacher._count.classes.toString()} 
-              label="Classes" 
+            <StatCard
+              icon={<School className="text-rose-500" />}
+              title={teacher._count.classes.toString()}
+              label="Classes"
             />
           </div>
         </div>
@@ -186,8 +194,8 @@ const QuickLink = ({ href, label, color }: { href: string; label: string; color:
     emerald: "bg-emerald-50 text-emerald-700 hover:bg-emerald-600",
   };
   return (
-    <Link 
-      href={href} 
+    <Link
+      href={href}
       className={`px-4 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest text-center transition-all hover:-translate-y-1 hover:text-white shadow-sm border border-transparent hover:shadow-lg ${colors[color]}`}
     >
       {label}

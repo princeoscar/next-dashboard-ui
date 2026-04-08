@@ -63,8 +63,16 @@ const SingleStudentPage = async ({
                   {student.name} {student.surname}
                 </h1>
                 {role === "admin" && (
-                  <div className="p-1 bg-slate-900 rounded-xl shadow-lg hover:scale-110 transition-transform">
-                    <FormContainer table="student" type="update" data={student} />
+                  <div className="flex items-center gap-2">
+                    {/* UPDATE BUTTON */}
+                    <div className="p-1 bg-slate-900 rounded-xl shadow-lg hover:scale-110 transition-transform">
+                      <FormContainer table="teacher" type="update" data={student} />
+                    </div>
+
+                    {/* DELETE BUTTON - ADD THIS PART */}
+                    <div className="p-1 bg-rose-600 rounded-xl shadow-lg hover:scale-110 transition-transform">
+                      <FormContainer table="teacher" type="delete" id={student.id} />
+                    </div>
                   </div>
                 )}
               </div>
