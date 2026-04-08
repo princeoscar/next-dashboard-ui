@@ -131,10 +131,11 @@ const StudentListPage = async ({
         </div>
       </td>
       {/* Fix 2: Prevent buttons from wrapping or disappearing on mobile */}
-      <td className="p-4 min-w-max">
-        <div className="flex items-center gap-2 justify-end flex-nowrap">
+      <td className="p-4">
+        <div className="flex items-center gap-2 justify-end flex-nowrap min-w-[120px]">
           <Link href={`/list/students/${item.id}`}>
-            <button className="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-xl bg-sky-50 text-sky-600 hover:bg-sky-600 hover:text-white transition-all border border-sky-100 shadow-sm">
+            <button className="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-xl
+             bg-sky-50 text-sky-600 hover:bg-sky-600 hover:text-white transition-all border border-sky-100 shadow-sm">
               <Eye size={16} />
             </button>
           </Link>
