@@ -53,10 +53,10 @@ const StudentListPage = async ({
       query.parentId = userId!;
       break;
     case "student":
-      query.id = userId!; // Students only see themselves in the list
+      query.id = userId!;
       break;
     default:
-      query.id = "none"; 
+      query.id = "none";
       break;
   }
 
@@ -80,7 +80,8 @@ const StudentListPage = async ({
     { header: "Grade", accessor: "grade", className: "hidden md:table-cell" },
     { header: "Contact", accessor: "phone", className: "hidden lg:table-cell" },
     { header: "Location", accessor: "address", className: "hidden lg:table-cell" },
-    { header: "Actions", accessor: "action" },
+    // Fix 1: Added text-right and padding to the header
+    { header: "Actions", accessor: "action", className: "text-right pr-4 md:pr-10" },
   ];
 
   const renderRow = (item: StudentList) => (
@@ -89,16 +90,13 @@ const StudentListPage = async ({
       className="border-b border-slate-100 last:border-0 text-sm hover:bg-slate-50/50 transition-all group"
     >
       <td className="flex items-center gap-4 p-4">
-        <div className="relative w-10 h-10">
+        <div className="relative w-10 h-10 shrink-0">
           <Image
             src={item.img || "/noAvatar.png"}
-            alt="Student Profile Picture"
+            alt=""
             fill
-
-            unoptimized={true}
             className="rounded-xl object-cover border border-slate-100 shadow-sm"
           />
-          <span>URL: {item.img}</span>
         </div>
         <div className="flex flex-col">
           <h3 className="font-black text-slate-700 tracking-tight leading-tight">
@@ -132,18 +130,19 @@ const StudentListPage = async ({
           <span className="truncate max-w-[120px] font-medium">{item.address}</span>
         </div>
       </td>
-      <td className="p-4">
-        <div className="flex items-center gap-2 justify-end">
+      {/* Fix 2: Prevent buttons from wrapping or disappearing on mobile */}
+      <td className="p-4 min-w-max">
+        <div className="flex items-center gap-2 justify-end flex-nowrap">
           <Link href={`/list/students/${item.id}`}>
-            <button className="w-8 h-8 flex items-center justify-center rounded-xl bg-sky-50 text-sky-600 hover:bg-sky-600 hover:text-white transition-all border border-sky-100 shadow-sm">
+            <button className="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-xl bg-sky-50 text-sky-600 hover:bg-sky-600 hover:text-white transition-all border border-sky-100 shadow-sm">
               <Eye size={16} />
             </button>
           </Link>
           {role === "admin" && (
-            <>
+            <div className="flex items-center gap-2 flex-nowrap shrink-0">
               <FormContainer table="student" type="update" data={item} />
               <FormContainer table="student" type="delete" id={item.id} />
-            </>
+            </div>
           )}
         </div>
       </td>
@@ -154,8 +153,8 @@ const StudentListPage = async ({
     <div className="bg-white p-8 rounded-[2.5rem] flex-1 m-4 mt-0 shadow-sm border border-slate-100">
       <div className="flex flex-col md:flex-row items-center justify-between mb-8 gap-6">
         <div>
-          <h1 className="text-2xl font-black text-slate-800 tracking-tighter uppercase">Student Registry</h1>
-          <p className="text-[10px] text-slate-400 font-black tracking-widest uppercase mt-1">Enrollment & Profile Management</p>
+          <h1 className="text-2xl font-black text-slate-800 tracking-tighter uppercase leading-none">Student Registry</h1>
+          <p className="text-[10px] text-slate-400 font-black tracking-widest uppercase mt-2">Enrollment & Profile Management</p>
         </div>
         <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
           <TableSearch />
@@ -169,7 +168,8 @@ const StudentListPage = async ({
         </div>
       </div>
 
-      <div className="rounded-3xl border border-slate-50 overflow-hidden bg-white">
+      {/* Fix 3: Added overflow-x-auto to handle very small screens */}
+      <div className="rounded-3xl border border-slate-50 overflow-x-auto bg-white">
         <Table columns={columns} renderRow={renderRow} data={data} />
       </div>
 
