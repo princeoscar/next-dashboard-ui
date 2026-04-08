@@ -26,7 +26,7 @@ const SingleTeacherPage = async (props: {
   const { id } = await props.params;
   const { sessionClaims } = await auth();
   const role = (sessionClaims?.metadata as { role?: string })?.role?.toLowerCase();
-    console.log("Current User Role:", role);
+
   // --- 1. DATA FETCHING ---
   const teacher = await prisma.teacher.findUnique({
     where: { id },
@@ -44,51 +44,50 @@ const SingleTeacherPage = async (props: {
   if (!teacher) return notFound();
 
   return (
-    <div className="flex-1 p-8 flex flex-col gap-8 xl:flex-row bg-slate-50/50 min-h-screen">
+    <div className="flex-1 p-4 flex flex-col gap-6 xl:flex-row">
       {/* LEFT COLUMN: Profile & Schedule */}
-      <div className="w-full xl:w-2/3 flex flex-col gap-8">
+      <div className="w-full xl:w-2/3 flex flex-col gap-6">
 
         {/* HEADER: USER INFO AND STATS */}
-        <div className="flex flex-col lg:flex-row gap-8">
+        <div className="flex flex-col lg:flex-row gap-6">
 
           {/* TEACHER INFO CARD */}
-          <div className="bg-sky-500 p-8 rounded-[2.5rem] flex-1 flex flex-col sm:flex-row gap-8 shadow-xl shadow-sky-100 relative overflow-hidden">
+          <div className="bg-indigo-600 py-8 px-6 rounded-[2.5rem] flex flex-col sm:flex-row gap-8 text-white shadow-2xl shadow-indigo-200 relative overflow-hidden flex-1">
             {/* Decorative Glassmorphism Element */}
-            <div className="absolute top-[-10%] right-[-10%] w-40 h-40 bg-white/20 rounded-full blur-3xl" />
+            <div className="absolute top-[-20%] right-[-10%] w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none" />
 
             <div className="sm:w-1/3 flex items-center justify-center relative z-10">
-              <div className="relative w-32 h-32 md:w-40 md:h-40 group">
+              <div className="relative w-36 h-36 md:w-44 md:h-44 group">
                 <Image
                   src={teacher.img || "/noAvatar.png"}
                   alt=""
                   fill
-                  className="rounded-[2rem] object-cover border-4 border-white shadow-2xl group-hover:scale-105 transition-transform duration-500"
+                  className="rounded-[2.5rem] object-cover border-4 border-white/20 shadow-2xl group-hover:scale-105 transition-transform duration-500"
                 />
               </div>
             </div>
 
             <div className="sm:w-2/3 flex flex-col justify-center relative z-10">
-              <div className="flex items-center gap-4 mb-2">
-                <h1 className="text-3xl font-black text-white tracking-tighter uppercase leading-none">
+              <div className="flex items-center flex-wrap gap-4 mb-3">
+                <h1 className="text-3xl md:text-4xl font-black text-white tracking-tighter uppercase leading-none">
                   {teacher.name} {teacher.surname}
                 </h1>
                 {role === "admin" && (
                   <div className="flex items-center gap-2">
                     {/* UPDATE BUTTON */}
-                    <div className="p-1 bg-slate-900 rounded-xl shadow-lg hover:scale-110 transition-transform">
+                    <div className="hover:scale-110 transition-transform">
                       <FormContainer table="teacher" type="update" data={teacher} />
                     </div>
-
-                    {/* DELETE BUTTON - ADD THIS PART */}
-                    <div className="p-1 bg-rose-600 rounded-xl shadow-lg hover:scale-110 transition-transform">
+                    {/* DELETE BUTTON */}
+                    <div className="hover:scale-110 transition-transform">
                       <FormContainer table="teacher" type="delete" id={teacher.id} />
                     </div>
                   </div>
-
                 )}
               </div>
-              <p className="text-[10px] font-black text-sky-100 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
-                <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
+
+              <p className="text-[10px] font-black text-indigo-100 uppercase tracking-[0.3em] mb-8 flex items-center gap-2">
+                <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_10px_rgba(52,211,153,0.8)]" />
                 Senior Faculty Member
               </p>
 
@@ -102,7 +101,7 @@ const SingleTeacherPage = async (props: {
           </div>
 
           {/* QUICK STATS GRID */}
-          <div className="flex-1 grid grid-cols-2 gap-4">
+          <div className="lg:w-1/3 grid grid-cols-2 gap-4">
             <StatCard
               icon={<Activity className="text-emerald-500" />}
               title={<Suspense fallback={<span className="animate-pulse">--%</span>}><TeacherAttendanceCard id={teacher.id} /></Suspense>}
@@ -128,21 +127,26 @@ const SingleTeacherPage = async (props: {
 
         {/* SCHEDULE SECTION */}
         <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-2 h-8 bg-sky-500 rounded-full" />
-            <h2 className="text-2xl font-black text-slate-800 tracking-tight uppercase">Faculty Timetable</h2>
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+              <div className="w-2 h-8 bg-indigo-600 rounded-full" />
+              <h2 className="text-2xl font-black text-slate-800 tracking-tight uppercase leading-none">Faculty Timetable</h2>
+            </div>
           </div>
-          <div className="min-h-[600px]">
+          <div className="min-h-[650px]">
             <BigCalendarContainer type="teacherId" id={teacher.id} />
           </div>
         </div>
       </div>
 
       {/* RIGHT COLUMN: Actions & Charts */}
-      <div className="w-full xl:w-1/3 flex flex-col gap-8">
+      <div className="w-full xl:w-1/3 flex flex-col gap-6">
         {/* QUICK LINKS PANEL */}
         <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
-          <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6">Faculty Shortcuts</h2>
+          <div className="flex items-center gap-2 mb-6">
+            <div className="w-1.5 h-4 bg-slate-800 rounded-full" />
+            <h2 className="text-[11px] font-black text-slate-800 uppercase tracking-[0.2em]">Faculty Shortcuts</h2>
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <QuickLink href={`/list/classes?supervisorId=${teacher.id}`} label="My Classes" color="sky" />
             <QuickLink href={`/list/students?teacherId=${teacher.id}`} label="My Students" color="indigo" />
@@ -153,9 +157,10 @@ const SingleTeacherPage = async (props: {
         </div>
 
         {/* PERFORMANCE VISUALIZER */}
-        <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100">
+        <div className="bg-white p-2 rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden">
           <Performance />
         </div>
+        
         <Announcements />
       </div>
     </div>
@@ -165,8 +170,8 @@ const SingleTeacherPage = async (props: {
 // --- MODULAR UI HELPERS ---
 
 const InfoItem = ({ icon, label }: { icon: any; label: string }) => (
-  <div className="flex items-center gap-3 truncate bg-white/10 p-2 rounded-xl border border-white/20 backdrop-blur-sm group hover:bg-white/20 transition-all">
-    <div className="text-white/80 group-hover:text-white transition-colors">
+  <div className="flex items-center gap-3 truncate bg-white/5 p-2.5 rounded-2xl border border-white/10 backdrop-blur-md group hover:bg-white/15 transition-all">
+    <div className="text-indigo-200 group-hover:text-white transition-colors">
       {icon}
     </div>
     <span className="truncate text-[11px] font-bold text-white tracking-tight">{label}</span>
@@ -174,13 +179,13 @@ const InfoItem = ({ icon, label }: { icon: any; label: string }) => (
 );
 
 const StatCard = ({ icon, title, label }: { icon: any; title: any; label: string }) => (
-  <div className="bg-white p-6 rounded-[2rem] flex flex-col gap-3 shadow-sm border border-slate-50 hover:shadow-xl hover:border-sky-100 transition-all group">
-    <div className="p-3 bg-slate-50 rounded-2xl w-fit group-hover:bg-sky-50 transition-colors">
+  <div className="bg-white p-6 rounded-[2.5rem] flex flex-col gap-4 shadow-sm border border-slate-50 hover:shadow-xl hover:border-indigo-100 transition-all group">
+    <div className="p-3 bg-slate-50 rounded-2xl w-fit group-hover:bg-indigo-50 transition-colors">
       {icon}
     </div>
     <div>
-      <h1 className="text-xl font-black text-slate-800 tracking-tighter tabular-nums">{title}</h1>
-      <span className="text-[9px] text-slate-400 font-black uppercase tracking-widest mt-1 block">{label}</span>
+      <h1 className="text-2xl font-black text-slate-800 tracking-tighter tabular-nums leading-none mb-1">{title}</h1>
+      <span className="text-[9px] text-slate-400 font-black uppercase tracking-widest block">{label}</span>
     </div>
   </div>
 );
@@ -196,7 +201,7 @@ const QuickLink = ({ href, label, color }: { href: string; label: string; color:
   return (
     <Link
       href={href}
-      className={`px-4 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest text-center transition-all hover:-translate-y-1 hover:text-white shadow-sm border border-transparent hover:shadow-lg ${colors[color]}`}
+      className={`px-4 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest text-center transition-all hover:-translate-y-1 hover:text-white shadow-sm border border-transparent hover:shadow-lg ${colors[color]}`}
     >
       {label}
     </Link>

@@ -8,7 +8,7 @@ import { auth } from "@clerk/nextjs/server";
 import { Class, Prisma, Subject, Teacher } from "@prisma/client";
 import Image from "next/image";
 import Link from "next/link";
-import { Eye, Phone, UserCheck, Info } from "lucide-react";
+import { Eye, Phone, UserCheck } from "lucide-react";
 
 type TeacherList = Teacher & { subjects: Subject[] } & { classes: Class[] };
 
@@ -57,7 +57,8 @@ const TeacherListPage = async ({
     { header: "Subjects", accessor: "subjects", className: "hidden md:table-cell" },
     { header: "Classes", accessor: "classes", className: "hidden md:table-cell" },
     { header: "Contact", accessor: "phone", className: "hidden lg:table-cell" },
-    { header: "Actions", accessor: "action" },
+    // Fixed: Added text-right and padding to align header with buttons
+    { header: "Actions", accessor: "action", className: "text-right pr-4 md:pr-10" },
   ];
 
   const renderRow = (item: TeacherList) => (
@@ -115,17 +116,18 @@ const TeacherListPage = async ({
         </div>
       </td>
       <td className="p-4">
-        <div className="flex items-center gap-2 justify-end">
+        {/* Fixed: flex-nowrap and justify-end ensures alignment under the header */}
+        <div className="flex items-center gap-2 justify-end flex-nowrap min-w-[130px]">
           <Link href={`/list/teachers/${item.id}`}>
-            <button className="w-8 h-8 flex items-center justify-center rounded-xl bg-sky-50 text-sky-600 hover:bg-sky-600 hover:text-white transition-all border border-sky-100 shadow-sm">
+            <button className="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-xl bg-sky-50 text-sky-600 hover:bg-sky-600 hover:text-white transition-all border border-sky-100 shadow-sm">
               <Eye size={16} />
             </button>
           </Link>
           {role === "admin" && (
-            <>
+            <div className="flex items-center gap-2 flex-nowrap">
               <FormContainer table="teacher" type="update" data={item} />
               <FormContainer table="teacher" type="delete" id={item.id} />
-            </>
+            </div>
           )}
         </div>
       </td>
