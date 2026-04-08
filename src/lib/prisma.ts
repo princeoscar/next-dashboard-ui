@@ -1,4 +1,4 @@
-import "server-only"; // 👈 This is the most important line
+import "server-only";
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import pg from "pg";
