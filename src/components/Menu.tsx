@@ -35,7 +35,8 @@ const menuItems = [
   },
 ];
 
-const Menu = ({ role,
+const Menu = ({ 
+  role,
    isMobile = false,
    onClose,
   }: { 
@@ -68,6 +69,10 @@ const Menu = ({ role,
               <Link
                 href={item.href}
                 key={item.label}
+                onClick={() => {
+                  console.log("Menu Item Clicked!"); // For debugging
+                  if (onClose) onClose();
+                }}
                 className={`flex items-center gap-3 p-2 rounded-md transition ${active
                   ? "bg-indigo-50 text-indigo-600 font-semibold"
                   : "text-gray-500 hover:bg-gray-100"

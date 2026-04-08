@@ -69,7 +69,7 @@ const MobileMenu = ({ role }: { role: string }) => {
             {/* SCROLLABLE MENU AREA */}
             <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
               {/* CORRECTION: Passing handleClose as a prop to Menu */}
-              <Menu role={role} isMobile onClose={handleClose} />
+              <Menu role={role} isMobile={true} onClose={handleClose} />
               
               <div className="h-20" /> 
             </div>
