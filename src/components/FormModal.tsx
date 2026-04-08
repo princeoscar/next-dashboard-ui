@@ -7,6 +7,7 @@ import {
   deleteMessage
 } from "@/lib/actions";
 import { FormContainerProps } from "@/lib/types";
+import { Pencil, Plus, Trash2, X } from "lucide-react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -68,7 +69,7 @@ const forms: {
   lesson: (setOpen, type, data, relatedData) => <LessonForm type={type} data={data} setOpen={setOpen} relatedData={relatedData} />,
   result: (setOpen, type, data, relatedData) => <ResultForm type={type} data={data} setOpen={setOpen} relatedData={relatedData} />,
   attendance: (setOpen, type, data, relatedData) => <AttendanceForm type={type} data={data} setOpen={setOpen} relatedData={relatedData} />,
-   message: (type, data, setOpen, relatedData) => ( <MessageForm type={type} data={data} setOpen={setOpen} relatedData={relatedData} />
+   message: (setOpen, type, data,  relatedData) => ( <MessageForm type={type} data={data} setOpen={setOpen} relatedData={relatedData} />
   ),
 };
 
@@ -94,10 +95,15 @@ const FormModal = ({
       setOpen(false);
       router.refresh();
     }
+    if (state.error) {
+       toast.error("Something went wrong!");
+    }
   }, [state, router, table]);
 
   const size = type === "create" ? "w-8 h-8" : "w-7 h-7";
-  const bgColor = type === "create" ? "bg-rubixYellow" : type === "update" ? "bg-rubixSky" : "bg-rubixPurple";
+  const bgColor = 
+  type === "create" ? "bg-rubixYellow" : 
+  type === "update" ? "bg-rubixSky" : "bg-rubixPurple";
 
   // Simplified Form Rendering Logic
   const renderForm = () => {
@@ -105,11 +111,13 @@ const FormModal = ({
       return (
         <form action={formAction} className="p-4 flex flex-col gap-4">
           <input type="hidden" name="id" value={id} />
-          <span className="text-center font-medium">
+          <span className="text-center font-medium text-slate-700">
             All data will be lost. Are you sure you want to delete this {table}?
           </span>
-          <button className="bg-red-700 text-white py-2 px-4 rounded-md border-none w-max self-center">
-            Delete
+          <button className="bg-red-700 text-white py-2 px-4 rounded-md border-none w-max self-center 
+          font-bold hover:bg-red-800 transition-colors">
+            Confirm Delete
+
           </button>
         </form>
       );
@@ -129,21 +137,27 @@ const FormModal = ({
   return (
     <>
       <button
-        className={`${size} flex items-center justify-center rounded-full ${bgColor}`}
+        className={`${size} flex items-center justify-center rounded-full 
+        ${bgColor} text-white shadow-md hover:opacity-80 transition-opacity`}
         onClick={() => setOpen(true)}
       >
-        <Image src={`/${type}.png`} alt="" width={16} height={16} />
+         {/* USING LUCIDE ICONS INSTEAD OF IMAGES */}
+        {type === "create" && <Plus size={16} />}
+        {type === "update" && <Pencil size={14} />}
+        {type === "delete" && <Trash2 size={14} />}
+
       </button>
       {open && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center">
-          <div className="bg-white p-8 rounded-md relative w-[90%] md:w-[70%] lg:w-[60%] xl:w-[50%] 2xl:w-[40%] max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/60  backdrop-blur-sm 
+        z-[9999] flex items-center justify-center p-4">
+          <div className="bg-white p-8 rounded-2xl relative w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-200">
             {renderForm()}
-            <div
-              className="absolute top-4 right-4 cursor-pointer"
+            <button
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors"
               onClick={() => setOpen(false)}
             >
-              <Image src="/close.png" alt="" width={14} height={14} />
-            </div>
+              <X size={20} />
+            </button>
           </div>
         </div>
       )}

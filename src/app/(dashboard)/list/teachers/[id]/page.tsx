@@ -26,7 +26,7 @@ const SingleTeacherPage = async (props: {
   const { id } = await props.params;
   const { sessionClaims } = await auth();
   const role = (sessionClaims?.metadata as { role?: string })?.role?.toLowerCase();
-
+    console.log("Current User Role:", role);
   // --- 1. DATA FETCHING ---
   const teacher = await prisma.teacher.findUnique({
     where: { id },
