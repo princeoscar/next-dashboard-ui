@@ -1,4 +1,4 @@
-
+"use client"; // <--- CORRECTION: Added this directive to allow hook usage
 
 import { useListData } from "@/hooks/useListData";
 import Pagination from "@/components/Pagination";
@@ -10,7 +10,9 @@ import { CalendarDays, Clock, Sparkles } from "lucide-react";
 const EventListPage = () => {
   // role is fetched from your hook/session
   const { data, count, role, loading, searchParams } = useListData<any>("events");
-  const p = parseInt(searchParams.get("page") || "1");
+  
+  // CORRECTION: searchParams from useListData is likely a URLSearchParams object
+  const p = parseInt(searchParams?.get("page") || "1");
   
   // Normalize role for safety
   const currentRole = role?.toLowerCase();
@@ -107,7 +109,7 @@ const EventListPage = () => {
       {/* DATA CONTENT */}
       {loading ? (
         <div className="flex flex-col items-center justify-center p-32 space-y-4">
-            <div className="w-12 h-12 border-4 border-slate-100 border-t-rubixSky rounded-full animate-spin" />
+            <div className="w-12 h-12 border-4 border-slate-100 border-t-indigo-500 rounded-full animate-spin" />
             <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Fetching Schedule...</p>
         </div>
       ) : (
