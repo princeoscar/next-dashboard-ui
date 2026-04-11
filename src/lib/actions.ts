@@ -813,7 +813,7 @@ export const updateAssignment = async (currentState: any, data: any) => {
       data: {
         title: data.title,
         startDate: new Date(data.startDate),
-        endDate: new Date(data.endDate),
+        dueDate: new Date(data.endDate),
         lessonId: Number(data.lessonId),
       },
     });
