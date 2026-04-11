@@ -32,9 +32,9 @@ const LoginPage = () => {
                     {/* Logo Section */}
                     <div className="flex items-center gap-3">
                         <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
-                            <span className="text-white font-black text-2xl">S</span>
+                            <span className="text-white font-black text-2xl">R</span>
                         </div>
-                        <h1 className="text-white text-3xl font-bold tracking-tight italic">Spark</h1>
+                        <h1 className="text-white text-3xl font-bold tracking-tight italic">Rubix Schools</h1>
                     </div>
 
                     {/* Value Proposition */}
