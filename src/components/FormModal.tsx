@@ -1,10 +1,14 @@
 "use client";
 
 import {
+  deleteAnnouncement,
+  deleteAssignment,
   deleteClass,
   deleteEvent,
   deleteExam,
   deleteLesson,
+  deleteParent,
+  deleteResult,
   deleteStudent,
   deleteSubject,
   deleteTeacher,
@@ -26,6 +30,11 @@ const deleteActionMap: any = {
   exam: deleteExam,
   event: deleteEvent,
   lesson: deleteLesson,
+  announcement: deleteAnnouncement,
+  result: deleteResult,
+  parent: deleteParent,
+  assignment: deleteAssignment,
+  
   // Add others as you create them
 };
 

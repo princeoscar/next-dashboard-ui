@@ -10,10 +10,11 @@ export type FormContainerProps = {
   type: "create" | "update" | "delete";
   data?: any;
   id?: number | string;
+  relatedData?: any;
 };
 
-const FormContainer = async ({ table, type, data, id }: FormContainerProps) => {
-  let relatedData = {};
+const FormContainer = async ({ table, type, data, id, relatedData: externalRelatedData, }: FormContainerProps) => {
+  let relatedData = externalRelatedData || {};
 
   const { userId, sessionClaims } = await auth();
   const role = (sessionClaims?.metadata as { role?: string })?.role?.toLowerCase();
