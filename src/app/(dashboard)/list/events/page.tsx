@@ -1,21 +1,44 @@
-"use client"; // <--- CORRECTION: Added this directive to allow hook usage
-
-import { useListData } from "@/hooks/useListData";
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
-import FormModal from "@/components/FormModal";
+import FormContainer from "@/components/FormContainer";
 import { CalendarDays, Clock, Sparkles } from "lucide-react";
+import prisma from "@/lib/prisma";
+import { ITEM_PER_PAGE } from "@/lib/settings";
+import { auth } from "@clerk/nextjs/server";
+import { Prisma } from "@prisma/client";
 
-const EventListPage = () => {
-  // role is fetched from your hook/session
-  const { data, count, role, loading, searchParams } = useListData<any>("events");
-  
-  // CORRECTION: searchParams from useListData is likely a URLSearchParams object
-  const p = parseInt(searchParams?.get("page") || "1");
-  
-  // Normalize role for safety
+const EventListPage = async ({
+  searchParams,
+}: {
+  searchParams: { [key: string]: string | undefined };
+}) => {
+  // 1. Get Auth and Role on the Server
+  const { sessionClaims } = await auth();
+  const role = (sessionClaims?.metadata as { role?: string })?.role;
   const currentRole = role?.toLowerCase();
+
+  // 2. Parse Pagination
+  const p = searchParams.page ? parseInt(searchParams.page) : 1;
+
+  // 3. Handle Search and Filtering
+  const query: Prisma.EventWhereInput = {};
+  if (searchParams.search) {
+    query.title = { contains: searchParams.search, mode: "insensitive" };
+  }
+
+  // 4. Fetch Data directly with Prisma
+  const [data, count] = await prisma.$transaction([
+    prisma.event.findMany({
+      where: query,
+      include: {
+        class: { select: { name: true } },
+      },
+      take: ITEM_PER_PAGE,
+      skip: ITEM_PER_PAGE * (p - 1),
+    }),
+    prisma.event.count({ where: query }),
+  ]);
 
   const columns = [
     { header: "Event Title", accessor: "title" },
@@ -26,10 +49,9 @@ const EventListPage = () => {
   ];
 
   const renderRow = (item: any) => {
-    // 1. STATUS LOGIC
     const now = new Date();
-    const start = new Date(item.startTime); 
-    const end = new Date(item.endTime);    
+    const start = new Date(item.startTime);
+    const end = new Date(item.endTime);
     const isLive = now >= start && now <= end;
 
     return (
@@ -39,7 +61,7 @@ const EventListPage = () => {
             <div className={`p-2 rounded-xl transition-all ${
               isLive 
                 ? 'bg-rose-50 text-rose-500 animate-pulse' 
-                : 'bg-rubixSky/10 text-rubixSky group-hover:bg-rubixSky group-hover:text-white'
+                : 'bg-blue-50 text-blue-500 group-hover:bg-blue-500 group-hover:text-white'
             }`}>
               <Sparkles size={16} />
             </div>
@@ -79,8 +101,8 @@ const EventListPage = () => {
         {currentRole === "admin" && (
           <td className="p-4">
             <div className="flex items-center gap-2 justify-end">
-              <FormModal table="event" type="update" data={item} />
-              <FormModal table="event" type="delete" id={item.id} />
+              <FormContainer table="event" type="update" data={item} />
+              <FormContainer table="event" type="delete" id={item.id} />
             </div>
           </td>
         )}
@@ -90,7 +112,6 @@ const EventListPage = () => {
 
   return (
     <div className="bg-white p-8 rounded-[2.5rem] flex-1 m-4 mt-0 shadow-sm border border-slate-100 min-h-[700px]">
-      {/* HEADER SECTION */}
       <div className="flex flex-col md:flex-row items-center justify-between mb-8 gap-6">
         <div>
           <h1 className="text-2xl font-black text-slate-800 tracking-tighter uppercase">Campus Events</h1>
@@ -100,29 +121,19 @@ const EventListPage = () => {
           <TableSearch />
           {currentRole === "admin" && (
             <div className="p-1 bg-slate-900 rounded-2xl shadow-xl shadow-slate-200">
-              <FormModal table="event" type="create" />
+              <FormContainer table="event" type="create" />
             </div>
           )}
         </div>
       </div>
 
-      {/* DATA CONTENT */}
-      {loading ? (
-        <div className="flex flex-col items-center justify-center p-32 space-y-4">
-            <div className="w-12 h-12 border-4 border-slate-100 border-t-indigo-500 rounded-full animate-spin" />
-            <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Fetching Schedule...</p>
-        </div>
-      ) : (
-        <div className="rounded-3xl border border-slate-50 overflow-hidden bg-white">
-          <Table columns={columns} renderRow={renderRow} data={data} />
-        </div>
-      )}
+      <div className="rounded-3xl border border-slate-50 overflow-hidden bg-white">
+        <Table columns={columns} renderRow={renderRow} data={data} />
+      </div>
 
-      {!loading && (
-        <div className="mt-8 border-t border-slate-50 pt-6">
-          <Pagination page={p} count={count} />
-        </div>
-      )}
+      <div className="mt-8 border-t border-slate-50 pt-6">
+        <Pagination page={p} count={count} />
+      </div>
     </div>
   );
 };

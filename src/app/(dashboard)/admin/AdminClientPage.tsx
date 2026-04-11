@@ -1,18 +1,11 @@
 "use client";
 
-import dynamic from "next/dynamic";
+
 import Announcements from "@/components/Announcements";
 import FinanceChart from "@/components/FinanceChart";
 import UserCard from "@/components/UserCard";
-import EventCalendarContainer from "@/components/EventCalenderContainer";
 import React from "react";
 
-const CountChartContainer = dynamic(() => import("@/components/CountChartContainer"), {
-  ssr: false,
-});
-const AttendanceChartContainer = dynamic(() => import("@/components/AttendanceChartContainer"), {
-  ssr: false,
-});
 
 interface AdminClientProps {
   counts: {
@@ -21,16 +14,20 @@ interface AdminClientProps {
     parentCount: number;
     adminCount: number;
   };
+  announcements: any[];
   searchParams: { [key: string]: string | undefined };
   chart: React.ReactNode;
   attendanceChart: React.ReactNode;
+  eventList: React.ReactNode;
 }
 
 const AdminClientPage = ({
   counts,
+  announcements,
   searchParams,
   chart,
   attendanceChart,
+  eventList,
 }: AdminClientProps) => {
   return (
     <div className="flex flex-col gap-4 md:flex-row p-2 md:p-0">
@@ -58,10 +55,10 @@ const AdminClientPage = ({
 
       <div className="w-full lg:w-1/3 flex flex-col gap-8">
         <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-50">
-          <EventCalendarContainer searchParams={searchParams} />
+          {eventList}
         </div>
         <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-50">
-          <Announcements />
+          <Announcements data={announcements}/>
         </div>
       </div>
     </div>

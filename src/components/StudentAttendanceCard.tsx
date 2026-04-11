@@ -1,4 +1,4 @@
-import prisma from "@/lib/prisma";
+import {prisma} from "@/lib/prisma";
 import { Activity, TrendingUp, TrendingDown, Minus } from "lucide-react";
 
 const StudentAttendanceCard = async ({ id }: { id: string }) => {
@@ -7,7 +7,7 @@ const StudentAttendanceCard = async ({ id }: { id: string }) => {
   const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
 
-  // 1. Fetch Year-to-Date Attendance
+  // 1. Fetch Year-to-Date Attendance (One fetch is enough!)
   const attendance = await prisma.attendance.findMany({
     where: {
       studentId: id,
@@ -16,11 +16,12 @@ const StudentAttendanceCard = async ({ id }: { id: string }) => {
     orderBy: { date: "asc" },
   });
 
+  // 2. Derive Stats from the array
   const totalDays = attendance.length;
   const presentDays = attendance.filter((day) => day.present).length;
   const totalPercentage = totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 0;
 
-  // 2. Trend Logic
+  // 3. Trend Logic
   const currentMonthData = attendance.filter((a) => a.date >= startOfCurrentMonth);
   const lastMonthData = attendance.filter(
     (a) => a.date >= startOfLastMonth && a.date < startOfCurrentMonth
@@ -39,17 +40,16 @@ const StudentAttendanceCard = async ({ id }: { id: string }) => {
         <div className="p-2 bg-blue-50 text-blue-500 rounded-xl group-hover:bg-blue-500 group-hover:text-white transition-colors">
           <Activity size={18} />
         </div>
-        
+
         {/* TREND BADGE */}
         {totalDays > 0 && lastMonthData.length > 0 && (
-          <div 
-            className={`flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter ${
-              trend > 0 
-                ? "bg-emerald-50 text-emerald-600 border border-emerald-100" 
-                : trend < 0 
-                ? "bg-rose-50 text-rose-600 border border-rose-100" 
-                : "bg-slate-50 text-slate-400 border border-slate-100"
-            }`}
+          <div
+            className={`flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter ${trend > 0
+                ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
+                : trend < 0
+                  ? "bg-rose-50 text-rose-600 border border-rose-100"
+                  : "bg-slate-50 text-slate-400 border border-slate-100"
+              }`}
           >
             {trend > 0 ? <TrendingUp size={10} /> : trend < 0 ? <TrendingDown size={10} /> : <Minus size={10} />}
             {Math.abs(Math.round(trend))}%
@@ -73,8 +73,8 @@ const StudentAttendanceCard = async ({ id }: { id: string }) => {
 
       {/* MINI VISUAL PROGRESS BAR */}
       <div className="mt-5 w-full h-1.5 bg-slate-50 rounded-full overflow-hidden border border-slate-100">
-        <div 
-          className="h-full bg-blue-500 rounded-full transition-all duration-1000"
+        <div
+          className="h-full bg-blue-500 rounded-full transition-all duration-1000 shadow-[0_0_8px_rgba(59,130,246,0.5)]"
           style={{ width: `${totalPercentage}%` }}
         />
       </div>

@@ -3,9 +3,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import InputField from "../InputField";
-import { Dispatch, SetStateAction, useEffect } from "react";
+import { Dispatch, SetStateAction, useActionState, useEffect } from "react";
 import { assignmentSchema, AssignmentSchema } from "@/lib/formValidationSchema";
-import { useFormState } from "react-dom";
 import { createAssignment, updateAssignment } from "@/lib/actions";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
@@ -30,7 +29,7 @@ const AssignmentForm = ({
     resolver: zodResolver(assignmentSchema) as any,
   });
 
-  const [state, formAction] = useFormState(
+  const [state, formAction] = useActionState(
     type === "create" ? createAssignment : updateAssignment,
     { success: false, error: false }
   );

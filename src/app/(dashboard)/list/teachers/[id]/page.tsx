@@ -2,209 +2,221 @@ import Announcements from "@/components/Announcements";
 import BigCalendarContainer from "@/components/BigCalendarContainer";
 import FormContainer from "@/components/FormContainer";
 import Performance from "@/components/Performance";
-import TeacherAttendanceCard from "@/components/TeacherAttendanceCard";
-import prisma from "@/lib/prisma";
+import {prisma} from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
+import { Teacher } from "@prisma/client";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
-import {
-  Mail,
-  Phone,
-  Droplet,
-  Cake,
-  BookOpen,
-  Layers,
-  School,
-  Activity
-} from "lucide-react";
 
-const SingleTeacherPage = async (props: {
-  params: Promise<{ id: string }>;
+const SingleTeacherPage = async ({
+  params: { id },
+}: {
+  params: { id: string };
 }) => {
-  const { id } = await props.params;
   const { sessionClaims } = await auth();
-  const role = (sessionClaims?.metadata as { role?: string })?.role?.toLowerCase();
+  const role = (sessionClaims?.metadata as { role?: string })?.role;
 
-  // --- 1. DATA FETCHING ---
-  const teacher = await prisma.teacher.findUnique({
-    where: { id },
-    include: {
-      _count: {
-        select: {
-          subjects: true,
-          lessons: true,
-          classes: true,
+  const teacher:
+    | (Teacher & {
+      subjects: { id: number; name: string }[];
+      _count: { subjects: number; lessons: number; classes: number };
+    })
+    | null = await prisma.teacher.findUnique({
+      where: { id },
+      include: {
+        subjects: true,
+        _count: {
+          select: {
+            subjects: true,
+            lessons: true,
+            classes: true,
+          },
         },
       },
-    },
-  });
+    });
 
-  if (!teacher) return notFound();
-
+  if (!teacher) {
+    return notFound();
+  }
   return (
-    <div className="flex-1 p-4 flex flex-col gap-6 xl:flex-row">
-      {/* LEFT COLUMN: Profile & Schedule */}
-      <div className="w-full xl:w-2/3 flex flex-col gap-6">
-
-        {/* HEADER: USER INFO AND STATS */}
-        <div className="flex flex-col lg:flex-row gap-6">
-
-          {/* TEACHER INFO CARD */}
-          <div className="bg-indigo-600 py-8 px-6 rounded-[2.5rem] flex flex-col sm:flex-row gap-8 text-white shadow-2xl shadow-indigo-200 relative overflow-hidden flex-1">
-            {/* Decorative Glassmorphism Element */}
-            <div className="absolute top-[-20%] right-[-10%] w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none" />
-
-            <div className="sm:w-1/3 flex items-center justify-center relative z-10">
-              <div className="relative w-36 h-36 md:w-44 md:h-44 group">
-                <Image
-                  src={teacher.img || "/noAvatar.png"}
-                  alt=""
-                  fill
-                  className="rounded-[2.5rem] object-cover border-4 border-white/20 shadow-2xl group-hover:scale-105 transition-transform duration-500"
-                />
-              </div>
+    <div className="flex-1 p-4 flex flex-col gap-4 xl:flex-row">
+      {/* LEFT */}
+      <div className="w-full xl:w-2/3">
+        {/* TOP */}
+        <div className="flex flex-col lg:flex-row gap-4">
+          {/* USER INFO CARD */}
+          <div className="bg-rubixSky py-6 px-4 rounded-md flex-1 flex gap-4">
+            <div className="w-1/3">
+              <Image
+                src={teacher.img || "/noAvatar.png"}
+                alt=""
+                width={144}
+                height={144}
+                className="w-36 h-36 rounded-full object-cover"
+              />
             </div>
-
-            <div className="sm:w-2/3 flex flex-col justify-center relative z-10">
-              <div className="flex items-center flex-wrap gap-4 mb-3">
-                <h1 className="text-3xl md:text-4xl font-black text-white tracking-tighter uppercase leading-none">
-                  {teacher.name} {teacher.surname}
+            <div className="w-2/3 flex flex-col justify-between gap-4">
+              <div className="flex flex-col">
+                <h1 className="text-xl font-semibold">
+                  {teacher.name + " " + teacher.surname}
                 </h1>
+                <span className="text-xs text-gray-400 font-medium">
+                  {teacher.subjects.map((s) => s.name).join(" • ")}
+                </span>
                 {role === "admin" && (
-                  <div className="flex items-center gap-2">
-                    {/* UPDATE BUTTON */}
-                    <div className="hover:scale-110 transition-transform">
-                      <FormContainer table="teacher" type="update" data={teacher} />
-                    </div>
-                    {/* DELETE BUTTON */}
-                    <div className="hover:scale-110 transition-transform">
-                      <FormContainer table="teacher" type="delete" id={teacher.id} />
-                    </div>
-                  </div>
+                  <FormContainer table="teacher" type="update" data={teacher} />
                 )}
               </div>
-
-              <p className="text-[10px] font-black text-indigo-100 uppercase tracking-[0.3em] mb-8 flex items-center gap-2">
-                <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_10px_rgba(52,211,153,0.8)]" />
-                Senior Faculty Member
+              <p className="text-sm text-gray-500">
+                An enthusiastic educator who loves inspiring students to learn
+                and grow. Known for making lessons fun, interactive, and easy to understand
+                while supporting every student’s unique journey.
               </p>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <InfoItem icon={<Droplet size={14} />} label={teacher.bloodType || "N/A"} />
-                <InfoItem icon={<Cake size={14} />} label={new Intl.DateTimeFormat("en-GB").format(teacher.birthday)} />
-                <InfoItem icon={<Mail size={14} />} label={teacher.email || "No Email"} />
-                <InfoItem icon={<Phone size={14} />} label={teacher.phone || "No Phone"} />
+              <div className="flex items-center justify-between gap-2 flex-wrap text-xs font-medium">
+                <div className="w-full md:w-1/3 lg:w-full 2xl:w-1/3 flex items-center gap-2">
+                  <Image src="/blood.png" alt="" width={14} height={14} />
+                  <span>{teacher.bloodType}</span>
+                </div>
+                <div className="w-full md:w-1/3 lg:w-full 2xl:w-1/3 flex items-center gap-2">
+                  <Image src="/date.png" alt="" width={14} height={14} />
+                  <span>
+                    {new Intl.DateTimeFormat("en-GB").format(teacher.birthday)}
+                  </span>
+                </div>
+                <div className="w-full md:w-1/3 lg:w-full 2xl:w-1/3 flex items-center gap-2">
+                  <Image src="/mail.png" alt="" width={14} height={14} />
+                  <span>{teacher.email || "-"}</span>
+                </div>
+                <div className="w-full md:w-1/3 lg:w-full 2xl:w-1/3 flex items-center gap-2">
+                  <Image src="/phone.png" alt="" width={14} height={14} />
+                  <span>{teacher.phone || "-"}</span>
+                </div>
               </div>
             </div>
           </div>
-
-          {/* QUICK STATS GRID */}
-          <div className="lg:w-1/3 grid grid-cols-2 gap-4">
-            <StatCard
-              icon={<Activity className="text-emerald-500" />}
-              title={<Suspense fallback={<span className="animate-pulse">--%</span>}><TeacherAttendanceCard id={teacher.id} /></Suspense>}
-              label="Attendance"
-            />
-            <StatCard
-              icon={<BookOpen className="text-indigo-600" />}
-              title={teacher._count.subjects.toString()}
-              label="Subjects"
-            />
-            <StatCard
-              icon={<Layers className="text-amber-500" />}
-              title={teacher._count.lessons.toString()}
-              label="Lessons"
-            />
-            <StatCard
-              icon={<School className="text-rose-500" />}
-              title={teacher._count.classes.toString()}
-              label="Classes"
-            />
-          </div>
-        </div>
-
-        {/* SCHEDULE SECTION */}
-        <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-3">
-              <div className="w-2 h-8 bg-indigo-600 rounded-full" />
-              <h2 className="text-2xl font-black text-slate-800 tracking-tight uppercase leading-none">Faculty Timetable</h2>
+          {/* SMALL CARDS */}
+          <div className="flex-1 flex gap-4 justify-between flex-wrap">
+            {/* CARD */}
+            <div className="bg-white p-4 rounded-md flex gap-4 w-full md:w-[48%] xl:w-[45%] 2xl:w-[48%]">
+              <Image
+                src="/singleAttendance.png"
+                alt=""
+                width={24}
+                height={24}
+                className="w-6 h-6"
+              />
+              <div className="">
+                <h1 className="text-xl font-semibold">90%</h1>
+                <span className="text-sm text-gray-400">Attendance</span>
+              </div>
+            </div>
+            {/* CARD */}
+            <div className="bg-white p-4 rounded-md flex gap-4 w-full md:w-[48%] xl:w-[45%] 2xl:w-[48%]">
+              <Image
+                src="/singleBranch.png"
+                alt=""
+                width={24}
+                height={24}
+                className="w-6 h-6"
+              />
+              <div className="">
+                <h1 className="text-xl font-semibold">
+                  {teacher._count.subjects}
+                </h1>
+                <span className="text-sm text-gray-400">Branches</span>
+              </div>
+            </div>
+            {/* CARD */}
+            <div className="bg-white p-4 rounded-md flex gap-4 w-full md:w-[48%] xl:w-[45%] 2xl:w-[48%]">
+              <Image
+                src="/singleLesson.png"
+                alt=""
+                width={24}
+                height={24}
+                className="w-6 h-6"
+              />
+              <div className="">
+                <h1 className="text-xl font-semibold">
+                  {teacher._count.lessons}
+                </h1>
+                <span className="text-sm text-gray-400">Lessons</span>
+              </div>
+            </div>
+            {/* CARD */}
+            <div className="bg-white p-4 rounded-md flex gap-4 w-full md:w-[48%] xl:w-[45%] 2xl:w-[48%]">
+              <Image
+                src="/singleClass.png"
+                alt=""
+                width={24}
+                height={24}
+                className="w-6 h-6"
+              />
+              <div className="">
+                <h1 className="text-xl font-semibold">
+                  {teacher._count.classes}
+                </h1>
+                <span className="text-sm text-gray-400">Classes</span>
+              </div>
             </div>
           </div>
-          <div className="min-h-[650px]">
-            <BigCalendarContainer type="teacherId" id={teacher.id} />
-          </div>
+        </div>
+        {/* BOTTOM */}
+        <div className="mt-4 bg-white rounded-md p-4 h-[800px]">
+          <h1>Teacher&apos;s Schedule</h1>
+          <BigCalendarContainer type="teacherId" id={teacher.id} />
         </div>
       </div>
-
-      {/* RIGHT COLUMN: Actions & Charts */}
-      <div className="w-full xl:w-1/3 flex flex-col gap-6">
-        {/* QUICK LINKS PANEL */}
-        <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
-          <div className="flex items-center gap-2 mb-6">
-            <div className="w-1.5 h-4 bg-slate-800 rounded-full" />
-            <h2 className="text-[11px] font-black text-slate-800 uppercase tracking-[0.2em]">Faculty Shortcuts</h2>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <QuickLink href={`/list/classes?supervisorId=${teacher.id}`} label="My Classes" color="sky" />
-            <QuickLink href={`/list/students?teacherId=${teacher.id}`} label="My Students" color="indigo" />
-            <QuickLink href={`/list/lessons?teacherId=${teacher.id}`} label="Schedule" color="amber" />
-            <QuickLink href={`/list/exams?teacherId=${teacher.id}`} label="Exams" color="rose" />
-            <QuickLink href={`/list/assignments?teacherId=${teacher.id}`} label="Homework" color="emerald" />
+      {/* RIGHT */}
+      <div className="w-full xl:w-1/3 flex flex-col gap-4">
+        <div className="bg-white p-4 rounded-md">
+          <h1 className="text-xl font-semibold">Shortcuts</h1>
+          <div className="mt-4 flex gap-4 flex-wrap text-xs text-gray-500">
+            <Link
+              className="p-3 rounded-md bg-rubixSkyLight"
+              href={`/list/classes?supervisorId=${teacher.id}`}
+            >
+              Teacher&apos;s Classes
+            </Link>
+            <Link
+              className="p-3 rounded-md bg-rubixPurpleLight"
+              href={`/list/students?teacherId=${teacher.id}`}
+            >
+              Teacher&apos;s Students
+            </Link>
+            <Link
+              className="p-3 rounded-md bg-rubixYellowLight"
+              href={`/list/lessons?teacherId=${teacher.id}`}
+            >
+              Teacher&apos;s Lessons
+            </Link>
+            <Link
+              className="p-3 rounded-md bg-pink-50"
+              href={`/list/exams?teacherId=${teacher.id}`}
+            >
+              Teacher&apos;s Exams
+            </Link>
+            <Link
+              className="p-3 rounded-md bg-rubixSkyLight"
+              href={`/list/assignments?teacherId=${teacher.id}`}
+            >
+              Teacher&apos;s Assignments
+            </Link>
+            {/* Only show if the logged-in user is viewing their OWN profile */}
+            {role === "teacher" && sessionClaims?.sub === teacher.id && (
+              <Link
+                className="p-3 rounded-md bg-gray-100 border border-gray-200 hover:bg-gray-200 transition"
+                href="/settings"
+              >
+                ⚙️ Edit My Settings
+              </Link>
+            )}
           </div>
         </div>
-
-        {/* PERFORMANCE VISUALIZER */}
-        <div className="bg-white p-2 rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden">
-          <Performance />
-        </div>
-        
-        <Announcements />
+        <Performance />
+        <Announcements data={[]} />
       </div>
     </div>
-  );
-};
-
-// --- MODULAR UI HELPERS ---
-
-const InfoItem = ({ icon, label }: { icon: any; label: string }) => (
-  <div className="flex items-center gap-3 truncate bg-white/5 p-2.5 rounded-2xl border border-white/10 backdrop-blur-md group hover:bg-white/15 transition-all">
-    <div className="text-indigo-200 group-hover:text-white transition-colors">
-      {icon}
-    </div>
-    <span className="truncate text-[11px] font-bold text-white tracking-tight">{label}</span>
-  </div>
-);
-
-const StatCard = ({ icon, title, label }: { icon: any; title: any; label: string }) => (
-  <div className="bg-white p-6 rounded-[2.5rem] flex flex-col gap-4 shadow-sm border border-slate-50 hover:shadow-xl hover:border-indigo-100 transition-all group">
-    <div className="p-3 bg-slate-50 rounded-2xl w-fit group-hover:bg-indigo-50 transition-colors">
-      {icon}
-    </div>
-    <div>
-      <h1 className="text-2xl font-black text-slate-800 tracking-tighter tabular-nums leading-none mb-1">{title}</h1>
-      <span className="text-[9px] text-slate-400 font-black uppercase tracking-widest block">{label}</span>
-    </div>
-  </div>
-);
-
-const QuickLink = ({ href, label, color }: { href: string; label: string; color: string }) => {
-  const colors: Record<string, string> = {
-    sky: "bg-sky-50 text-sky-700 hover:bg-sky-600",
-    indigo: "bg-indigo-50 text-indigo-700 hover:bg-indigo-600",
-    rose: "bg-rose-50 text-rose-700 hover:bg-rose-600",
-    amber: "bg-amber-50 text-amber-700 hover:bg-amber-600",
-    emerald: "bg-emerald-50 text-emerald-700 hover:bg-emerald-600",
-  };
-  return (
-    <Link
-      href={href}
-      className={`px-4 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest text-center transition-all hover:-translate-y-1 hover:text-white shadow-sm border border-transparent hover:shadow-lg ${colors[color]}`}
-    >
-      {label}
-    </Link>
   );
 };
 

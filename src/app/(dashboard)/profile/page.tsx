@@ -1,6 +1,6 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import prisma from "@/lib/prisma";
+import prisma from "@/lib/prisma"; // Standardized import
 import Image from "next/image";
 import Link from "next/link";
 import { 
@@ -12,7 +12,8 @@ import {
   GraduationCap, 
   BookOpen, 
   ChevronRight,
-  Clock
+  Clock,
+  Settings
 } from "lucide-react";
 
 const ProfilePage = async () => {
@@ -21,14 +22,15 @@ const ProfilePage = async () => {
 
   if (!userId || !user) return redirect("/sign-in");
 
-  const role = (sessionClaims?.metadata as { role?: string })?.role || "student";
+  const rawRole = (sessionClaims?.metadata as { role?: string })?.role || "student";
+  const role = rawRole.toLowerCase();
 
   // --- 1. DYNAMIC DATABASE FETCH ---
   let dbUser: any = null;
-
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
+  // Fetching logic based on role
   if (role === "teacher") {
     dbUser = await prisma.teacher.findUnique({
       where: { id: userId },
@@ -52,26 +54,35 @@ const ProfilePage = async () => {
         },
       },
     });
-  } else {
-    dbUser = await prisma.user.findUnique({ where: { id: userId } });
+  } else if (role === "admin") {
+    dbUser = await prisma.admin.findUnique({ where: { id: userId } });
   }
 
-  if (!dbUser) return <div className="p-12 text-slate-400 font-black text-center uppercase tracking-widest">Database Record Sync Required</div>;
+  if (!dbUser) {
+    return (
+      <div className="p-12 text-slate-400 font-black text-center flex flex-col items-center gap-4">
+        <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center animate-pulse">
+           <User size={32} />
+        </div>
+        <p className="uppercase tracking-[0.2em] text-xs">Database Record Sync Required</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-8 bg-slate-50/50 min-h-screen">
       <div className="max-w-5xl mx-auto flex flex-col gap-8">
         
-        {/* HEADER CARD: THE HERO SECTION */}
-        <div className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col md:flex-row gap-10 items-center relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-rubixSky/5 rounded-full -mr-16 -mt-16 blur-3xl" />
+        {/* HERO SECTION */}
+        <div className="bg-white p-10 rounded-[3rem] shadow-sm border border-slate-100 flex flex-col md:flex-row gap-10 items-center relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-rubixSky/5 rounded-full -mr-32 -mt-32 blur-3xl" />
           
-          <div className="relative w-40 h-40">
+          <div className="relative w-44 h-44 group">
             <Image
               src={user.imageUrl || "/noAvatar.png"}
               alt="Profile"
               fill
-              className="rounded-[2rem] object-cover border-4 border-white shadow-2xl shadow-slate-200"
+              className="rounded-[2.5rem] object-cover border-8 border-slate-50 shadow-2xl transition-transform group-hover:scale-[1.02]"
             />
           </div>
           
@@ -80,18 +91,19 @@ const ProfilePage = async () => {
               <h1 className="text-4xl font-black text-slate-800 tracking-tighter uppercase">
                 {dbUser.name} {dbUser.surname || ""}
               </h1>
-              <span className="bg-slate-900 text-white px-4 py-1 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] w-max mx-auto md:mx-0 shadow-lg shadow-slate-200">
-                {role}
-              </span>
+              <div className="flex items-center gap-2 bg-slate-900 text-white px-4 py-1.5 rounded-2xl shadow-xl">
+                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                 <span className="text-[10px] font-black uppercase tracking-widest">{role}</span>
+              </div>
             </div>
-            <div className="flex flex-col md:flex-row gap-4 text-slate-400 font-bold text-[11px] uppercase tracking-widest">
-               <div className="flex items-center gap-2 justify-center md:justify-start">
+            <div className="flex flex-col md:flex-row gap-6 text-slate-400 font-bold text-[11px] uppercase tracking-widest">
+               <div className="flex items-center gap-2">
                  <Mail size={14} className="text-rubixSky" />
                  {dbUser.email || user.emailAddresses[0].emailAddress}
                </div>
-               <div className="flex items-center gap-2 justify-center md:justify-start">
+               <div className="flex items-center gap-2">
                  <ShieldCheck size={14} className="text-emerald-500" />
-                 Verified Account
+                 ID: {dbUser.username || dbUser.id.toString().slice(0, 8)}
                </div>
             </div>
           </div>
@@ -102,31 +114,33 @@ const ProfilePage = async () => {
           
           {/* PERSONAL INFO */}
           <div className="lg:col-span-1 bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
-            <h2 className="text-sm font-black text-slate-800 mb-8 uppercase tracking-widest flex items-center gap-3">
-              <User size={18} className="text-rubixPurple" />
-              Identity Details
+            <h2 className="text-xs font-black text-slate-800 mb-8 uppercase tracking-[0.2em] flex items-center gap-3">
+              <div className="p-2 bg-rubixPurple/10 rounded-xl text-rubixPurple">
+                <User size={16} />
+              </div>
+              Identity
             </h2>
             <div className="space-y-6">
               <DetailRow icon={<Phone size={14}/>} label="Contact" value={dbUser.phone || "---"} />
-              <DetailRow icon={<Droplet size={14}/>} label="Blood Type" value={dbUser.bloodType || "N/A"} />
-              <DetailRow icon={<Clock size={14}/>} label="Username" value={dbUser.username || user.username || "---"} />
+              <DetailRow icon={<Droplet size={14}/>} label="Blood" value={dbUser.bloodType || "N/A"} />
+              <DetailRow icon={<Clock size={14}/>} label="Joined" value={new Date(dbUser.createdAt || today).toLocaleDateString('en-GB')} />
             </div>
           </div>
 
           {/* DYNAMIC ROLE-BASED CARD */}
           <div className="lg:col-span-2 bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
-            <h2 className="text-sm font-black text-slate-800 mb-8 uppercase tracking-widest flex items-center gap-3">
-              {role === "teacher" && <><BookOpen size={18} className="text-rubixYellow" /> Teaching Faculty</>}
-              {role === "student" && <><GraduationCap size={18} className="text-rubixSky" /> Academic Enrolment</>}
-              {role === "parent" && <><User size={18} className="text-rose-500" /> Household Members</>}
-              {role === "admin" && <><ShieldCheck size={18} className="text-slate-900" /> System Control</>}
+            <h2 className="text-xs font-black text-slate-800 mb-8 uppercase tracking-[0.2em] flex items-center gap-3">
+              {role === "teacher" && <><BookOpen size={16} className="text-rubixYellow" /> Teaching Faculty</>}
+              {role === "student" && <><GraduationCap size={16} className="text-rubixSky" /> Academic Enrolment</>}
+              {role === "parent" && <><User size={16} className="text-rose-500" /> Household Members</>}
+              {role === "admin" && <><Settings size={16} className="text-slate-900" /> System Control</>}
             </h2>
 
-            <div className="flex flex-col gap-4">
+            <div className="grid grid-cols-1 gap-4">
               {role === "teacher" && (
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-3">
                   {dbUser.subjects?.map((s: any) => (
-                    <span key={s.id} className="bg-rubixPurple/5 text-rubixPurple px-4 py-2 rounded-xl text-[10px] font-black uppercase border border-rubixPurple/10">
+                    <span key={s.id} className="bg-slate-50 text-slate-700 px-5 py-3 rounded-2xl text-[10px] font-black uppercase border border-slate-100 shadow-sm">
                       {s.name}
                     </span>
                   ))}
@@ -134,48 +148,39 @@ const ProfilePage = async () => {
               )}
 
               {role === "student" && (
-                <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-100 flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm text-blue-600">
+                <div className="p-8 bg-slate-50 rounded-[2rem] border border-slate-100 flex items-center gap-6">
+                    <div className="w-16 h-16 bg-white rounded-3xl flex items-center justify-center shadow-sm text-rubixSky">
                       <SchoolIcon />
                     </div>
                     <div>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Assigned Cohort</p>
-                      <p className="text-xl font-black text-slate-800 uppercase tracking-tighter">Class {dbUser.class?.name || "Pending"}</p>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Assigned Cohort</p>
+                      <p className="text-3xl font-black text-slate-800 uppercase tracking-tighter">Class {dbUser.class?.name || "Pending"}</p>
                     </div>
-                  </div>
                 </div>
               )}
 
-              {role === "parent" && dbUser.students?.map((child: any) => (
-                <div key={child.id} className="p-6 bg-white border border-slate-100 rounded-[2rem] shadow-sm hover:border-rubixSky/30 transition-all group">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-rubixSky/5 text-rubixSky rounded-2xl flex items-center justify-center font-black transition-all group-hover:bg-rubixSky group-hover:text-white">
-                        {child.name[0]}{child.surname[0]}
+              {role === "parent" && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {dbUser.students?.map((child: any) => (
+                    <div key={child.id} className="p-6 bg-white border border-slate-100 rounded-[2rem] shadow-sm hover:border-rubixSky/30 transition-all group">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-rubixSky/10 text-rubixSky rounded-xl flex items-center justify-center font-black text-xs">
+                            {child.name[0]}
+                          </div>
+                          <div>
+                            <p className="text-sm font-black text-slate-800 tracking-tight">{child.name}</p>
+                            <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest">{child.class?.name}</p>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-lg font-black text-slate-800 tracking-tight">{child.name} {child.surname}</p>
-                        <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest">Class {child.class?.name}</p>
-                      </div>
+                      <Link href={`/list/students/${child.id}`} className="flex items-center justify-between pt-3 border-t border-slate-50 text-[10px] font-black text-rubixSky uppercase tracking-widest group-hover:text-slate-900 transition-colors">
+                        Dossier <ChevronRight size={14} />
+                      </Link>
                     </div>
-                    <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
-                      child.attendances.length > 0 ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"
-                    }`}>
-                      {child.attendances.length > 0 ? "• Present Today" : "• Absent / Not Logged"}
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between pt-4 border-t border-slate-50 mt-2">
-                    <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                      Latest Score: <span className="text-slate-800">{child.results[0]?.score || "---"}%</span>
-                    </div>
-                    <Link href={`/list/students/${child.id}`} className="flex items-center gap-1 text-[10px] font-black text-rubixSky uppercase tracking-widest hover:gap-2 transition-all">
-                      View Dossier <ChevronRight size={14} />
-                    </Link>
-                  </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
           </div>
 
@@ -188,19 +193,19 @@ const ProfilePage = async () => {
 // --- HELPERS ---
 
 const DetailRow = ({ icon, label, value }: { icon: any; label: string; value: string }) => (
-  <div className="flex items-center justify-between border-b border-slate-50 pb-4 last:border-0 group">
-    <div className="flex items-center gap-3">
-      <div className="p-2 bg-slate-50 rounded-lg text-slate-400 group-hover:text-rubixSky transition-colors">
+  <div className="flex items-center justify-between border-b border-slate-50 pb-5 last:border-0 group">
+    <div className="flex items-center gap-4">
+      <div className="text-slate-300 group-hover:text-rubixSky transition-colors">
         {icon}
       </div>
       <span className="text-slate-400 text-[10px] font-black uppercase tracking-widest">{label}</span>
     </div>
-    <span className="text-slate-800 font-black text-sm tracking-tight">{value}</span>
+    <span className="text-slate-800 font-black text-xs tracking-tight">{value}</span>
   </div>
 );
 
 const SchoolIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3 10 4.5V17"/><path d="m12 3-10 4.5V17"/><path d="M6 10v9.264a1 1 0 0 0 .553.894L12 21l5.447-2.842a1 1 0 0 0 .553-.894V10"/><path d="M18 13c0 2.21-2.686 4-6 4s-6-1.79-6-4"/></svg>
+  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3 10 4.5V17"/><path d="m12 3-10 4.5V17"/><path d="M6 10v9.264a1 1 0 0 0 .553.894L12 21l5.447-2.842a1 1 0 0 0 .553-.894V10"/><path d="M18 13c0 2.21-2.686 4-6 4s-6-1.79-6-4"/></svg>
 );
 
 export default ProfilePage;

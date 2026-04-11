@@ -3,13 +3,14 @@ import BigCalendarContainer from "@/components/BigCalendarContainer";
 import FormContainer from "@/components/FormContainer";
 import Performance from "@/components/Performance";
 import StudentAttendanceCard from "@/components/StudentAttendanceCard";
-import prisma from "@/lib/prisma";
+import {prisma} from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
+import { Class, Prisma, Student } from "@prisma/client";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { Calendar as CalendarIcon, Mail, Phone, Droplet, Cake, GraduationCap, LayoutDashboard, BookmarkCheck } from "lucide-react";
+import AnnouncementListPage from "../../announcements/page";
 
 const SingleStudentPage = async ({
   params: { id },
@@ -17,194 +18,196 @@ const SingleStudentPage = async ({
   params: { id: string };
 }) => {
   const { sessionClaims } = await auth();
-  const role = (sessionClaims?.metadata as { role?: string })?.role?.toLowerCase();
+  const role = (sessionClaims?.metadata as { role?: string })?.role;
 
-  // --- 1. DATA FETCHING ---
-  const student = await prisma.student.findUnique({
+  // Let Prisma handle the complex type for you automatically
+  type StudentWithRelationships = Prisma.StudentGetPayload<{
+    include: {
+      class: { include: { _count: { select: { lessons: true } } } }
+      parent: true
+    }
+  }>;
+
+  const student: StudentWithRelationships | null = await prisma.student.findUnique({
     where: { id },
     include: {
       class: {
-        include: {
-          _count: { select: { lessons: true } },
-        },
-      },
-    },
+        include: { _count: { select: { lessons: true } } } },
+      parent: true,
+    }
   });
 
   if (!student) return notFound();
 
   return (
-    <div className="flex-1 p-8 flex flex-col gap-8 xl:flex-row bg-slate-50/50 min-h-screen">
-      {/* LEFT COLUMN: Main Info & Schedule */}
-      <div className="w-full xl:w-2/3 flex flex-col gap-8">
-
-        {/* HEADER: USER INFO AND STATS */}
-        <div className="flex flex-col lg:flex-row gap-8">
-
-          {/* PERSONAL INFO CARD */}
-          <div className="bg-white p-8 rounded-[2.5rem] flex-1 flex flex-col sm:flex-row gap-8 shadow-sm border border-slate-100 relative overflow-hidden">
-            {/* Background Accent */}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50/50 rounded-full -mr-16 -mt-16" />
-
-            <div className="sm:w-1/3 flex items-center justify-center relative z-10">
-              <div className="relative w-32 h-32 md:w-40 md:h-40 group">
-                <Image
-                  src={student.img || "/noAvatar.png"}
-                  alt="{student.name}"
-                  fill
-                  className="rounded-[2rem] object-cover border-4 border-white shadow-2xl group-hover:scale-105 transition-transform duration-500"
-                />
-              </div>
+    <div className="flex-1 p-4 flex flex-col gap-4 xl:flex-row">
+      {/* LEFT */}
+      <div className="w-full xl:w-2/3">
+        {/* TOP */}
+        <div className="flex flex-col lg:flex-row gap-4">
+          {/* USER INFO CARD */}
+          <div className="bg-rubixSky py-6 px-4 rounded-md flex-1 flex gap-4">
+            <div className="w-1/3">
+              <Image
+                src={student.img || "/noAvatar.png"}
+                alt=""
+                width={144}
+                height={144}
+                className="w-36 h-36 rounded-full object-cover"
+              />
             </div>
-
-            <div className="sm:w-2/3 flex flex-col justify-center relative z-10">
-              <div className="flex items-center gap-4 mb-2">
-                <h1 className="text-3xl font-black text-slate-800 tracking-tighter uppercase leading-none">
-                  {student.name} {student.surname}
+            <div className="w-2/3 flex flex-col justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <h1 className="text-xl font-semibold">
+                  {student.name + " " + student.surname}
                 </h1>
                 {role === "admin" && (
-                  <div className="flex items-center gap-2">
-                    {/* UPDATE BUTTON */}
-                    <div className="p-1 bg-slate-900 rounded-xl shadow-lg hover:scale-110 transition-transform">
-                      <FormContainer table="teacher" type="update" data={student} />
-                    </div>
-
-                    {/* DELETE BUTTON - ADD THIS PART */}
-                    <div className="p-1 bg-rose-600 rounded-xl shadow-lg hover:scale-110 transition-transform">
-                      <FormContainer table="teacher" type="delete" id={student.id} />
-                    </div>
-                  </div>
+                  <FormContainer table="student" type="update" data={student} />
                 )}
               </div>
-              <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
-                <span className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse" />
-                Active Enrollment: {student.class ? student.class.name : "Not Enrolled"}
+              <p className="text-sm text-gray-500">
+                Lorem ipsum, dolor sit amet consectetur adipisicing elit.
               </p>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <InfoItem icon={<Droplet size={14} />} label={student.bloodType || "N/A"} color="rose" />
-                <InfoItem icon={<Cake size={14} />} label={new Intl.DateTimeFormat("en-GB").format(student.birthday)} color="blue" />
-                <InfoItem icon={<Mail size={14} />} label={student.email || "No Email"} color="emerald" />
-                <InfoItem icon={<Phone size={14} />} label={student.phone || "No Phone"} color="amber" />
+              <div className="flex items-center justify-between gap-2 flex-wrap text-xs font-medium">
+                <div className="w-full md:w-1/3 lg:w-full 2xl:w-1/3 flex items-center gap-2">
+                  <Image src="/blood.png" alt="" width={14} height={14} />
+                  <span>{student.bloodType}</span>
+                </div>
+                <div className="w-full md:w-1/3 lg:w-full 2xl:w-1/3 flex items-center gap-2">
+                  <Image src="/date.png" alt="" width={14} height={14} />
+                  <span>
+                    {new Intl.DateTimeFormat("en-GB").format(student.birthday)}
+                  </span>
+                </div>
+                <div className="w-full md:w-1/3 lg:w-full 2xl:w-1/3 flex items-center gap-2">
+                  <Image src="/mail.png" alt="" width={14} height={14} />
+                  <span>{student.email || "-"}</span>
+                </div>
+                <div className="w-full md:w-1/3 lg:w-full 2xl:w-1/3 flex items-center gap-2">
+                  <Image src="/phone.png" alt="" width={14} height={14} />
+                  <span>{student.phone || "-"}</span>
+                </div>
+                {/* ✅ ADD PARENT INFO HERE (Inside the grid) */}
+                <div className="w-full md:w-1/3 lg:w-full 2xl:w-1/3 flex items-center gap-2">
+                  <Image src="/user.png" alt="" width={14} height={14} />
+                  <span>{student.parent ? `${student.parent.name} ${student.parent.surname}` : "No Parent info"}</span>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* QUICK STATS GRID */}
-          <div className="flex-1 grid grid-cols-2 gap-4">
-            <StatCard
-              icon={<BookmarkCheck className="text-indigo-600" />}
-              title={<Suspense fallback={<span className="animate-pulse">--%</span>}><StudentAttendanceCard id={student.id} /></Suspense>}
-              label="Attendance"
-            />
-            <StatCard
-              icon={<GraduationCap className="text-amber-500" />}
-              title={`${student.class?.name.match(/\d+/)?.[0] || "-"}th`}
-              label="Grade Level"
-            />
-            <StatCard
-              icon={<LayoutDashboard className="text-emerald-500" />}
-              title={student.class?._count.lessons.toString() || "0"}
-              label="Weekly Lessons"
-            />
-            <StatCard
-              icon={<CalendarIcon className="text-rose-500" />}
-              title={student.class?.name || "Unassigned"}
-              label="Home Class"
-            />
-          </div>
-        </div>
-
-        {/* SCHEDULE SECTION */}
-        <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-2 h-8 bg-indigo-600 rounded-full" />
-            <h2 className="text-2xl font-black text-slate-800 tracking-tight uppercase">Academic Schedule</h2>
-          </div>
-          <div className="min-h-[600px]">
-            {student.class?.id ? (
-              <BigCalendarContainer type="classId" id={student.class.id} />
-            ) : (
-              <div className="flex flex-col items-center justify-center h-[600px] text-slate-400 border-2 border-dashed border-slate-100 rounded-[2rem]">
-                <CalendarIcon size={48} className="mb-4 opacity-20" />
-                <p className="font-black uppercase tracking-widest text-[10px]">No Schedule Available</p>
-                <span className="text-xs italic">Student is not assigned to a class.</span>
+          {/* SMALL CARDS */}
+          <div className="flex-1 flex gap-4 justify-between flex-wrap">
+            {/* CARD */}
+            <div className="bg-white p-4 rounded-md flex gap-4 w-full md:w-[48%] xl:w-[45%] 2xl:w-[48%]">
+              <Image
+                src="/singleAttendance.png"
+                alt=""
+                width={24}
+                height={24}
+                className="w-6 h-6"
+              />
+              <Suspense fallback="loading...">
+                <StudentAttendanceCard id={student.id} />
+              </Suspense>
+            </div>
+            {/* CARD */}
+            <div className="bg-white p-4 rounded-md flex gap-4 w-full md:w-[48%] xl:w-[45%] 2xl:w-[48%]">
+              <Image
+                src="/singleBranch.png"
+                alt=""
+                width={24}
+                height={24}
+                className="w-6 h-6"
+              />
+              <div className="">
+                <h1 className="text-xl font-semibold">{student.class?.name || "No Class"}</h1>
+                <span className="text-sm text-gray-400">Grade</span>
               </div>
-            )}
+            </div>
+            {/* CARD */}
+            <div className="bg-white p-4 rounded-md flex gap-4 w-full md:w-[48%] xl:w-[45%] 2xl:w-[48%]">
+              <Image
+                src="/singleLesson.png"
+                alt=""
+                width={24}
+                height={24}
+                className="w-6 h-6"
+              />
+              <div className="">
+                <h1 className="text-xl font-semibold">
+                  {student.class?._count.lessons}
+                </h1>
+                <span className="text-sm text-gray-400">Lessons</span>
+              </div>
+            </div>
+            {/* CARD */}
+            <div className="bg-white p-4 rounded-md flex gap-4 w-full md:w-[48%] xl:w-[45%] 2xl:w-[48%]">
+              <Image
+                src="/singleClass.png"
+                alt=""
+                width={24}
+                height={24}
+                className="w-6 h-6"
+              />
+              <div className="">
+                <h1 className="text-xl font-semibold">{student.class?.name}</h1>
+                <span className="text-sm text-gray-400">Class</span>
+              </div>
+            </div>
           </div>
         </div>
+        {/* BOTTOM */}
+        <div className="mt-4 bg-white rounded-md p-4 h-[800px]">
+          <h1>Student&apos;s Schedule</h1>
+          {student.class ? (
+            <BigCalendarContainer type="classId" id={student.class.id} />
+          ) : (
+            <p>No schedule available (No Class Assigned)</p>
+          )}
+        </div>
       </div>
-
-      {/* RIGHT COLUMN: Performance & Actions */}
-      <div className="w-full xl:w-1/3 flex flex-col gap-8">
-        {/* ACTION PANEL */}
-        <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
-          <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6">Student Shortcuts</h2>
-          <div className="grid grid-cols-2 gap-3">
-            <QuickLink href={`/list/lessons?classId=${student.class?.id} : "#"`} label="Lessons" color="sky" />
-            <QuickLink href={`/list/teachers?classId=${student.class?.id}`} label="Teachers" color="indigo" />
-            <QuickLink href={`/list/exams?classId=${student.class?.id}`} label="Exams" color="rose" />
-            <QuickLink href={`/list/assignments?classId=${student.class?.id}`} label="Homework" color="amber" />
-            <QuickLink href={`/list/results?studentId=${student.id}`} label="Results" color="emerald" />
+      {/* RIGHT */}
+      <div className="w-full xl:w-1/3 flex flex-col gap-4">
+        <div className="bg-white p-4 rounded-md">
+          <h1 className="text-xl font-semibold">Shortcuts</h1>
+          <div className="mt-4 flex gap-4 flex-wrap text-xs text-gray-500">
+            <Link
+              className="p-3 rounded-md bg-rubixSkyLight"
+              href={`/list/lessons?classId=${student.class?.id}`}
+            >
+              Student&apos;s Lessons
+            </Link>
+            <Link
+              className="p-3 rounded-md bg-rubixPurpleLight"
+              href={`/list/teachers?classId=${student.class?.id}`}
+            >
+              Student&apos;s Teachers
+            </Link>
+            <Link
+              className="p-3 rounded-md bg-pink-50"
+              href={`/list/exams?classId=${student.class?.id}`}
+            >
+              Student&apos;s Exams
+            </Link>
+            <Link
+              className="p-3 rounded-md bg-rubixSkyLight"
+              href={`/list/assignments?classId=${student.class?.id}`}
+            >
+              Student&apos;s Assignments
+            </Link>
+            <Link
+              className="p-3 rounded-md bg-rubixYellowLight"
+              href={`/list/results?studentId=${student.id}`}
+            >
+              Student&apos;s Results
+            </Link>
           </div>
         </div>
-
-        {/* VISUALIZATIONS */}
-        <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100">
-          <Performance />
-        </div>
-        <Announcements />
+        <Performance />
+        <Announcements data={[]}/>
       </div>
     </div>
-  );
-};
-
-// --- MODULAR UI HELPERS ---
-
-const InfoItem = ({ icon, label, color }: { icon: any; label: string; color: string }) => {
-  const colors: Record<string, string> = {
-    rose: "bg-rose-50 text-rose-600",
-    blue: "bg-blue-50 text-blue-600",
-    emerald: "bg-emerald-50 text-emerald-600",
-    amber: "bg-amber-50 text-amber-600",
-  };
-  return (
-    <div className="flex items-center gap-3 truncate group">
-      <div className={`p-2 ${colors[color]} rounded-xl shadow-sm group-hover:scale-110 transition-transform`}>
-        {icon}
-      </div>
-      <span className="truncate text-[11px] font-bold text-slate-500">{label}</span>
-    </div>
-  );
-};
-
-const StatCard = ({ icon, title, label }: { icon: any; title: any; label: string }) => (
-  <div className="bg-white p-6 rounded-[2rem] flex flex-col gap-3 shadow-sm border border-slate-50 hover:shadow-xl hover:border-indigo-100 transition-all group">
-    <div className="p-3 bg-slate-50 rounded-2xl w-fit group-hover:bg-indigo-50 transition-colors">
-      {icon}
-    </div>
-    <div>
-      <h1 className="text-xl font-black text-slate-800 tracking-tighter tabular-nums">{title}</h1>
-      <span className="text-[9px] text-slate-400 font-black uppercase tracking-widest mt-1 block">{label}</span>
-    </div>
-  </div>
-);
-
-const QuickLink = ({ href, label, color }: { href: string; label: string; color: string }) => {
-  const colors: Record<string, string> = {
-    sky: "bg-sky-50 text-sky-700 hover:bg-sky-700",
-    indigo: "bg-indigo-50 text-indigo-700 hover:bg-indigo-700",
-    rose: "bg-rose-50 text-rose-700 hover:bg-rose-700",
-    amber: "bg-amber-50 text-amber-700 hover:bg-amber-700",
-    emerald: "bg-emerald-50 text-emerald-700 hover:bg-emerald-700",
-  };
-  return (
-    <Link
-      href={href}
-      className={`px-4 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest text-center transition-all hover:-translate-y-1 hover:text-white shadow-sm border border-transparent hover:shadow-lg ${colors[color]}`}
-    >
-      {label}
-    </Link>
   );
 };
 

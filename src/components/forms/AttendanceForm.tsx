@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useFieldArray } from "react-hook-form";
 import InputField from "../InputField";
-import { Dispatch, SetStateAction, useEffect } from "react";
+import { Dispatch, SetStateAction, useActionState, useEffect } from "react";
 import { attendanceSchema, AttendanceSchema } from "@/lib/formValidationSchema";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
@@ -44,7 +44,7 @@ const AttendanceForm = ({
     name: "students",
   });
 
-  const [state, formAction] = useFormState<any, any>(
+  const [state, formAction] = useActionState<any, any>(
     createAttendance,
     { success: false, error: false }
   );

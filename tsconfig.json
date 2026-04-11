@@ -35,6 +35,6 @@
     ".next/types/**/*.ts",
     "src/components/AttendanceChartContainer",
     ".next/dev/types/**/*.ts"
-  ],
+, "src/app/(dashboard)/list/students/[id]/studen"  ],
   "exclude": ["node_modules", "prisma/seed.ts"]
 }

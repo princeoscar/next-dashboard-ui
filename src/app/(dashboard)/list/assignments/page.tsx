@@ -2,8 +2,9 @@ import FormContainer from "@/components/FormContainer";
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
-import prisma from "@/lib/prisma";
+import {prisma} from "@/lib/prisma";
 import { ITEM_PER_PAGE } from "@/lib/settings";
+
 import { auth } from "@clerk/nextjs/server";
 import { Assignment, Class, Lesson, Prisma, Subject, Teacher } from "@prisma/client";
 import { FileText, User, LayoutGrid, Clock } from "lucide-react";
@@ -15,12 +16,12 @@ type AssignmentList = Assignment & {
 const AssignmentListPage = async ({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | undefined };
+  searchParams: Promise<{ [key: string]: string | undefined }>;
 }) => {
   const { userId, sessionClaims } = await auth();
   const role = (sessionClaims?.metadata as { role?: string })?.role?.toLowerCase();
 
-  const { page, ...queryParams } = searchParams;
+  const { page, ...queryParams } = await searchParams;
   const p = page ? parseInt(page) : 1;
 
   // 1. TYPED QUERY BUILDING

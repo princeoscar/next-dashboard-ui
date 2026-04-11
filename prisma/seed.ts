@@ -1,4 +1,3 @@
-
 import prisma from "../src/lib/prisma";
 import { Day, UserSex } from "@prisma/client";
 
@@ -28,11 +27,10 @@ async function main() {
   const currentYear = new Date().getFullYear();
 
   // 1️⃣ ADMIN
-  const adminUser = await prisma.user.create({
+  await prisma.user.create({
     data: {
       id: "admin1",
       username: "admin",
-      email: "admin@school.com",
       role: "ADMIN",
     },
   });
@@ -68,6 +66,14 @@ async function main() {
       data: {
         id: `teacher${i}`,
         username: `teacher${i}`,
+        role: "TEACHER",
+      },
+    });
+
+    const teacher = await prisma.teacher.create({
+      data: {
+        id: user.id,
+        username: user.username,
         name: `TName${i}`,
         surname: `TSurname${i}`,
         email: `t${i}@school.com`,
@@ -76,26 +82,8 @@ async function main() {
         bloodType: "A+",
         sex: i % 2 === 0 ? UserSex.MALE : UserSex.FEMALE,
         birthday: new Date(1990, 0, 1),
-        role: "TEACHER",
-      },
-    });
-
-    // Connect teacher to subjects
-    const teacher = await prisma.teacher.create({
-      data: {
-        id: `teacher${i}`,        // Required by your schema
-        userId: user.id,          // The relation link
-        username: user.username,  // Required by your schema
-        name: user.name!,         // Required by your schema
-        surname: user.surname!,   // Required by your schema
-        email: user.email,
-        phone: `123${i}`,
-        address: `Address${i}`,
-        bloodType: "A+",
-        sex: i % 2 === 0 ? UserSex.MALE : UserSex.FEMALE,
-        birthday: new Date(1990, 0, 1),
-        subjects: { 
-          connect: [{ id: createdSubjects[i % createdSubjects.length].id }] 
+        subjects: {
+          connect: [{ id: createdSubjects[i % createdSubjects.length].id }],
         },
       },
     });
@@ -131,26 +119,20 @@ async function main() {
       data: {
         id: `parent${i}`,
         username: `parent${i}`,
-        name: `PName${i}`,
-        surname: `PSurname${i}`,
-        email: `p${i}@test.com`,
-        phone: `123${i}`,
-        address: `Addr${i}`,
         role: "PARENT",
       },
     });
 
-    // 2. Create the Parent profile
     const parent = await prisma.parent.create({
-     data: {
-        id: `parent${i}`,
-        userId: parentUser.id,
+      data: {
+        id: parentUser.id,
         username: parentUser.username,
-        name: parentUser.name!,
-        surname: parentUser.surname!,
-        email: parentUser.email,
-        phone: `123${i}`,
-        address: `Addr${i}`,
+        name: `PName${i}`,
+        surname: `PSurname${i}`,
+        email: `parent${i}@school.com`,
+        phone: `1234567${i}`,
+        address: `Address ${i}`,
+        clerkId: "clerk_parent1",
       },
     });
 
@@ -159,32 +141,22 @@ async function main() {
       data: {
         id: `student${i}`,
         username: `student${i}`,
-        name: `SName${i}`,
-        surname: `SSurname${i}`,
-        email: `s${i}@test.com`,
-        phone: `987${i}`,
-        address: `Addr${i}`,
-        bloodType: "O-",
-        sex: i % 2 === 0 ? UserSex.MALE : UserSex.FEMALE,
-        birthday: new Date(2015, 0, 1),
         role: "STUDENT",
       },
     });
 
-    // 4. Create the Student profile
     const student = await prisma.student.create({
       data: {
-        id: `student${i}`,
-        userId: studentUser.id,
+        id: studentUser.id,
         username: studentUser.username,
-        name: studentUser.name!,
-        surname: studentUser.surname!,
-        email: studentUser.email,
+        name: `SName${i}`,
+        surname: `SSurname${i}`,
+        email: `student${i}@school.com`,
         phone: `987${i}`,
         address: `Addr${i}`,
         bloodType: "O-",
         sex: i % 2 === 0 ? UserSex.MALE : UserSex.FEMALE,
-        parentId: parent.id,
+        parentId: parent.id, // Direct link to parent created above
         gradeId: createdGrades[i % createdGrades.length].id,
         classId: createdClasses[i % createdClasses.length].id,
         birthday: new Date(2015, 0, 1),
@@ -193,35 +165,113 @@ async function main() {
     createdStudents.push(student);
   }
 
-  // 8️⃣ EXAMS & RESULTS
-  for (const lesson of createdLessons) {
-    const exam = await prisma.exam.create({
-      data: {
-        title: `Exam for ${lesson.name}`,
-        startTime: new Date(currentYear, 10, 1),
-        endTime: new Date(currentYear, 10, 1, 2),
-        lessonId: lesson.id,
-      },
-    });
+  // 8️⃣ EXAMS, ASSIGNMENTS & RESULTS
+console.log("Creating Exams, Assignments and Results...");
 
-    for (const student of createdStudents) {
-      if (student.classId === lesson.classId) {
-        await prisma.result.create({
-          data: {
-            score: Math.floor(Math.random() * 100),
-            studentId: student.id,
-            examId: exam.id,
-          },
-        });
-      }
+for (const lesson of createdLessons) {
+  // 1. Create an Exam for this lesson
+  const exam = await prisma.exam.create({
+    data: {
+      title: `Termly Exam for ${lesson.name}`,
+      startTime: new Date(currentYear, 10, 1),
+      endTime: new Date(currentYear, 10, 1, 2),
+      lessonId: lesson.id,
+    },
+  });
+
+  // 2. Create an Assignment for this lesson
+  const assignment = await prisma.assignment.create({
+    data: {
+      title: `Class Test for ${lesson.name}`,
+      startDate: new Date(currentYear, 9, 15),
+      dueDate: new Date(currentYear, 9, 20),
+      lessonId: lesson.id,
+    },
+  });
+
+  for (const student of createdStudents) {
+    if (student.classId === lesson.classId) {
+      // 3. Create Exam Result
+      await prisma.result.create({
+        data: {
+          score: Math.floor(Math.random() * 40) + 60, // Scores 60-100
+          studentId: student.id,
+          examId: exam.id,
+          type: "EXAM", // 👈 IMPORTANT: This matches your schema
+        },
+      });
+
+      // 4. Create Assignment/Test Result
+      await prisma.result.create({
+        data: {
+          score: Math.floor(Math.random() * 50) + 50, // Scores 50-100
+          studentId: student.id,
+          assignmentId: assignment.id,
+          type: "ASSIGNMENT", // 👈 IMPORTANT: This matches your schema
+        },
+      });
     }
   }
+}
+
+// 8️⃣ EXAMS, ASSIGNMENTS & RESULTS
+console.log("Creating Exams, Assignments and Results...");
+
+for (const lesson of createdLessons) {
+  // 1. Create a Final Exam for this specific lesson
+  const exam = await prisma.exam.create({
+    data: {
+      title: `Termly Exam for ${lesson.name}`,
+      startTime: new Date(currentYear, 10, 1),
+      endTime: new Date(currentYear, 10, 1, 2),
+      lessonId: lesson.id,
+    },
+  });
+
+  // 2. Create a Class Assignment/Test for this specific lesson
+  const assignment = await prisma.assignment.create({
+    data: {
+      title: `Continuous Assessment for ${lesson.name}`,
+      startDate: new Date(currentYear, 9, 15),
+      dueDate: new Date(currentYear, 9, 20),
+      lessonId: lesson.id,
+    },
+  });
+
+  for (const student of createdStudents) {
+    // Only give results to students who are actually in this lesson's class
+    if (student.classId === lesson.classId) {
+      
+      // 3. Create the EXAM Result (Worth 60%)
+      await prisma.result.create({
+        data: {
+          score: Math.floor(Math.random() * 41) + 60, // Scores between 60-100
+          studentId: student.id,
+          examId: exam.id,
+          type: "EXAM", // 👈 Crucial for your report card logic!
+        },
+      });
+
+      // 4. Create the ASSIGNMENT Result (Worth 40%)
+      await prisma.result.create({
+        data: {
+          score: Math.floor(Math.random() * 51) + 50, // Scores between 50-100
+          studentId: student.id,
+          assignmentId: assignment.id,
+          type: "ASSIGNMENT", // 👈 Crucial for your report card logic!
+        },
+      });
+    }
+  }
+}
 
   console.log("Seeding completed successfully.");
 }
 
 main()
-  .then(async () => await prisma.$disconnect())
+  .then(async () => {
+    await prisma.$disconnect();
+  })
   .catch(async (e) => {
     console.error(e);
     await prisma.$disconnect();

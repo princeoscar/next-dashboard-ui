@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import {prisma} from "@/lib/prisma";
+
+export const runtime = "nodejs";
 
 export async function GET() {
+  
   try {
     const today = new Date();
     const dayOfWeek = today.getDay();
@@ -20,6 +23,7 @@ export async function GET() {
         present: true,
       },
     });
+    
 
     const daysOfWeek = ["Mon", "Tue", "Wed", "Thu", "Fri"];
     const attendanceMap: any = {

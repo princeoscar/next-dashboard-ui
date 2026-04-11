@@ -1,4 +1,4 @@
-import prisma from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { ChevronRight, BookOpen, Users } from "lucide-react";
@@ -6,14 +6,12 @@ import { ChevronRight, BookOpen, Users } from "lucide-react";
 const SelectClassPage = async () => {
   const { userId } = await auth();
 
-  // 1. Get all lessons this teacher is responsible for
   const lessons = await prisma.lesson.findMany({
     where: { teacherId: userId! },
     include: {
-      class: true,
-      subject: true,
+      class: { select: { name: true } },
+      subject: { select: { name: true } },
       exams: { select: { id: true, title: true } },
-      assignment: { select: { id: true, title: true } },
     },
   });
 
@@ -40,7 +38,6 @@ const SelectClassPage = async () => {
             <div className="space-y-2">
               <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-2">Available Assessments</p>
               
-              {/* List Exams */}
               {lesson.exams.map((exam) => (
                 <Link
                   key={exam.id}
@@ -56,7 +53,7 @@ const SelectClassPage = async () => {
               ))}
 
               {lesson.exams.length === 0 && (
-                <p className="text-[10px] italic text-slate-400">No exams scheduled yet.</p>
+                <p className="text-[10px] italic text-slate-400 px-1">No exams scheduled for this class.</p>
               )}
             </div>
           </div>

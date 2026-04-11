@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, use } from "react"; // 👈 Add 'use' here
 import Image from "next/image";
 import EventCalendar from "./EventCalendar";
 
-// 1. Define the Event Interface
 interface SchoolEvent {
   id: number | string;
   title: string;
@@ -14,20 +13,22 @@ interface SchoolEvent {
 }
 
 interface EventCalendarContainerProps {
-  searchParams: { [key: string]: string | undefined };
+  searchParams: Promise<{ [key: string]: string | undefined }>;
 }
 
 const EventCalendarContainer = ({ searchParams }: EventCalendarContainerProps) => {
+  // ✅ 1. Use the 'use' hook to unwrap the promise in a Client Component
+  const resolvedSearchParams = use(searchParams);
+  const date = resolvedSearchParams?.date;
+
   const [events, setEvents] = useState<SchoolEvent[]>([]);
   const [loading, setLoading] = useState(true);
-
-  const { date } = searchParams;
 
   useEffect(() => {
     const fetchEvents = async () => {
       setLoading(true);
       try {
-        // Use provided date or default to today's date in YYYY-MM-DD format
+        // Use provided date or default to today
         const queryDate = date || new Date().toISOString().split('T')[0];
         const res = await fetch(`/api/calendar-events?date=${queryDate}`);
         

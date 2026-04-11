@@ -1,6 +1,6 @@
 import Announcements from "@/components/Announcements";
 import BigCalendarContainer from "@/components/BigCalendarContainer";
-import prisma from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { GraduationCap, Calendar as CalendarIcon, FileText, Bell, UserCircle } from "lucide-react";
@@ -76,12 +76,11 @@ const ParentPage = async () => {
                 </div>
               </div>
 
-              <Link
-                href={`/list/results?studentId=${student.id}`}
-                className="flex items-center gap-2 bg-slate-900 text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg shadow-slate-200 self-start md:self-center"
-              >
-                <FileText size={14} />
-                View Report Card
+              <Link href={`/print/${student.id}`} target="_blank">
+                <button className="bg-blue-500 text-white p-2 rounded">
+                  <FileText size={14} />
+                  View Report Card
+                </button>
               </Link>
             </div>
 
@@ -115,7 +114,7 @@ const ParentPage = async () => {
             <Bell size={20} className="text-rubixYellow" />
             <h2 className="text-lg font-black text-slate-800 uppercase tracking-tight">School Bulletins</h2>
           </div>
-          <Announcements />
+          <Announcements data={[]} />
         </div>
       </div>
     </div>

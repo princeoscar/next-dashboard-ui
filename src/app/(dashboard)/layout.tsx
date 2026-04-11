@@ -1,63 +1,48 @@
-import { auth } from "@clerk/nextjs/server";
-import { redirect } from "next/navigation";
-import Link from "next/link";
-import Image from "next/image";
-import prisma from "@/lib/prisma";
-import dynamic from "next/dynamic";
 import Menu from "@/components/Menu";
 import Navbar from "@/components/Navbar";
-
-// ✅ DYNAMIC IMPORTS: These must be outside the function scope.
-// This tells Next.js to ignore these on the server-side render (SSR).
-
+import Image from "next/image";
+import Link from "next/link";
+import { auth, currentUser } from "@clerk/nextjs/server"; // Import Clerk
+import { prisma } from "@/lib/prisma"; // Import Prisma
 
 export default async function DashboardLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
-  const { userId, sessionClaims } = await auth();
-  if (!userId) redirect("/sign-in");
-
-  const role = (sessionClaims?.metadata as { role?: string })?.role || "student";
-
-  // Fetching data safely
-  const lastWeek = new Date();
-  lastWeek.setDate(lastWeek.getDate() - 7);
-
-  const [unreadMessages, activeAnnouncements] = await Promise.all([
-    prisma.message.count({
-      where: { receiverId: userId, isRead: false },
-    }),
-    prisma.announcement.count({
-      where: { date: { gte: lastWeek } },
-    }),
-  ]);
+}>) {
+  // 1. FETCH THE DATA HERE
+  const { userId } = await auth();
+  const user = await currentUser();
+  const role = (user?.publicMetadata?.role as string) || "user";
+  const firstName = user?.firstName || "Guest";
+  const announcementCount = await prisma.announcement.count();
 
   return (
-    <div className="h-screen flex overflow-hidden">
-      <aside className="hidden lg:flex lg:w-[16%] xl:w-[14%] p-4 flex-col border-r bg-white h-full">
-        <Link href="/" className="flex items-center gap-2 mb-8 shrink-0">
-          <div className="bg-indigo-600 p-1.5 rounded-lg">
-            <Image src="/logo.png" alt="logo" width={24} height={24} className="brightness-0 invert" />
-          </div>
-          <span className="font-bold text-slate-800 text-lg">Rubix Schools</span>
+    <div className="h-screen flex overflow-hidden"> 
+      
+      {/* LEFT - SIDEBAR */}
+      <div className="hidden md:block md:w-[8%] lg:w-[16%] xl:w-[14%] p-4 border-r border-gray-100 overflow-y-auto custom-scrollbar">
+        <Link
+          href="/"
+          className="flex items-center justify-center lg:justify-start gap-2 mb-4"
+        >
+          <Image src="/logo.png" alt="logo" width={32} height={32} />
+          <span className="hidden lg:block font-bold text-slate-800">Rubix School</span>
         </Link>
+        <Menu role={role}/>
+      </div>
 
-        <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
-          <Menu role={role} />
-        </div>
-      </aside>
-
-      <div className="flex-1 bg-[#F7F8FA] flex flex-col h-full overflow-hidden">
-        <Navbar
-          role={role}
-          messageCount={unreadMessages}
-          announcementCount={activeAnnouncements}
+      {/* RIGHT - MAIN CONTENT */}
+      <div className="w-full md:w-[92%] lg:w-[84%] xl:w-[86%] bg-[#F7F8FA] flex flex-col h-full overflow-y-auto">
+        {/* 2. PASS THE DEFINED VARIABLES */}
+        <Navbar 
+          role={role} 
+          firstName={firstName} 
+          announcementCount={announcementCount}
         />
-        <main className="flex-1 overflow-y-auto p-4 md:p-8">
-          {children}
-        </main>
+        <div className="p-4">
+           {children}
+        </div>
       </div>
     </div>
   );

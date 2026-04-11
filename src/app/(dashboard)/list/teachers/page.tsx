@@ -2,170 +2,127 @@ import FormContainer from "@/components/FormContainer";
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
-import prisma from "@/lib/prisma";
-import { ITEM_PER_PAGE } from "@/lib/settings";
-import { auth } from "@clerk/nextjs/server";
+import {prisma} from "@/lib/prisma";
 import { Class, Prisma, Subject, Teacher } from "@prisma/client";
 import Image from "next/image";
 import Link from "next/link";
-import { Eye, Phone, UserCheck } from "lucide-react";
+import { auth } from "@clerk/nextjs/server";
+import { ITEM_PER_PAGE } from "@/lib/settings";
 
 type TeacherList = Teacher & { subjects: Subject[] } & { classes: Class[] };
 
 const TeacherListPage = async ({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | undefined };
+  searchParams: Promise<{ [key: string]: string | undefined }>; // ✅ Next.js 15 Fix
 }) => {
-  const { sessionClaims } = await auth();
-  const role = (sessionClaims?.metadata as { role?: string })?.role?.toLowerCase();
-
-  const { page, ...queryParams } = searchParams;
-  const p = page ? parseInt(page) : 1;
-
-  const query: Prisma.TeacherWhereInput = {};
-
-  if (queryParams.search) {
-    query.OR = [
-      { name: { contains: queryParams.search, mode: "insensitive" } },
-      { surname: { contains: queryParams.search, mode: "insensitive" } },
-      { email: { contains: queryParams.search, mode: "insensitive" } },
-      { username: { contains: queryParams.search, mode: "insensitive" } },
-      { subjects: { some: { name: { contains: queryParams.search, mode: "insensitive" } } } },
-    ];
-  }
-
-  const [data, count] = await prisma.$transaction([
-    prisma.teacher.findMany({
-      where: query,
-      include: {
-        subjects: { select: { id: true, name: true } },
-        classes: { select: { id: true, name: true } },
-      },
-      take: ITEM_PER_PAGE,
-      skip: ITEM_PER_PAGE * (p - 1),
-      orderBy: { name: "asc" },
-    }),
-    prisma.teacher.count({ where: query }),
-  ]);
+  // ✅ 1. Await auth and searchParams
+  const { sessionClaims } = await auth(); 
+  const resolvedSearchParams = await searchParams;
+  
+  const role = (sessionClaims?.metadata as { role?: string })?.role;
 
   const columns = [
-    { header: "Teacher Info", accessor: "info" },
-    { header: "ID", accessor: "teacherId", className: "hidden md:table-cell" },
+    { header: "Info", accessor: "info" },
+    { header: "Teacher ID", accessor: "teacherId", className: "hidden md:table-cell" },
     { header: "Subjects", accessor: "subjects", className: "hidden md:table-cell" },
     { header: "Classes", accessor: "classes", className: "hidden md:table-cell" },
-    { header: "Contact", accessor: "phone", className: "hidden lg:table-cell" },
-    // "min-w-max" ensures the header doesn't shrink smaller than the text
-    { header: "Actions", accessor: "action", className: "text-right pr-4 min-w-[120px]" },
+    { header: "Phone", accessor: "phone", className: "hidden lg:table-cell" },
+    { header: "Address", accessor: "address", className: "hidden lg:table-cell" },
+    ...(role === "admin" ? [{ header: "Actions", accessor: "action" }] : []),
   ];
 
   const renderRow = (item: TeacherList) => (
-    <tr
-      key={item.id}
-      className="border-b border-slate-100 last:border-0 text-sm hover:bg-slate-50/50 transition-all group"
-    >
+    <tr key={item.id} className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-rubixPurpleLight">
       <td className="flex items-center gap-4 p-4">
-        <div className="relative w-10 h-10 shrink-0">
-          <Image
-            src={item.img || "/noAvatar.png"}
-            alt=""
-            fill
-            className="rounded-xl object-cover border border-slate-100 shadow-sm"
-          />
-        </div>
+        <Image
+          src={item.img || "/noAvatar.png"}
+          alt=""
+          width={40}
+          height={40}
+          className="md:hidden xl:block w-10 h-10 rounded-full object-cover"
+        />
         <div className="flex flex-col">
-          <h3 className="font-black text-slate-700 tracking-tight leading-tight">
-            {item.name} {item.surname}
-          </h3>
-          <p className="text-[10px] text-slate-400 font-bold lowercase tracking-wider mt-0.5">
-            {item.email}
-          </p>
+          <h3 className="font-semibold">{item.name}</h3>
+          <p className="text-xs text-gray-500">{item?.email}</p>
         </div>
       </td>
-      <td className="hidden md:table-cell p-4 text-slate-500 font-bold tabular-nums text-xs">
-        #{item.username}
-      </td>
-      <td className="hidden md:table-cell p-4">
-        <div className="flex flex-wrap gap-1 max-w-[180px]">
-          {item.subjects.map((s) => (
-            <span key={s.id} className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-md text-[9px] font-black uppercase border border-indigo-100">
-              {s.name}
-            </span>
-          ))}
-        </div>
-      </td>
-      <td className="hidden md:table-cell p-4">
-        <div className="flex flex-wrap gap-1 max-w-[180px]">
-          {item.classes.length > 0 ? (
-            item.classes.map((c) => (
-              <span key={c.id} className="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-md text-[9px] font-black uppercase border border-emerald-100">
-                {c.name}
-              </span>
-            ))
-          ) : (
-            <span className="text-[9px] text-slate-300 font-black uppercase italic tracking-tighter">No Classes</span>
-          )}
-        </div>
-      </td>
-      <td className="hidden lg:table-cell p-4">
-        <div className="flex items-center gap-2 text-slate-500">
-          <Phone size={14} className="text-slate-300" />
-          <span className="text-xs font-bold tabular-nums">{item.phone || "---"}</span>
-        </div>
-      </td>
-      {/* FIXED ACTION CELL: 
-          - min-w-max prevents the cell from shrinking.
-          - flex-nowrap prevents buttons from dropping to a new line.
-      */}
-      <td className="p-4 min-w-max">
-        <div className="flex items-center gap-2 justify-end flex-nowrap min-w-max">
+      <td className="hidden md:table-cell">{item.username}</td>
+      <td className="hidden md:table-cell">{item.subjects.map((s) => s.name).join(", ")}</td>
+      <td className="hidden md:table-cell">{item.classes.map((c) => c.name).join(", ")}</td>
+      <td className="hidden md:table-cell">{item.phone}</td>
+      <td className="hidden md:table-cell">{item.address}</td>
+      <td>
+        <div className="flex items-center gap-2">
           <Link href={`/list/teachers/${item.id}`}>
-            <button className="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-xl bg-sky-50 text-sky-600 hover:bg-sky-600 hover:text-white transition-all border border-sky-100 shadow-sm">
-              <Eye size={16} />
+            <button className="w-7 h-7 flex items-center justify-center rounded-full bg-rubixSky">
+              <Image src="/view.png" alt="" width={16} height={16} />
             </button>
           </Link>
           {role === "admin" && (
-            <div className="flex items-center gap-2 flex-nowrap shrink-0">
-              <FormContainer table="teacher" type="update" data={item} />
-              <FormContainer table="teacher" type="delete" id={item.id} />
-            </div>
+            <FormContainer table="teacher" type="delete" id={item.id} />
           )}
         </div>
       </td>
     </tr>
   );
 
+  // ✅ 2. Use the resolved params
+  const { page, ...queryParams } = resolvedSearchParams;
+  const p = page ? parseInt(page) : 1;
+
+  const query: Prisma.TeacherWhereInput = {};
+
+  if (queryParams) {
+    for (const [key, value] of Object.entries(queryParams)) {
+      if (value !== undefined) {
+        switch (key) {
+          case "classId":
+            query.lessons = { some: { classId: parseInt(value) } };
+            break;
+          case "search":
+            query.name = { contains: value, mode: "insensitive" };
+            break;
+        }
+      }
+    }
+  }
+
+  const [data, count] = await prisma.$transaction(async (tx) => {
+  const teachers = await tx.teacher.findMany({
+    where: query,
+    include: { subjects: true, classes: true },
+    take: ITEM_PER_PAGE,
+    skip: ITEM_PER_PAGE * (p - 1),
+  });
+
+  const totalCount = await tx.teacher.count({ where: query });
+
+  return [teachers, totalCount];
+}, {
+  timeout: 10000, // This syntax should now be accepted
+});
+
+
   return (
-    <div className="bg-white p-8 rounded-[2.5rem] flex-1 m-4 mt-0 shadow-sm border border-slate-100">
-      <div className="flex flex-col md:flex-row items-center justify-between mb-8 gap-6">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <UserCheck size={20} className="text-indigo-600" />
-            <h1 className="text-2xl font-black text-slate-800 tracking-tighter uppercase">Faculty Directory</h1>
-          </div>
-          <p className="text-[10px] text-slate-400 font-black tracking-widest uppercase ml-7">Academic Staff Management</p>
-        </div>
+    <div className="bg-white p-4 rounded-md flex-1 m-4 mt-0">
+      <div className="flex items-center justify-between">
+        <h1 className="hidden md:block text-lg font-semibold">All Teachers</h1>
         <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
           <TableSearch />
-          <div className="flex items-center gap-3 self-end">
-            {role === "admin" && (
-              <div className="p-1 bg-slate-900 rounded-2xl shadow-xl shadow-slate-200">
-                <FormContainer table="teacher" type="create" />
-              </div>
-            )}
+          <div className="flex items-center gap-4 self-end">
+            <button className="w-8 h-8 flex items-center justify-center rounded-full bg-rubixYellow">
+              <Image src="/filter.png" alt="" width={14} height={14} />
+            </button>
+            <button className="w-8 h-8 flex items-center justify-center rounded-full bg-rubixYellow">
+              <Image src="/sort.png" alt="" width={14} height={14} />
+            </button>
+            {role === "admin" && <FormContainer table="teacher" type="create" />}
           </div>
         </div>
       </div>
-
-      <div className="w-full overflow-x-auto">
-        <div className="min-w-[700px]">
-          <Table columns={columns} renderRow={renderRow} data={data} />
-        </div>
-      </div>
-
-      <div className="mt-8 border-t border-slate-50 pt-6">
-        <Pagination page={p} count={count} />
-      </div>
+      <Table columns={columns} renderRow={renderRow} data={data} />
+      <Pagination page={p} count={count} />
     </div>
   );
 };

@@ -3,9 +3,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import InputField from "../InputField";
-import { Dispatch, SetStateAction, useEffect } from "react";
+import { Dispatch, SetStateAction, useActionState, useEffect } from "react";
 import { eventSchema, EventSchema } from "@/lib/formValidationSchema";
-import { useFormState } from "react-dom";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { createEvent, updateEvent } from "@/lib/actions";
@@ -22,10 +21,14 @@ const EventForm = ({
   setOpen: Dispatch<SetStateAction<boolean>>;
   relatedData?: any;
 }) => {
-  // Helper to format dates for the datetime-local input
+  const router = useRouter();
+
+  // 1. IMPROVED DATE FORMATTING
   const formatDate = (date: Date | string) => {
     if (!date) return "";
     const d = new Date(date);
+    // Ensure we handle invalid dates to prevent app crash
+    if (isNaN(d.getTime())) return ""; 
     d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
     return d.toISOString().slice(0, 16);
   };
@@ -43,18 +46,17 @@ const EventForm = ({
     },
   });
 
-  const [state, formAction] = useFormState<any, any>(
+  // 2. FORM STATE ACTION
+  const [state, formAction] = useActionState(
     type === "create" ? createEvent : updateEvent,
     { success: false, error: false }
   );
-
-  const router = useRouter();
 
   useEffect(() => {
     if (state.success) {
       toast.success(`Event has been ${type === "create" ? "created" : "updated"}!`);
       setOpen(false);
-      router.refresh();
+      router.refresh(); // Triggers Server Component re-fetch
     }
   }, [state, router, type, setOpen]);
 
@@ -64,11 +66,12 @@ const EventForm = ({
     <form 
       className="flex flex-col gap-8 p-2" 
       onSubmit={handleSubmit((formData) => {
-        // Fix for the persistent ts(2554) error
-        (formAction as (data: EventSchema) => void)(formData);
+        // 3. CLEAN ACTION TRIGGER
+        // We pass the validated formData directly to the server action
+        formAction(formData);
       })}
     >
-      {/* HEADER */}
+      {/* HEADER SECTION */}
       <div className="flex items-center gap-4 mb-2">
         <div className="p-3 bg-purple-50 text-purple-600 rounded-2xl shadow-sm">
           <CalendarClock size={24} />
@@ -87,11 +90,11 @@ const EventForm = ({
         <InputField
           label="Event Title"
           name="title"
-          defaultValue={data?.title}
           register={register}
           error={errors.title}
         />
         
+        {/* SELECT FIELD WITH ICON */}
         <div className="flex flex-col gap-2">
           <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
             Target Audience
@@ -104,7 +107,7 @@ const EventForm = ({
             >
               <option value="">Whole School</option>
               {classes?.map((item: { id: number; name: string }) => (
-                <option value={item.id} key={item.id}>
+                <option value={item.id.toString()} key={item.id}>
                   {item.name}
                 </option>
               ))}
@@ -134,9 +137,13 @@ const EventForm = ({
           error={errors.endTime}
         />
 
-        {data && <input type="hidden" {...register("id")} defaultValue={data.id} />}
+        {/* HIDDEN ID FOR UPDATES */}
+        {data?.id && (
+          <input type="hidden" {...register("id")} defaultValue={data.id} />
+        )}
       </div>
 
+      {/* TEXTAREA SECTION */}
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-2 px-1">
           <AlignLeft size={14} className="text-slate-400" />
@@ -156,6 +163,7 @@ const EventForm = ({
         )}
       </div>
 
+      {/* FOOTER & BUTTONS */}
       <div className="flex flex-col gap-4 mt-2">
         {state.error && (
           <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl text-center">

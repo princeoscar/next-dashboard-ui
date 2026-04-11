@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import {prisma} from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 
+ export const runtime = "nodejs";
+
 export async function GET() {
+ 
   const { userId, sessionClaims } = await auth();
   const role = (sessionClaims?.metadata as { role?: string })?.role;
 

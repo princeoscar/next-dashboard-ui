@@ -2,7 +2,7 @@ import FormContainer from "@/components/FormContainer";
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
-import prisma from "@/lib/prisma";
+import {prisma} from "@/lib/prisma";
 import { ITEM_PER_PAGE } from "@/lib/settings";
 import { auth } from "@clerk/nextjs/server";
 import { Class, Lesson, Prisma, Subject, Teacher } from "@prisma/client";
@@ -13,12 +13,12 @@ type LessonList = Lesson & { subject: Subject } & { class: Class } & { teacher: 
 const LessonListPage = async ({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | undefined };
+  searchParams: Promise<{ [key: string]: string | undefined }>;
 }) => {
   const { sessionClaims, userId } = await auth();
   const role = (sessionClaims?.metadata as { role?: string })?.role?.toLowerCase();
 
-  const { page, ...queryParams } = searchParams;
+  const { page, ...queryParams } = await searchParams;
   const p = page ? parseInt(page) : 1;
 
   // --- 1. TYPE-SAFE QUERY BUILDING ---
@@ -83,53 +83,59 @@ const LessonListPage = async ({
     ...(role === "admin" ? [{ header: "Actions", accessor: "action" }] : []),
   ];
 
-  const renderRow = (item: LessonList) => (
-    <tr 
-      key={item.id} 
-      className="border-b border-slate-100 last:border-0 text-sm hover:bg-slate-50/50 transition-all group"
-    >
-      <td className="p-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-rubixSky/10 text-rubixSky rounded-xl group-hover:bg-rubixSky group-hover:text-white transition-all">
-            <BookOpen size={16} />
-          </div>
-          <span className="font-black text-slate-700 tracking-tight">{item.subject.name}</span>
-        </div>
-      </td>
-      <td className="p-4">
-        <div className="flex items-center gap-2 text-slate-500">
-          <Users size={14} className="text-slate-300" />
-          <span className="font-bold text-xs">{item.class.name}</span>
-        </div>
-      </td>
-      <td className="hidden md:table-cell p-4">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400">
-            <User size={12} />
-          </div>
-          <span className="text-slate-600 text-xs font-medium">
-            {item.teacher.name} {item.teacher.surname}
-          </span>
-        </div>
-      </td>
-      <td className="hidden lg:table-cell p-4">
-        <div className="flex items-center gap-2 w-fit px-3 py-1 bg-slate-50 text-slate-500 rounded-lg text-[10px] font-black uppercase tracking-widest border border-slate-100">
-          <Calendar size={12} />
-          <span className="tabular-nums">
-            {item.day} • {item.startTime.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
-          </span>
-        </div>
-      </td>
-      {role === "admin" && (
-        <td className="p-4 text-right">
-          <div className="flex items-center gap-2 justify-end">
-            <FormContainer table="lesson" type="update" data={item} />
-            <FormContainer table="lesson" type="delete" id={item.id} />
+  const renderRow = (item: LessonList) => {
+    // Ensure startTime is a Date object for formatting
+    const startTimeDate = new Date(item.startTime);
+    
+    return (
+      <tr 
+        key={item.id} 
+        className="border-b border-slate-100 last:border-0 text-sm hover:bg-slate-50/50 transition-all group"
+      >
+        <td className="p-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-rubixSky/10 text-rubixSky rounded-xl group-hover:bg-rubixSky group-hover:text-white transition-all">
+              <BookOpen size={16} />
+            </div>
+            <span className="font-black text-slate-700 tracking-tight">{item.subject.name}</span>
           </div>
         </td>
-      )}
-    </tr>
-  );
+        <td className="p-4">
+          <div className="flex items-center gap-2 text-slate-500">
+            <Users size={14} className="text-slate-300" />
+            <span className="font-bold text-xs">{item.class.name}</span>
+          </div>
+        </td>
+        <td className="hidden md:table-cell p-4">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400">
+              <User size={12} />
+            </div>
+            <span className="text-slate-600 text-xs font-medium">
+              {item.teacher.name} {item.teacher.surname}
+            </span>
+          </div>
+        </td>
+        <td className="hidden lg:table-cell p-4">
+          <div className="flex items-center gap-2 w-fit px-3 py-1 bg-slate-50 text-slate-500 rounded-lg text-[10px] font-black uppercase tracking-widest border border-slate-100">
+            <Calendar size={12} />
+            <span className="tabular-nums">
+              {/* Added a helper to handle the Enum string and Date formatting */}
+              {item.day.toString().toLowerCase()} • {startTimeDate.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
+            </span>
+          </div>
+        </td>
+        {role === "admin" && (
+          <td className="p-4 text-right">
+            <div className="flex items-center gap-2 justify-end">
+              <FormContainer table="lesson" type="update" data={item} />
+              <FormContainer table="lesson" type="delete" id={item.id} />
+            </div>
+          </td>
+        )}
+      </tr>
+    );
+  };
 
   return (
     <div className="bg-white p-8 rounded-[2.5rem] flex-1 m-4 mt-0 shadow-sm border border-slate-100">

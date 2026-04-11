@@ -1,46 +1,8 @@
-import prisma from "@/lib/prisma";
+
 import { auth } from "@clerk/nextjs/server";
 
-const EventList = async ({ dateParam }: { dateParam: string | undefined }) => {
-  const { userId, sessionClaims } = await auth();
-  const role = (sessionClaims?.metadata as { role?: string })?.role;
-
-  // 1. Precise Date Logic
-  const date = dateParam ? new Date(dateParam) : new Date();
-  
-  const startOfDay = new Date(date);
-  startOfDay.setHours(0, 0, 0, 0);
-
-  const endOfDay = new Date(date);
-  endOfDay.setHours(23, 59, 59, 999);
-
-  // 2. Fetch with Role-Based Access Control (RBAC)
-  const data = await prisma.event.findMany({
-  where: {
-    startTime: {
-      gte: startOfDay,
-      lte: endOfDay,
-    },
-    // The fix is ensuring the OR array objects are valid Event filters
-    ...(role !== "admin" && {
-      OR: [
-        { classId: null }, // General events
-        {
-          class: {
-            OR: [
-              { supervisorId: userId! },
-              { students: { some: { id: userId! } } },
-              { students: { some: { parentId: userId! } } },
-            ],
-          },
-        },
-      ],
-    }),
-  },
-  orderBy: { startTime: "asc" },
-});
-
-  // 3. High-Quality Empty State
+const EventList = ({ data }: { data: any[] }) => {
+  // The empty state logic stays here because it's about UI
   if (data.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-slate-100 rounded-xl">

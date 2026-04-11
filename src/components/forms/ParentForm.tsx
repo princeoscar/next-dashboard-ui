@@ -3,13 +3,26 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import InputField from "../InputField";
-import { Dispatch, SetStateAction, useEffect } from "react";
+import { Dispatch, SetStateAction, useActionState, useEffect } from "react";
 import { parentSchema, ParentSchema } from "@/lib/formValidationSchema";
-import { useFormState } from "react-dom";
+import { useFormStatus } from "react-dom";
 import { createParent, updateParent } from "@/lib/actions";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
-import { Contact, ShieldCheck, UserCircle, MapPin, GraduationCap } from "lucide-react";
+import { Contact, ShieldCheck, UserCircle, MapPin, GraduationCap, Mail, Lock } from "lucide-react";
+
+// Consistency check: Reuse your loading button component
+const SubmitButton = ({ type }: { type: "create" | "update" }) => {
+  const { pending } = useFormStatus();
+  return (
+    <button 
+      disabled={pending}
+      className="bg-slate-900 hover:bg-blue-600 text-white py-4 px-10 rounded-2xl font-black text-[12px] uppercase tracking-widest shadow-xl shadow-slate-200 transition-all active:scale-95 disabled:bg-slate-400 disabled:cursor-not-allowed"
+    >
+      {pending ? "Processing..." : type === "create" ? "Add Parent" : "Save Changes"}
+    </button>
+  );
+};
 
 const ParentForm = ({
   type,
@@ -31,20 +44,29 @@ const ParentForm = ({
     defaultValues: data,
   });
 
-  const [state, formAction] = useFormState<any, any>(
+  const router = useRouter();
+
+  const [state, formAction] = useActionState<any, any>(
     type === "create" ? createParent : updateParent,
     { success: false, error: false }
   );
 
-  const router = useRouter();
-
+  // ✅ MOVED ALL SUCCESS LOGIC HERE
   useEffect(() => {
     if (state.success) {
-      toast.success(`Parent record ${type === "create" ? "created" : "updated"} successfully!`);
+      toast.success(
+        type === "create" 
+          ? "Parent created! You can now assign them to a student." 
+          : "Parent updated successfully!"
+      );
       setOpen(false);
       router.refresh();
+      
+      if (type === "create") {
+        router.push("/list/students");
+      }
     }
-  }, [state, router, type, setOpen]);
+  }, [state.success, router, type, setOpen]);
 
   const { students } = relatedData || {};
 
@@ -52,57 +74,53 @@ const ParentForm = ({
     <form 
       className="flex flex-col gap-8 p-2" 
       onSubmit={handleSubmit((formData) => {
-        // Correct way to pass the ID for updates while staying type-safe
-        (formAction as (data: ParentSchema & { id?: string }) => void)({ 
+        (formAction as (data: any) => void)({ 
           ...formData, 
           id: data?.id 
         });
       })}
     >
-      {/* HEADER */}
-      <div className="flex items-center gap-4 mb-2">
-        <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl shadow-sm">
-          <Contact size={24} />
-        </div>
-        <div>
-          <h1 className="text-2xl font-black text-slate-800 tracking-tighter uppercase leading-none">
-            {type === "create" ? "New Parent" : "Edit Parent"}
-          </h1>
-          <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-1">
-            Guardian & Family Records
-          </p>
-        </div>
+      {/* HEADER SECTION */}
+      <div className="flex flex-col gap-1">
+        <h1 className="text-xl font-black text-slate-800 uppercase tracking-tighter">
+          {type === "create" ? "Register Parent" : "Edit Parent Profile"}
+        </h1>
+        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+          {type === "create" ? "Create a new guardian account" : `Modifying records for ${data?.name}`}
+        </p>
       </div>
 
-      {/* AUTH SECTION */}
+      {/* AUTHENTICATION SECTION */}
       <div className="flex flex-col gap-4">
         <div className="flex items-center gap-2 px-1">
           <ShieldCheck size={14} className="text-slate-400" />
           <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-            Authentication Information
+            Authentication
           </span>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-slate-50/50 p-6 rounded-[2rem] border border-slate-100">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-slate-50/50 p-6 rounded-[2rem] border border-slate-100 shadow-inner">
           <InputField
             label="Username"
             name="username"
             defaultValue={data?.username}
             register={register}
-            error={errors.username}
+            error={errors?.username}
           />
           <InputField
             label="Email Address"
             name="email"
+            type="email"
             defaultValue={data?.email}
             register={register}
-            error={errors.email}
+            error={errors?.email}
           />
           <InputField
             label="Password"
             name="password"
             type="password"
+            defaultValue={data?.password}
             register={register}
-            error={errors.password}
+            error={errors?.password}
           />
         </div>
       </div>
@@ -116,34 +134,10 @@ const ParentForm = ({
           </span>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50/50 p-6 rounded-[2rem] border border-slate-100 shadow-inner">
-          <InputField
-            label="First Name"
-            name="name"
-            defaultValue={data?.name}
-            register={register}
-            error={errors.name}
-          />
-          <InputField
-            label="Last Name"
-            name="surname"
-            defaultValue={data?.surname}
-            register={register}
-            error={errors.surname}
-          />
-          <InputField
-            label="Contact Phone"
-            name="phone"
-            defaultValue={data?.phone}
-            register={register}
-            error={errors.phone}
-          />
-          <InputField
-            label="Residential Address"
-            name="address"
-            defaultValue={data?.address}
-            register={register}
-            error={errors.address}
-          />
+          <InputField label="First Name" name="name" defaultValue={data?.name} register={register} error={errors.name} />
+          <InputField label="Last Name" name="surname" defaultValue={data?.surname} register={register} error={errors.surname} />
+          <InputField label="Contact Phone" name="phone" defaultValue={data?.phone} register={register} error={errors.phone} />
+          <InputField label="Residential Address" name="address" defaultValue={data?.address} register={register} error={errors.address} />
 
           {/* STUDENT LINK SELECT */}
           <div className="flex flex-col gap-2 md:col-span-2">
@@ -166,9 +160,7 @@ const ParentForm = ({
               <GraduationCap className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none group-focus-within:text-blue-500 transition-colors" size={18} />
             </div>
             {errors.studentId?.message && (
-              <p className="text-[10px] text-rose-500 font-bold uppercase tracking-wide ml-1">
-                {errors.studentId.message.toString()}
-              </p>
+              <p className="text-xs text-red-400">{errors.studentId.message.toString()}</p>
             )}
           </div>
         </div>
@@ -192,9 +184,7 @@ const ParentForm = ({
             </p>
           </div>
 
-          <button className="bg-slate-900 hover:bg-blue-600 text-white py-4 px-10 rounded-2xl font-black text-[12px] uppercase tracking-widest shadow-xl shadow-slate-200 transition-all active:scale-95 self-end">
-            {type === "create" ? "Add Parent" : "Save Changes"}
-          </button>
+          <SubmitButton type={type} />
         </div>
       </div>
     </form>

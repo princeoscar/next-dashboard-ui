@@ -1,4 +1,4 @@
-import prisma from "@/lib/prisma";
+import {prisma} from "@/lib/prisma";
 import { CheckCircle2, AlertCircle } from "lucide-react";
 
 const TeacherAttendanceCard = async ({ id }: { id: string }) => {
@@ -14,7 +14,7 @@ const TeacherAttendanceCard = async ({ id }: { id: string }) => {
   const conductedLessonsCount = await prisma.lesson.count({
     where: {
       teacherId: id,
-      attendance: {
+      attendances: {
         some: {
           date: { gte: startOfYear },
         },

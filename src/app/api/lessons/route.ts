@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
-import { ITEM_PER_PAGE } from "@/lib/settings";
+import {prisma} from "@/lib/prisma";
+
 import { auth } from "@clerk/nextjs/server";
+import { ITEM_PER_PAGE } from "@/lib/settings";
 
 export async function GET(req: NextRequest) {
   const { sessionClaims } = await auth();

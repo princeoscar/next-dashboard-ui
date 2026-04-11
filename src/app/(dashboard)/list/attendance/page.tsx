@@ -2,32 +2,31 @@ import FormContainer from "@/components/FormContainer";
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
-import prisma from "@/lib/prisma";
+import {prisma} from "@/lib/prisma";
 import { ITEM_PER_PAGE } from "@/lib/settings";
 import { auth } from "@clerk/nextjs/server";
 import { Attendance, Student, Lesson, Class, Prisma } from "@prisma/client";
 import { UserCheck, Calendar } from "lucide-react";
 
 type AttendanceList = Attendance & {
-  student: Student;
+  student: { name: string; surname: string };
   lesson: Lesson & { class: Class };
 };
 
 const AttendanceListPage = async ({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | undefined };
+  searchParams: Promise<{ [key: string]: string | undefined }>;
 }) => {
   const { sessionClaims, userId } = await auth();
   const role = (sessionClaims?.metadata as { role?: string })?.role?.toLowerCase();
 
-  const { page, ...queryParams } = searchParams;
+  const { page, ...queryParams } = await searchParams;
   const p = page ? parseInt(page) : 1;
 
-  // --- 1. TYPED QUERY BUILDING ---
   const query: Prisma.AttendanceWhereInput = {};
 
-  // --- 2. ROLE-BASED VISIBILITY ---
+  // --- ROLE-BASED VISIBILITY ---
   switch (role) {
     case "admin":
       break;
@@ -38,22 +37,24 @@ const AttendanceListPage = async ({
       query.studentId = userId!;
       break;
     case "parent":
-      query.student = { parentId: userId! };
+      // Adjusting to ensure we find attendance for ANY of the parent's children
+      query.student = { parentId: userId! }; 
       break;
     default:
-      query.id = -1; // Secure fallback: show nothing if role is undefined
+      query.id = -1; 
       break;
   }
 
-  // --- 3. SEARCH LOGIC ---
+  // --- SEARCH LOGIC ---
   if (queryParams.search) {
     query.OR = [
       { student: { name: { contains: queryParams.search, mode: "insensitive" } } },
       { student: { surname: { contains: queryParams.search, mode: "insensitive" } } },
+      { lesson: { name: { contains: queryParams.search, mode: "insensitive" } } },
     ];
   }
 
-  // --- 4. DATA FETCHING ---
+  // --- DATA FETCHING ---
   const [data, count] = await prisma.$transaction([
     prisma.attendance.findMany({
       where: query,
@@ -88,7 +89,7 @@ const AttendanceListPage = async ({
     >
       <td className="p-4">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-rubixSky/10 group-hover:text-rubixSky transition-colors">
+          <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors">
             <UserCheck size={16} />
           </div>
           <span className="font-bold text-slate-700">
@@ -99,7 +100,8 @@ const AttendanceListPage = async ({
       <td className="hidden sm:table-cell p-4 text-slate-500 font-medium">
         <div className="flex items-center gap-2">
           <Calendar size={14} className="text-slate-300" />
-          {new Intl.DateTimeFormat("en-GB", { day: '2-digit', month: 'short' }).format(item.date)}
+          {/* Using a reliable formatting method */}
+          {new Date(item.date).toLocaleDateString("en-GB", { day: '2-digit', month: 'short' })}
         </div>
       </td>
       <td className="p-4">
@@ -119,7 +121,7 @@ const AttendanceListPage = async ({
         </div>
       </td>
       {(role === "admin" || role === "teacher") && (
-        <td className="p-4 text-right">
+        <td className="p-4">
           <div className="flex items-center gap-2 justify-end">
             <FormContainer table="attendance" type="update" data={item} />
             <FormContainer table="attendance" type="delete" id={item.id} />

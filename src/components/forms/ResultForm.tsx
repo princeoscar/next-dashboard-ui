@@ -3,11 +3,10 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import InputField from "../InputField";
-import { Dispatch, SetStateAction, useEffect } from "react";
+import { Dispatch, SetStateAction, useActionState, useEffect } from "react";
 import { resultSchema, ResultSchema } from "@/lib/formValidationSchema";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
-import { useFormState } from "react-dom";
 import { createResult, updateResult } from "@/lib/actions";
 import { Trophy, User, FileText, ClipboardCheck, Info } from "lucide-react";
 
@@ -31,7 +30,7 @@ const ResultForm = ({
     defaultValues: data,
   });
 
-  const [state, formAction] = useFormState<any, any>(
+  const [state, formAction] = useActionState(
     type === "create" ? createResult : updateResult,
     { success: false, error: false }
   );
@@ -48,14 +47,13 @@ const ResultForm = ({
 
   const { students, exams, assignments } = relatedData || {};
 
+  const onSubmit = handleSubmit((formData) => {
+    // We cast to any to bridge the gap between Zod's output and useActionState's expectations
+    formAction(formData as any);
+  });
+
   return (
-    <form
-      className="flex flex-col gap-8 p-2"
-      onSubmit={handleSubmit((formData) => {
-        // Essential cast to resolve ts(2554)
-        (formAction as (data: ResultSchema) => void)(formData);
-      })}
-    >
+    <form className="flex flex-col gap-8 p-2" onSubmit={onSubmit}>
       {/* HEADER */}
       <div className="flex items-center gap-4 mb-2">
         <div className="p-3 bg-amber-50 text-amber-600 rounded-2xl shadow-sm">
@@ -125,7 +123,7 @@ const ResultForm = ({
               <option value="">None</option>
               {exams?.map((e: any) => (
                 <option value={e.id} key={e.id}>
-                  {`${e.title} (${e.lesson.subject.name})`}
+                  {e.title} {e.lesson?.subject?.name ? `(${e.lesson.subject.name})` : ""}
                 </option>
               ))}
             </select>
@@ -149,7 +147,7 @@ const ResultForm = ({
               <option value="">None</option>
               {assignments?.map((a: any) => (
                 <option value={a.id} key={a.id}>
-                  {`${a.title} (${a.lesson.subject.name})`}
+                  {a.title} {a.lesson?.subject?.name ? `(${a.lesson.subject.name})` : ""}
                 </option>
               ))}
             </select>
@@ -166,7 +164,7 @@ const ResultForm = ({
         <div className="flex items-start gap-2 bg-blue-50/50 p-4 rounded-2xl border border-blue-100">
           <Info size={16} className="text-blue-500 mt-0.5 shrink-0" />
           <p className="text-[10px] font-bold text-blue-600 uppercase tracking-tight leading-relaxed">
-            Note: A result must be linked to either an Exam or an Assignment. If both are selected, the server logic will prioritize based on your schema rules.
+            Note: A result must be linked to either an Exam or an Assignment.
           </p>
         </div>
 

@@ -1,7 +1,7 @@
 import Announcements from "@/components/Announcements";
 import BigCalendarContainer from "@/components/BigCalendarContainer";
 import EventCalendar from "@/components/EventCalendar";
-import prisma from "@/lib/prisma";
+import {prisma} from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { GraduationCap, Calendar as CalendarIcon, Info } from "lucide-react";
 
@@ -86,7 +86,7 @@ const StudentPage = async () => {
             <div className="w-1.5 h-5 bg-rubixPurple rounded-full" />
             <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest">Bulletins</h2>
           </div>
-          <Announcements />
+          <Announcements data={[]}/>
         </div>
 
       </div>

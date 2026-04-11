@@ -1,4 +1,4 @@
-import prisma from "@/lib/prisma";
+import {prisma} from "@/lib/prisma";
 import BigCalendar from "./BigCalendar";
 import { adjustScheduleToCurrentWeek } from "@/lib/utils";
 import { CalendarOff } from "lucide-react";

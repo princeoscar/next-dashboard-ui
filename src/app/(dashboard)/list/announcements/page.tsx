@@ -2,7 +2,7 @@ import FormContainer from "@/components/FormContainer";
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
-import prisma from "@/lib/prisma";
+import prisma from "@/lib/prisma"; // Changed to default import to match your standard
 import { ITEM_PER_PAGE } from "@/lib/settings";
 import { auth } from "@clerk/nextjs/server";
 import { Announcement, Class, Prisma } from "@prisma/client";
@@ -18,23 +18,24 @@ const AnnouncementListPage = async ({
   const { sessionClaims, userId } = await auth();
   const role = (sessionClaims?.metadata as { role?: string })?.role?.toLowerCase();
 
-  const { page, ...queryParams } = searchParams;
-  const p = page ? parseInt(page) : 1;
+  const p = searchParams.page ? parseInt(searchParams.page) : 1;
 
   // --- 1. SEARCH & ROLE FILTERING LOGIC ---
   const query: Prisma.AnnouncementWhereInput = {};
 
-  if (queryParams.search) {
-    query.title = { contains: queryParams.search, mode: "insensitive" };
+  if (searchParams.search) {
+    query.title = { contains: searchParams.search, mode: "insensitive" };
   }
 
   // ROLE-BASED VISIBILITY: 
-  // Non-admins only see Global announcements (classId: null) OR those for their specific class.
   if (role !== "admin") {
+    // If no userId, return empty or global only to be safe
+    const currentUserId = userId || ""; 
+
     const roleConditions = {
-      teacher: { lessons: { some: { teacherId: userId! } } },
-      student: { students: { some: { id: userId! } } },
-      parent: { students: { some: { parentId: userId! } } },
+      teacher: { lessons: { some: { teacherId: currentUserId } } },
+      student: { students: { some: { id: currentUserId } } },
+      parent: { students: { some: { parentId: currentUserId } } },
     };
 
     query.OR = [
@@ -72,16 +73,21 @@ const AnnouncementListPage = async ({
           <div className="p-2 bg-rubixPurple/10 text-rubixPurple rounded-lg group-hover:bg-rubixPurple group-hover:text-white transition-all">
             <Megaphone size={16} />
           </div>
-          <span className="font-bold text-slate-700">{item.title}</span>
+          <div>
+            <span className="font-bold text-slate-700 block">{item.title}</span>
+            <span className="text-[10px] text-slate-400 md:hidden block mt-1">
+              {item.class ? item.class.name : "Global"}
+            </span>
+          </div>
         </div>
       </td>
       <td className="hidden md:table-cell p-4">
         {item.class ? (
-          <div className="flex items-center gap-2 w-fit px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-[10px] font-black uppercase tracking-widest">
+          <div className="flex items-center gap-2 w-fit px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-slate-200">
             <Users size={12} /> {item.class.name}
           </div>
         ) : (
-          <div className="flex items-center gap-2 w-fit px-3 py-1 bg-rubixSky/10 text-rubixSky rounded-full text-[10px] font-black uppercase tracking-widest border border-rubixSky/10">
+          <div className="flex items-center gap-2 w-fit px-3 py-1 bg-rubixSky/10 text-rubixSky rounded-full text-[10px] font-black uppercase tracking-widest border border-rubixSky/20 shadow-sm">
             <Globe size={12} /> Global
           </div>
         )}
@@ -91,7 +97,7 @@ const AnnouncementListPage = async ({
           day: '2-digit', 
           month: 'short', 
           year: 'numeric' 
-        }).format(item.date)}
+        }).format(new Date(item.date))}
       </td>
       {role === "admin" && (
         <td className="p-4 text-right">
@@ -105,11 +111,11 @@ const AnnouncementListPage = async ({
   );
 
   return (
-    <div className="bg-white p-6 rounded-[2rem] flex-1 m-4 mt-0 shadow-sm border border-slate-100">
+    <div className="bg-white p-6 rounded-[2rem] flex-1 m-4 mt-0 shadow-sm border border-slate-100 min-h-[600px]">
       <div className="flex flex-col md:flex-row items-center justify-between mb-8 gap-4">
         <div>
           <h1 className="text-2xl font-black text-slate-800 tracking-tighter uppercase">Board Updates</h1>
-          <p className="text-xs text-slate-400 font-bold tracking-widest uppercase mt-1">
+          <p className="text-[10px] text-slate-400 font-black tracking-widest uppercase mt-1">
             {role === "admin" ? "Manage school-wide communications" : "View latest school notices"}
           </p>
         </div>
@@ -117,7 +123,7 @@ const AnnouncementListPage = async ({
           <TableSearch />
           <div className="flex items-center gap-4 self-end">
             {role === "admin" && (
-              <div className="p-1 bg-slate-900 rounded-2xl shadow-lg shadow-slate-200">
+              <div className="p-1 bg-slate-900 rounded-2xl shadow-xl shadow-slate-200">
                 <FormContainer table="announcement" type="create" />
               </div>
             )}
@@ -125,11 +131,11 @@ const AnnouncementListPage = async ({
         </div>
       </div>
 
-      <div className="bg-white rounded-3xl border border-slate-50 overflow-hidden">
+      <div className="bg-white rounded-3xl border border-slate-50 overflow-hidden shadow-inner">
         <Table columns={columns} renderRow={renderRow} data={data} />
       </div>
 
-      <div className="mt-6 border-t border-slate-50 pt-6">
+      <div className="mt-8 border-t border-slate-50 pt-6">
         <Pagination page={p} count={count} />
       </div>
     </div>

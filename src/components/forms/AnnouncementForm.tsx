@@ -4,8 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import InputField from "../InputField";
 import { announcementSchema, AnnouncementSchema } from "@/lib/formValidationSchema";
-import { Dispatch, SetStateAction, useEffect } from "react";
-import { useFormState } from "react-dom";
+import { Dispatch, SetStateAction, useEffect, useActionState } from "react"; // Updated Hook
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { createAnnouncement, updateAnnouncement } from "@/lib/actions";
@@ -28,10 +27,11 @@ const AnnouncementForm = ({
     formState: { errors },
   } = useForm<AnnouncementSchema>({
     resolver: zodResolver(announcementSchema) as any,
+    defaultValues: data,
   });
 
-  // --- SERVER ACTION STATE ---
-  const [state, formAction] = useFormState(
+  // Updated to useActionState and added isPending
+  const [state, formAction, isPending] = useActionState(
     type === "create" ? createAnnouncement : updateAnnouncement,
     { success: false, error: false }
   );
@@ -41,7 +41,7 @@ const AnnouncementForm = ({
   useEffect(() => {
     if (state.success) {
       toast.success(
-        `Success: Bulletin ${type === "create" ? "published" : "updated"} successfully!`
+        `Announcement ${type === "create" ? "published" : "updated"} successfully!`
       );
       setOpen(false);
       router.refresh();
@@ -50,14 +50,20 @@ const AnnouncementForm = ({
 
   const { classes } = relatedData || {};
 
+  const onSubmit = handleSubmit((formData) => {
+    const payload = {
+      ...formData,
+      id: data?.id ? data.id : undefined, // Prisma handles ID types internally, but keeping it clean
+      classId: formData.classId ? Number(formData.classId) : null,
+    };
+    formAction(payload as any);
+  });
+
   return (
-    <form 
-      className="flex flex-col gap-8 p-2" 
-      onSubmit={handleSubmit((formData) => formAction(formData))}
-    >
-      {/* HEADER */}
+    <form className="flex flex-col gap-8 p-2" onSubmit={onSubmit}>
+      {/* HEADER SECTION */}
       <div className="flex items-center gap-4 mb-2">
-        <div className="p-3 bg-rubixSky/10 text-rubixSky rounded-2xl">
+        <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl">
           <Megaphone size={24} />
         </div>
         <div>
@@ -70,6 +76,7 @@ const AnnouncementForm = ({
         </div>
       </div>
 
+      {/* INPUTS SECTION */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <InputField
           label="Title"
@@ -79,7 +86,7 @@ const AnnouncementForm = ({
           error={errors.title}
           placeholder="e.g. Science Fair 2026"
         />
-        
+
         <InputField
           label="Display Date"
           name="date"
@@ -89,16 +96,12 @@ const AnnouncementForm = ({
           error={errors.date}
         />
 
-        {/* Hidden ID for updates */}
-        {data && <input type="hidden" {...register("id")} defaultValue={data.id} />}
-
-        {/* TARGET AUDIENCE SELECT */}
         <div className="flex flex-col gap-2">
           <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
             Target Audience
           </label>
           <select
-            className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 text-sm font-medium focus:ring-4 focus:ring-rubixSky/10 focus:border-rubixSky outline-none transition-all appearance-none"
+            className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 text-sm font-medium focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all appearance-none"
             {...register("classId")}
             defaultValue={data?.classId || ""}
           >
@@ -118,36 +121,37 @@ const AnnouncementForm = ({
         </div>
       </div>
 
-      {/* DESCRIPTION TEXTAREA */}
       <div className="flex flex-col gap-2">
         <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
           Detailed Message
         </label>
         <textarea
           {...register("description")}
-          className="w-full p-5 rounded-[1.5rem] bg-slate-50 border border-slate-200 text-sm font-medium h-40 outline-none focus:ring-4 focus:ring-rubixSky/10 focus:border-rubixSky transition-all resize-none placeholder:text-slate-300"
+          className="w-full p-5 rounded-[1.5rem] bg-slate-50 border border-slate-200 text-sm font-medium h-40 outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all resize-none placeholder:text-slate-300"
           defaultValue={data?.description}
-          placeholder="Describe the details of the event or announcement..."
+          placeholder="Describe the details..."
         />
-        {errors.description?.message && (
+        {errors.description && (
           <p className="text-[10px] text-rose-500 font-bold uppercase tracking-wide ml-1">
-            {errors.description.message.toString()}
+            {errors.description.message?.toString()}
           </p>
         )}
       </div>
 
-      {/* ERROR MESSAGE */}
       {state.error && (
-        <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl animate-pulse">
-          <p className="text-rose-600 text-[10px] font-black uppercase tracking-widest text-center">
-            Critical Error: Unable to synchronize with database.
-          </p>
-        </div>
+        <p className="text-rose-600 text-[10px] font-black uppercase tracking-widest text-center">
+          Error: Unable to synchronize with database.
+        </p>
       )}
 
-      {/* SUBMIT BUTTON */}
-      <button className="group relative flex items-center justify-center gap-3 bg-slate-900 hover:bg-rubixSky text-white py-4 px-8 rounded-2xl font-black text-[12px] uppercase tracking-widest shadow-xl shadow-slate-200 transition-all active:scale-95 self-end">
-        {type === "create" ? "Publish Announcement" : "Commit Changes"}
+      <button
+        type="submit"
+        disabled={isPending} // Disable button during submission
+        className={`bg-slate-900 hover:bg-blue-600 text-white py-4 px-8 rounded-2xl font-black text-[12px] uppercase tracking-widest transition-all active:scale-95 self-end ${
+          isPending ? "opacity-50 cursor-not-allowed" : ""
+        }`}
+      >
+        {isPending ? "Syncing..." : type === "create" ? "Publish" : "Save Changes"}
       </button>
     </form>
   );
