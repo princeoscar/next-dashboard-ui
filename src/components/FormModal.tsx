@@ -93,20 +93,22 @@ const FormModal = ({ table, type, data, id, relatedData }: FormContainerProps & 
     const [state, formAction] = useActionState(deleteActionMap[table], {
       success: false,
       error: false,
+      message: "",
     });
 
     const router = useRouter();
 
-    useEffect(() => {
-      if (state.success) {
-        toast(`${table} has been deleted!`);
-        setOpen(false);
-        router.refresh();
-      }
-      if (state.error) {
-        toast.error("Something went wrong!");
-      }
-    }, [state, router]);
+   useEffect(() => {
+  if (state.success) {
+    toast(`${table} has been ${type === "create" ? "created" : "updated"}!`);
+    setOpen(false);
+    router.refresh();
+  }
+  if (state.error) {
+    // Show the specific message from the server if it exists
+    toast.error(state.message || "Something went wrong!");
+  }
+}, [state, router, type, table]);
 
     return type === "delete" && id ? (
       <form action={formAction} className="p-4 flex flex-col gap-4">

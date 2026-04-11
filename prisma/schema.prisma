@@ -52,7 +52,6 @@ model Teacher {
   birthday  DateTime
   classes   Class[]
   lessons   Lesson[]
-  user      User      @relation(fields: [id], references: [id])
   subjects  Subject[] @relation("SubjectToTeacher")
 
   @@index([name])
@@ -199,7 +198,7 @@ model User {
   img              String?
   receivedMessages Message[] @relation("ReceivedMessages")
   sentMessages     Message[] @relation("SentMessages")
-  teacherProfile   Teacher?
+  
 }
 
 model Income {

@@ -17,6 +17,7 @@ import {
 } from "./formValidationSchema";
 import prisma from "./prisma";
 import { auth, clerkClient } from "@clerk/nextjs/server";
+import { isClerkAPIResponseError } from "@clerk/shared/error";
 
 type CurrentState = { success: boolean; error: boolean; message?: string };
 
@@ -196,17 +197,21 @@ export const deleteResult = async (
 export const createTeacher = async (currentState: CurrentState, data: TeacherSchema) => {
   try {
     const client = await clerkClient();
+    
+    // 1. Create User in Clerk
     const user = await client.users.createUser({
       username: data.username,
       password: data.password,
       firstName: data.name,
       lastName: data.surname,
+      emailAddress: data.email ? [data.email] : [],
       publicMetadata: { role: "teacher" },
     });
 
+    // 2. Create Teacher in Prisma
     await prisma.teacher.create({
       data: {
-        id: user.id,
+        id: user.id, // Must match the Clerk ID
         username: data.username,
         name: data.name,
         surname: data.surname,
@@ -217,16 +222,38 @@ export const createTeacher = async (currentState: CurrentState, data: TeacherSch
         bloodType: data.bloodType,
         sex: data.sex,
         birthday: new Date(data.birthday),
+        // CRITICAL: Ensure these Subject IDs actually exist in your DB!
         subjects: {
           connect: data.subjects?.map((id) => ({ id: Number(id) })) || [],
         },
       },
     });
+
     revalidatePath("/list/teachers");
     return { success: true, error: false };
-  } catch (err) {
-    console.error(err);
-    return { success: false, error: true };
+
+  } catch (err: any) {
+    console.error("Teacher Creation Error:", err);
+
+    // Handle Clerk Specific Errors (Username/Email taken)
+    if (isClerkAPIResponseError(err)) {
+      return { 
+        success: false, 
+        error: true, 
+        message: err.errors[0]?.message || "Account creation failed." 
+      };
+    }
+
+    // Handle Prisma P2003 (The Foreign Key Error)
+    if (err.code === 'P2003') {
+      return { 
+        success: false, 
+        error: true, 
+        message: "Database Error: A related record (like a Subject or User) was not found." 
+      };
+    }
+
+    return { success: false, error: true, message: "An unexpected error occurred." };
   }
 };
 
