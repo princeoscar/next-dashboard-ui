@@ -125,6 +125,72 @@ export const deleteClass = async (currentState: CurrentState, data: FormData) =>
   }
 };
 
+
+export const createResult = async (
+  currentState: any,
+  data: any // You can replace 'any' with your ResultSchema later
+) => {
+  try {
+    await prisma.result.create({
+      data: {
+        score: Number(data.score),
+        studentId: data.studentId,
+        // Connect to either assignment or exam based on your schema
+        ...(data.assignmentId && { assignmentId: Number(data.assignmentId) }),
+        ...(data.examId && { examId: Number(data.examId) }),
+      },
+    });
+
+    revalidatePath("/list/results");
+    return { success: true, error: false };
+  } catch (err) {
+    console.error(err);
+    return { success: false, error: true };
+  }
+};
+
+export const updateResult = async (
+  currentState: any,
+  data: any
+) => {
+  if (!data.id) return { success: false, error: true };
+
+  try {
+    await prisma.result.update({
+      where: { id: Number(data.id) },
+      data: {
+        score: Number(data.score),
+        studentId: data.studentId,
+        ...(data.assignmentId && { assignmentId: Number(data.assignmentId) }),
+        ...(data.examId && { examId: Number(data.examId) }),
+      },
+    });
+
+    revalidatePath("/list/results");
+    return { success: true, error: false };
+  } catch (err) {
+    console.error(err);
+    return { success: false, error: true };
+  }
+};
+
+export const deleteResult = async (
+  currentState: any,
+  data: { id: number }
+) => {
+  try {
+    await prisma.result.delete({
+      where: { id: Number(data.id) },
+    });
+
+    revalidatePath("/list/results");
+    return { success: true, error: false };
+  } catch (err) {
+    console.error(err);
+    return { success: false, error: true };
+  }
+};
+
 // ---------------- TEACHER ----------------
 
 export const createTeacher = async (currentState: CurrentState, data: TeacherSchema) => {

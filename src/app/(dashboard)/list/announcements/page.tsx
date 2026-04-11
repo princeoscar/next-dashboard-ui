@@ -13,18 +13,22 @@ type AnnouncementList = Announcement & { class: Class | null };
 const AnnouncementListPage = async ({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | undefined };
+  searchParams: Promise<{ [key: string]: string | undefined }>;
 }) => {
+
+     const params = await searchParams;
+
+
   const { sessionClaims, userId } = await auth();
   const role = (sessionClaims?.metadata as { role?: string })?.role?.toLowerCase();
 
-  const p = searchParams.page ? parseInt(searchParams.page) : 1;
+  const p = params.page ? parseInt(params.page) : 1;
 
   // --- 1. SEARCH & ROLE FILTERING LOGIC ---
   const query: Prisma.AnnouncementWhereInput = {};
 
-  if (searchParams.search) {
-    query.title = { contains: searchParams.search, mode: "insensitive" };
+  if (params.search) {
+    query.title = { contains: params.search, mode: "insensitive" };
   }
 
   // ROLE-BASED VISIBILITY: 
