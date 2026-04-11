@@ -789,6 +789,50 @@ export const saveBulkResultsAction = async (examId: number, formData: FormData) 
   }
 };
 
+export const createAssignment = async (currentState: any, data: any) => {
+  try {
+    await prisma.assignment.create({
+      data: {
+        title: data.title,
+        startDate: new Date(data.startDate),
+        dueDate: new Date(data.endDate),
+        lessonId: Number(data.lessonId),
+      },
+    });
+    revalidatePath("/list/assignments");
+    return { success: true, error: false };
+  } catch (err) {
+    return { success: false, error: true };
+  }
+};
+
+export const updateAssignment = async (currentState: any, data: any) => {
+  try {
+    await prisma.assignment.update({
+      where: { id: Number(data.id) },
+      data: {
+        title: data.title,
+        startDate: new Date(data.startDate),
+        endDate: new Date(data.endDate),
+        lessonId: Number(data.lessonId),
+      },
+    });
+    revalidatePath("/list/assignments");
+    return { success: true, error: false };
+  } catch (err) {
+    return { success: false, error: true };
+  }
+};
+
+export const deleteAssignment = async (currentState: any, data: { id: number }) => {
+  try {
+    await prisma.assignment.delete({ where: { id: Number(data.id) } });
+    revalidatePath("/list/assignments");
+    return { success: true, error: false };
+  } catch (err) {
+    return { success: false, error: true };
+  }
+};
 
 
 // (Assignment and Result standard actions would follow the same pattern)

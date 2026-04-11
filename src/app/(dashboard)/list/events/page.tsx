@@ -11,20 +11,22 @@ import { Prisma } from "@prisma/client";
 const EventListPage = async ({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | undefined };
+  searchParams: Promise<{ [key: string]: string | undefined }>;
 }) => {
+
+  const params = await searchParams;
   // 1. Get Auth and Role on the Server
   const { sessionClaims } = await auth();
   const role = (sessionClaims?.metadata as { role?: string })?.role;
   const currentRole = role?.toLowerCase();
 
   // 2. Parse Pagination
-  const p = searchParams.page ? parseInt(searchParams.page) : 1;
+  const p = params.page ? parseInt(params.page) : 1;
 
   // 3. Handle Search and Filtering
   const query: Prisma.EventWhereInput = {};
-  if (searchParams.search) {
-    query.title = { contains: searchParams.search, mode: "insensitive" };
+  if (params.search) {
+    query.title = { contains: params.search, mode: "insensitive" };
   }
 
   // 4. Fetch Data directly with Prisma
