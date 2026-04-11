@@ -133,17 +133,18 @@ const StudentListPage = async ({
     }
   }
 
-  const [data, count] = await prisma.$transaction([
-    prisma.student.findMany({
-      where: query,
-      include: {
-        class: true,
-      },
-      take: ITEM_PER_PAGE,
-      skip: ITEM_PER_PAGE * (p - 1),
-    }),
-    prisma.student.count({ where: query }),
-  ]);
+  const [data, count] = await Promise.all([
+  prisma.student.findMany({
+    where: query,
+    include: {// Optimization: Only select what's needed
+      class: { select: { id: true, name: true } },
+    },
+    take: ITEM_PER_PAGE,
+    skip: ITEM_PER_PAGE * (p - 1),
+    orderBy: { name: "asc" },
+  }),
+  prisma.student.count({ where: query }),
+]);
 
   return (
     <div className="bg-white p-4 rounded-md flex-1 m-4 mt-0">

@@ -33,6 +33,8 @@ model Student {
   class       Class?       @relation(fields: [classId], references: [id])
   grade       Grade        @relation(fields: [gradeId], references: [id])
   parent      Parent?      @relation(fields: [parentId], references: [id])
+
+  @@index([name])
 }
 
 model Teacher {
@@ -52,6 +54,8 @@ model Teacher {
   lessons   Lesson[]
   user      User      @relation(fields: [id], references: [id])
   subjects  Subject[] @relation("SubjectToTeacher")
+
+  @@index([name])
 }
 
 model Parent {

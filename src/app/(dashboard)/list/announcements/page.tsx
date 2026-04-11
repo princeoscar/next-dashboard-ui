@@ -51,16 +51,18 @@ const AnnouncementListPage = async ({
   }
 
   // --- 2. DATA FETCHING ---
-  const [data, count] = await prisma.$transaction([
-    prisma.announcement.findMany({
-      where: query,
-      include: { class: true },
-      take: ITEM_PER_PAGE,
-      skip: ITEM_PER_PAGE * (p - 1),
-      orderBy: { date: "desc" },
-    }),
-    prisma.announcement.count({ where: query }),
-  ]);
+  const [data, count] = await Promise.all([
+  prisma.announcement.findMany({
+    where: query,
+    include: {
+      class: { select: { id: true, name: true } },
+    },
+    take: ITEM_PER_PAGE,
+    skip: ITEM_PER_PAGE * (p - 1),
+    orderBy: { date: "asc" },
+  }),
+  prisma.announcement.count({ where: query }),
+]);
 
   // --- 3. TABLE CONFIGURATION ---
   const columns = [

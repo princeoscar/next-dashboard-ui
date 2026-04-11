@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import InputField from "../InputField";
 import Image from "next/image";
-import { Dispatch, SetStateAction, useEffect, useState, useActionState } from "react"; // ✅ useActionState
+import { Dispatch, SetStateAction, useEffect, useState, useActionState, startTransition } from "react"; // ✅ useActionState
 import { createTeacher, updateTeacher } from "@/lib/actions";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
@@ -41,9 +41,11 @@ const TeacherForm = ({
 
   // ✅ 2. Payload Preparation
   const onSubmit = handleSubmit((formData) => {
-    // We explicitly pass the Cloudinary image URL and the raw form data
+  // Wrap the call in startTransition to satisfy the useActionState requirement
+  startTransition(() => {
     formAction({ ...formData, img: img?.secure_url });
   });
+});
 
   useEffect(() => {
     if (state.success) {

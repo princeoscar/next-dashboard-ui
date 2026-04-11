@@ -88,21 +88,19 @@ const TeacherListPage = async ({
     }
   }
 
-  const [data, count] = await prisma.$transaction(async (tx) => {
-  const teachers = await tx.teacher.findMany({
+  const [data, count] = await Promise.all([
+  prisma.teacher.findMany({
     where: query,
-    include: { subjects: true, classes: true },
+    include: {
+      subjects: { select: { id: true, name: true } }, // Optimization: Only select what's needed
+      classes: { select: { id: true, name: true } },
+    },
     take: ITEM_PER_PAGE,
     skip: ITEM_PER_PAGE * (p - 1),
-  });
-
-  const totalCount = await tx.teacher.count({ where: query });
-
-  return [teachers, totalCount];
-}, {
-  timeout: 10000, // This syntax should now be accepted
-});
-
+    orderBy: { name: "asc" },
+  }),
+  prisma.teacher.count({ where: query }),
+]);
 
   return (
     <div className="bg-white p-4 rounded-md flex-1 m-4 mt-0">
