@@ -3,12 +3,16 @@ import { notFound } from "next/navigation";
 import { saveBulkResultsAction } from "@/lib/actions";
 import BulkResultForm from "@/components/forms/BulkResultForm";
 
-const BulkEntryPage = async ({ searchParams }: { searchParams: { examId: string } }) => {
-  const { examId } = await searchParams;
+const BulkEntryPage = async ({
+   searchParams, 
+  }: {
+     searchParams: Promise<{ examId: string }>
+     }) => {
+      const params = await searchParams;
 
-  if (!examId || isNaN(Number(examId))) {
-    return <div className="p-8 text-slate-500 italic">Invalid Exam Selection. Please return to the exam list.</div>;
-  }
+  const examId = params.examId;
+
+ if (!examId) return <div>No Exam ID provided</div>;
 
   const exam = await prisma.exam.findUnique({
     where: { id: parseInt(examId) },

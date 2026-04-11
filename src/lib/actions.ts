@@ -834,5 +834,25 @@ export const deleteAssignment = async (currentState: any, data: { id: number }) 
   }
 };
 
+export const sendReply = async (currentState: any, data: any) => {
+  try {
+    await prisma.message.create({
+      data: {
+        content: data.content,
+        senderId: data.senderId,
+        receiverId: data.receiverId,
+        // If your schema uses a parentMessageId to link replies:
+        ...(data.parentId && { parentId: Number(data.parentId) }),
+      },
+    });
+
+    revalidatePath("/list/messages");
+    return { success: true, error: false };
+  } catch (err) {
+    console.error(err);
+    return { success: false, error: true };
+  }
+};
+
 
 // (Assignment and Result standard actions would follow the same pattern)
