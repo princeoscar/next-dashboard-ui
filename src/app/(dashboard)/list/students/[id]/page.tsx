@@ -11,6 +11,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import AnnouncementListPage from "../../announcements/page";
+import { Calendar } from "lucide-react";
 
 const SingleStudentPage = async ({
   params,
@@ -42,175 +43,153 @@ const SingleStudentPage = async ({
   if (!student) return notFound();
 
   return (
-    <div className="flex-1 p-4 flex flex-col gap-4 xl:flex-row">
+    <div className="flex-1 p-4 flex flex-col gap-6 xl:flex-row bg-slate-50/50">
       {/* LEFT */}
-      <div className="w-full xl:w-2/3">
+      <div className="w-full xl:w-2/3 flex flex-col gap-6">
         {/* TOP */}
-        <div className="flex flex-col lg:flex-row gap-4">
+        <div className="flex flex-col lg:flex-row gap-6">
           {/* USER INFO CARD */}
-          <div className="bg-rubixSky py-6 px-4 rounded-md flex-1 flex gap-4">
-            <div className="w-1/3">
+          <div className="bg-rubixSky p-6 rounded-[2rem] flex-1 
+          flex flex-col sm:flex-row gap-6 shadow-sm border border-sky-200/50">
+             <div className="w-full sm:w-1/3 flex justify-center items-center">
+            <div className="relative w-32 h-32 md:w-40 md:h-40">
               <Image
                 src={student.img || "/noAvatar.png"}
                 alt=""
-                width={144}
-                height={144}
-                className="w-36 h-36 rounded-full object-cover"
+               fill
+                className="rounded-full object-cover border-4 border-white shadow-md"
               />
             </div>
-            <div className="w-2/3 flex flex-col justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <h1 className="text-xl font-semibold">
+            </div>
+            <div className="w-full sm:w-2/3 flex flex-col justify-center">
+              <div className="flex items-center gap-3 mb-2">
+                <h1 className="text-2xl font-black text-slate-800 tracking-tight">
                   {student.name + " " + student.surname}
                 </h1>
                 {role === "admin" && (
                   <FormContainer table="student" type="update" data={student} />
                 )}
               </div>
-              <p className="text-sm text-gray-500">
-                Lorem ipsum, dolor sit amet consectetur adipisicing elit.
+              <p className="text-sm text-slate-600
+               leading-relaxed mb-6 font-medium opacity-80">
+                Active student at Rubix Academy. Pursuing excellence 
+                through dedicated learning and consistent performance.
               </p>
-              <div className="flex items-center justify-between gap-2 flex-wrap text-xs font-medium">
-                <div className="w-full md:w-1/3 lg:w-full 2xl:w-1/3 flex items-center gap-2">
-                  <Image src="/blood.png" alt="" width={14} height={14} />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-3 gap-x-4">
+                <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
+                  <Image src="/blood.png" alt="" width={14} height={14} className="opacity-70"/>
                   <span>{student.bloodType}</span>
                 </div>
-                <div className="w-full md:w-1/3 lg:w-full 2xl:w-1/3 flex items-center gap-2">
-                  <Image src="/date.png" alt="" width={14} height={14} />
-                  <span>
-                    {new Intl.DateTimeFormat("en-GB").format(student.birthday)}
-                  </span>
+                 <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
+                  <Image src="/date.png" alt="date" width={14} height={14} className="opacity-70" />
+                  <span>{new Intl.DateTimeFormat("en-GB").format(student.birthday)}</span>
                 </div>
-                <div className="w-full md:w-1/3 lg:w-full 2xl:w-1/3 flex items-center gap-2">
-                  <Image src="/mail.png" alt="" width={14} height={14} />
-                  <span>{student.email || "-"}</span>
+
+                <div className="flex items-center gap-2 text-xs font-bold text-slate-700 truncate">
+                  <Image src="/mail.png" alt="mail" width={14} height={14} className="opacity-70" />
+                  <span className="truncate">{student.email || "—"}</span>
                 </div>
-                <div className="w-full md:w-1/3 lg:w-full 2xl:w-1/3 flex items-center gap-2">
-                  <Image src="/phone.png" alt="" width={14} height={14} />
-                  <span>{student.phone || "-"}</span>
+
+                <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
+                  <Image src="/phone.png" alt="phone" width={14} height={14} className="opacity-70" />
+                  <span>{student.phone || "—"}</span>
                 </div>
+
                 {/* ✅ ADD PARENT INFO HERE (Inside the grid) */}
-                <div className="w-full md:w-1/3 lg:w-full 2xl:w-1/3 flex items-center gap-2">
-                  <Image src="/user.png" alt="" width={14} height={14} />
+                 <div className="flex items-center gap-2 text-xs font-bold text-slate-700 md:col-span-2">
+                  <Image src="/user.png" alt="parent" width={14} height={14} className="opacity-70" />
                   <span>{student.parent ? `${student.parent.name} ${student.parent.surname}` : "No Parent info"}</span>
                 </div>
               </div>
             </div>
           </div>
 
+
           {/* SMALL CARDS */}
-          <div className="flex-1 flex gap-4 justify-between flex-wrap">
+           <div className="flex-1 grid grid-cols-2 gap-4">
+
             {/* CARD */}
-            <div className="bg-white p-4 rounded-md flex gap-4 w-full md:w-[48%] xl:w-[45%] 2xl:w-[48%]">
-              <Image
-                src="/singleAttendance.png"
-                alt=""
-                width={24}
-                height={24}
-                className="w-6 h-6"
-              />
-              <Suspense fallback="loading...">
-                <StudentAttendanceCard id={student.id} />
-              </Suspense>
-            </div>
-            {/* CARD */}
-            <div className="bg-white p-4 rounded-md flex gap-4 w-full md:w-[48%] xl:w-[45%] 2xl:w-[48%]">
-              <Image
-                src="/singleBranch.png"
-                alt=""
-                width={24}
-                height={24}
-                className="w-6 h-6"
-              />
-              <div className="">
-                <h1 className="text-xl font-semibold">{student.class?.name || "No Class"}</h1>
-                <span className="text-sm text-gray-400">Grade</span>
+             <div className="bg-white p-5 rounded-3xl flex flex-col justify-between shadow-sm border border-slate-100 hover:border-rubixSky transition-colors">
+              <Image src="/singleAttendance.png" alt="" width={24} height={24} />
+              <div className="mt-2">
+                <Suspense fallback={<span className="text-lg font-black">...</span>}>
+                  <StudentAttendanceCard id={student.id} />
+                </Suspense>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Attendance</p>
               </div>
             </div>
+
             {/* CARD */}
-            <div className="bg-white p-4 rounded-md flex gap-4 w-full md:w-[48%] xl:w-[45%] 2xl:w-[48%]">
-              <Image
-                src="/singleLesson.png"
-                alt=""
-                width={24}
-                height={24}
-                className="w-6 h-6"
-              />
-              <div className="">
-                <h1 className="text-xl font-semibold">
-                  {student.class?._count.lessons}
+             {/* GRADE */}
+            <div className="bg-white p-5 rounded-3xl flex flex-col justify-between shadow-sm border border-slate-100 hover:border-rubixSky transition-colors">
+              <Image src="/singleBranch.png" alt="" width={24} height={24} />
+              <div className="mt-2">
+                <h1 className="text-xl font-black text-slate-800 tracking-tighter">
+                    {student.class?.name.charAt(0) || "N/A"}
                 </h1>
-                <span className="text-sm text-gray-400">Lessons</span>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Grade</p>
               </div>
             </div>
+
+            {/* LESSONS */}
+            <div className="bg-white p-5 rounded-3xl flex flex-col justify-between shadow-sm border border-slate-100 hover:border-rubixSky transition-colors">
+              <Image src="/singleLesson.png" alt="" width={24} height={24} />
+              <div className="mt-2">
+                <h1 className="text-xl font-black text-slate-800 tracking-tighter">
+                  {student.class?._count.lessons || 0}
+                </h1>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Lessons</p>
+              </div>
+            </div>
+
             {/* CARD */}
-            <div className="bg-white p-4 rounded-md flex gap-4 w-full md:w-[48%] xl:w-[45%] 2xl:w-[48%]">
-              <Image
-                src="/singleClass.png"
-                alt=""
-                width={24}
-                height={24}
-                className="w-6 h-6"
-              />
-              <div className="">
-                <h1 className="text-xl font-semibold">{student.class?.name}</h1>
-                <span className="text-sm text-gray-400">Class</span>
+            {/* CLASS */}
+            <div className="bg-white p-5 rounded-3xl flex flex-col justify-between shadow-sm border border-slate-100 hover:border-rubixSky transition-colors">
+              <Image src="/singleClass.png" alt="" width={24} height={24} />
+              <div className="mt-2">
+                <h1 className="text-xl font-black text-slate-800 tracking-tighter truncate">
+                    {student.class?.name || "N/A"}
+                </h1>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Class</p>
               </div>
             </div>
           </div>
         </div>
-        {/* BOTTOM */}
-        <div className="mt-4 bg-white rounded-md p-4 h-[800px]">
-          <h1>Student&apos;s Schedule</h1>
+
+          <div className="bg-white rounded-[2.5rem] p-6 shadow-sm border border-slate-100 h-[800px]">
+          <h1 className="text-xl font-black text-slate-800 tracking-tight uppercase mb-6 flex items-center gap-2">
+            <Calendar size={20} className="text-rubixSky" />
+            Student Schedule
+          </h1>
           {student.class ? (
             <BigCalendarContainer type="classId" id={student.class.id} />
           ) : (
-            <p>No schedule available (No Class Assigned)</p>
+            <div className="h-full flex items-center justify-center text-slate-400 font-bold uppercase tracking-widest text-xs">
+                No schedule available (No Class Assigned)
+            </div>
           )}
         </div>
       </div>
-      {/* RIGHT */}
-      <div className="w-full xl:w-1/3 flex flex-col gap-4">
-        <div className="bg-white p-4 rounded-md">
-          <h1 className="text-xl font-semibold">Shortcuts</h1>
-          <div className="mt-4 flex gap-4 flex-wrap text-xs text-gray-500">
-            <Link
-              className="p-3 rounded-md bg-rubixSkyLight"
-              href={`/list/lessons?classId=${student.class?.id}`}
-            >
-              Student&apos;s Lessons
-            </Link>
-            <Link
-              className="p-3 rounded-md bg-rubixPurpleLight"
-              href={`/list/teachers?classId=${student.class?.id}`}
-            >
-              Student&apos;s Teachers
-            </Link>
-            <Link
-              className="p-3 rounded-md bg-pink-50"
-              href={`/list/exams?classId=${student.class?.id}`}
-            >
-              Student&apos;s Exams
-            </Link>
-            <Link
-              className="p-3 rounded-md bg-rubixSkyLight"
-              href={`/list/assignments?classId=${student.class?.id}`}
-            >
-              Student&apos;s Assignments
-            </Link>
-            <Link
-              className="p-3 rounded-md bg-rubixYellowLight"
-              href={`/list/results?studentId=${student.id}`}
-            >
-              Student&apos;s Results
-            </Link>
+
+      {/* RIGHT: SHORTCUTS & PERFORMANCE */}
+      <div className="w-full xl:w-1/3 flex flex-col gap-6">
+        <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100">
+          <h1 className="text-lg font-black text-slate-800 uppercase tracking-tight mb-4">Quick Shortcuts</h1>
+          <div className="flex gap-3 flex-wrap text-[10px] font-black uppercase tracking-widest">
+            <Link className="px-4 py-3 rounded-xl bg-sky-50 text-sky-600 border border-sky-100 hover:bg-sky-600 hover:text-white transition-all" href={`/list/lessons?classId=${student.class?.id}`}>Lessons</Link>
+            <Link className="px-4 py-3 rounded-xl bg-purple-50 text-purple-600 border border-purple-100 hover:bg-purple-600 hover:text-white transition-all" href={`/list/teachers?classId=${student.class?.id}`}>Teachers</Link>
+            <Link className="px-4 py-3 rounded-xl bg-pink-50 text-pink-600 border border-pink-100 hover:bg-pink-600 hover:text-white transition-all" href={`/list/exams?classId=${student.class?.id}`}>Exams</Link>
+            <Link className="px-4 py-3 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-600 hover:text-white transition-all" href={`/list/assignments?classId=${student.class?.id}`}>Assignments</Link>
+            <Link className="px-4 py-3 rounded-xl bg-amber-50 text-amber-600 border border-amber-100 hover:bg-amber-600 hover:text-white transition-all" href={`/list/results?studentId=${student.id}`}>Results</Link>
           </div>
         </div>
         <Performance />
-        <Announcements data={[]}/>
+        <Announcements data={[]} />
       </div>
     </div>
   );
 };
+
 
 export default SingleStudentPage;
