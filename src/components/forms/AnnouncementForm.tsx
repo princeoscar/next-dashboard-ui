@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import InputField from "../InputField";
 import { announcementSchema, AnnouncementSchema } from "@/lib/formValidationSchema";
-import { Dispatch, SetStateAction, useEffect, useActionState } from "react"; // Updated Hook
+import { Dispatch, SetStateAction, useEffect, useActionState, startTransition } from "react"; // Updated Hook
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { createAnnouncement, updateAnnouncement } from "@/lib/actions";
@@ -56,8 +56,11 @@ const AnnouncementForm = ({
       id: data?.id ? data.id : undefined, // Prisma handles ID types internally, but keeping it clean
       classId: formData.classId ? Number(formData.classId) : null,
     };
+    startTransition(() => {
     formAction(payload as any);
   });
+});
+  
 
   return (
     <form className="flex flex-col gap-8 p-2" onSubmit={onSubmit}>

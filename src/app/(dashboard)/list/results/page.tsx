@@ -2,7 +2,7 @@ import FormContainer from "@/components/FormContainer";
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
-import {prisma} from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import { ITEM_PER_PAGE } from "@/lib/settings";
 import { auth } from "@clerk/nextjs/server";
 import { Prisma } from "@prisma/client";
@@ -39,7 +39,7 @@ const ResultListPage = async ({
       query.student = { parentId: userId! };
       break;
     default:
-      query.id = -1; // Secure fallback
+      query.id = -1;
       break;
   }
 
@@ -78,122 +78,126 @@ const ResultListPage = async ({
     prisma.result.count({ where: query }),
   ]);
 
+  // --- 4. COLUMN DEFINITION (Synced with hidden logic) ---
   const columns = [
-    { header: "Subject", accessor: "name" },
-    { header: "Student", accessor: "student" },
-    { header: "Score", accessor: "score", className: "hidden md:table-cell" },
+    { header: "Subject & Student", accessor: "name", className: "pl-4" },
+    { header: "Score", accessor: "score", className: "hidden md:table-cell text-center" },
     { header: "Type", accessor: "type", className: "hidden md:table-cell" },
-    { header: "Class", accessor: "class", className: "hidden md:table-cell" },
+    { header: "Class", accessor: "class", className: "hidden lg:table-cell" },
     { header: "Date", accessor: "date", className: "hidden lg:table-cell" },
-    ...(role === "admin" || role === "teacher" ? [{ header: "Actions", accessor: "action" }] : []),
+    { header: "Actions", accessor: "action", className: "text-right pr-4" },
   ];
 
- const renderRow = (item: any) => {
-  const assessment = item.exam || item.assignment;
-  const isExam = !!item.exam;
-  
-  const scoreColor = item.score >= 80 
-      ? "text-emerald-600" 
-      : item.score >= 50 
-      ? "text-rubixSky" 
-      : "text-rose-500";
+  const renderRow = (item: any) => {
+    const assessment = item.exam || item.assignment;
+    const isExam = !!item.exam;
+    
+    const scoreColor = item.score >= 80 
+        ? "text-emerald-600" 
+        : item.score >= 50 
+        ? "text-sky-500" 
+        : "text-rose-500";
 
-  return (
-    <tr key={item.id} className="border-b border-slate-100 last:border-0 text-sm hover:bg-slate-50/50 transition-all group">
-      {/* Subject Cell */}
-      <td className="p-4">
-        <div className="flex items-center gap-3">
-          <div className={`p-2 rounded-xl transition-all ${
-              isExam 
-              ? 'bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white' 
-              : 'bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white'
-          }`}>
-            {isExam ? <ClipboardCheck size={16} /> : <FileText size={16} />}
+    return (
+      <tr key={item.id} className="border-b border-slate-100 last:border-0 text-sm hover:bg-slate-50/50 transition-all group">
+        {/* PRIMARY INFO CELL (Combined for Mobile) */}
+        <td className="p-4">
+          <div className="flex items-center gap-3">
+            <div className={`hidden sm:flex p-2 rounded-xl transition-all shrink-0 ${
+                isExam 
+                ? 'bg-indigo-50 text-indigo-600' 
+                : 'bg-emerald-50 text-emerald-600'
+            }`}>
+              {isExam ? <ClipboardCheck size={16} /> : <FileText size={16} />}
+            </div>
+            <div className="flex flex-col">
+              <span className="font-black text-slate-700 block tracking-tight leading-tight">
+                  {assessment?.lesson.subject.name || "Unknown"}
+              </span>
+              {/* MOBILE METADATA */}
+              <div className="flex flex-col gap-0.5 mt-1">
+                <span className="text-xs text-slate-500 font-medium md:font-bold">
+                  {item.student.name} {item.student.surname}
+                </span>
+                <span className={`md:hidden font-black text-sm ${scoreColor}`}>
+                  {item.score}% 
+                  <span className="ml-2 text-[9px] text-slate-400 font-bold uppercase tracking-tighter">
+                    {isExam ? "Exam" : "Assignment"}
+                  </span>
+                </span>
+              </div>
+            </div>
           </div>
-          <span className="font-black text-slate-700 tracking-tight">
-              {assessment?.lesson.subject.name || "Unknown Subject"}
+        </td>
+
+        {/* SCORE CELL (Desktop) */}
+        <td className={`hidden md:table-cell p-4 font-black text-center text-lg tabular-nums ${scoreColor}`}>
+          {item.score}%
+        </td>
+
+        {/* TYPE CELL (Desktop) */}
+        <td className="hidden md:table-cell p-4">
+          <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border ${
+            isExam 
+            ? "bg-indigo-50 text-indigo-700 border-indigo-100" 
+            : "bg-emerald-50 text-emerald-700 border-emerald-100"
+          }`}>
+            {isExam ? "Exam" : "Assignment"}
           </span>
-        </div>
-      </td>
+        </td>
 
-      {/* Student Cell */}
-      <td className="p-4">
-        <div className="flex items-center gap-2">
-          <User size={14} className="text-slate-300" />
-          <span className="text-slate-600 font-medium">{item.student.name} {item.student.surname}</span>
-        </div>
-      </td>
+        {/* CLASS CELL (Desktop) */}
+        <td className="hidden lg:table-cell p-4">
+          <span className="text-[10px] font-black text-slate-400 bg-slate-100 px-3 py-1 rounded-full uppercase tracking-tighter">
+            {assessment?.lesson.class.name || "N/A"}
+          </span>
+        </td>
 
-      {/* Score Cell */}
-      <td className={`hidden md:table-cell p-4 font-black text-lg tabular-nums ${scoreColor}`}>
-        {item.score}%
-      </td>
+        {/* DATE CELL (Desktop) */}
+        <td className="hidden lg:table-cell p-4 text-slate-500 text-xs font-bold">
+          <div className="flex items-center gap-2">
+            <Calendar size={12} className="text-slate-300" />
+            {(() => {
+              const dateVal = isExam ? item.exam?.startTime : item.assignment?.startDate;
+              return dateVal ? new Intl.DateTimeFormat("en-GB").format(new Date(dateVal)) : "--/--/--";
+            })()}
+          </div>
+        </td>
 
-      {/* Type Cell */}
-      <td className="hidden md:table-cell p-4">
-        <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border ${
-          isExam 
-          ? "bg-indigo-50 text-indigo-700 border-indigo-100" 
-          : "bg-emerald-50 text-emerald-700 border-emerald-100"
-        }`}>
-          {isExam ? "Exam" : "Assignment"}
-        </span>
-      </td>
+        {/* ACTIONS CELL */}
+        <td className="p-4">
+          <div className="flex items-center gap-2 justify-end">
+            <Link href={`/print/${item.studentId}`}>
+              <button className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-amber-500 hover:text-white transition-all shadow-sm shrink-0">
+                <FileText size={14} />
+              </button>
+            </Link>
 
-      {/* Class Cell */}
-      <td className="hidden md:table-cell p-4">
-        <span className="text-[10px] font-black text-slate-400 bg-slate-100 px-3 py-1 rounded-full uppercase tracking-tighter">
-          {assessment?.lesson.class.name || "N/A"}
-        </span>
-      </td>
-
-      {/* Date Cell */}
-      <td className="hidden lg:table-cell p-4 text-slate-500 text-xs font-bold">
-        <div className="flex items-center gap-2">
-          <Calendar size={12} className="text-slate-300" />
-          {(() => {
-            const dateVal = isExam ? item.exam?.startTime : item.assignment?.startDate;
-            return dateVal ? new Intl.DateTimeFormat("en-GB").format(new Date(dateVal)) : "--/--/--";
-          })()}
-        </div>
-      </td>
-
-      {/* ACTIONS CELL (Where the Print Button Lives) */}
-      <td className="p-4">
-        <div className="flex items-center gap-2 justify-end">
-          {/* ✅ RE-ADDED: The Print Button */}
-          <Link href={`/print/${item.studentId}`}>
-            <button className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-100 hover:bg-amber-500 hover:text-white transition-all shadow-sm">
-              <FileText size={14} />
-            </button>
-          </Link>
-
-          {/* Conditional Admin/Teacher Actions */}
-          {(role === "admin" || role === "teacher") && (
-            <>
-              <FormContainer table="result" type="update" data={item} />
-              <FormContainer table="result" type="delete" id={item.id} />
-            </>
-          )}
-        </div>
-      </td>
-    </tr>
-  );
-};
+            {(role === "admin" || role === "teacher") && (
+              <>
+                <FormContainer table="result" type="update" data={item} />
+                <FormContainer table="result" type="delete" id={item.id} />
+              </>
+            )}
+          </div>
+        </td>
+      </tr>
+    );
+  };
 
   return (
-    <div className="bg-white p-8 rounded-[2.5rem] flex-1 m-4 mt-0 shadow-sm border border-slate-100">
+    <div className="bg-white p-4 md:p-8 rounded-[2rem] md:rounded-[2.5rem] flex-1 m-2 md:m-4 mt-0 shadow-sm border border-slate-100">
       <div className="flex flex-col md:flex-row items-center justify-between mb-8 gap-6">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Trophy size={20} className="text-amber-400 fill-amber-400" />
-            <h1 className="text-2xl font-black text-slate-800 tracking-tighter uppercase">Academic Results</h1>
+            <h1 className="text-xl md:text-2xl font-black text-slate-800 tracking-tighter uppercase">Academic Results</h1>
           </div>
-          <p className="text-[10px] text-slate-400 font-black tracking-widest uppercase ml-7">Performance & Grade Registry</p>
+          <p className="text-[10px] text-slate-400 font-black tracking-widest uppercase ml-7">Performance Registry</p>
         </div>
         <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
           <TableSearch />
-          <div className="flex items-center gap-3 self-end">
+          <div className="flex items-center gap-3 self-end md:self-center">
             {(role === "admin" || role === "teacher") && (
               <div className="p-1 bg-slate-900 rounded-2xl shadow-xl shadow-slate-200">
                 <FormContainer table="result" type="create" />

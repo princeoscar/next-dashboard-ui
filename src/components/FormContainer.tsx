@@ -42,7 +42,7 @@ const FormContainer = async ({ table, type, data, id, relatedData: externalRelat
         });
         relatedData = { subjects: teacherSubjects };
         break;
-      // Inside FormContainer.tsx
+
       case "message":
         const teachers = await prisma.teacher.findMany({
           select: { id: true, name: true, surname: true },
@@ -114,6 +114,7 @@ const FormContainer = async ({ table, type, data, id, relatedData: externalRelat
         ]);
         relatedData = { lessons: attendanceLessons, students: attendanceStudents };
         break;
+
       case "announcement":
         const announcementClasses = await prisma.class.findMany({
           select: { id: true, name: true },
@@ -126,6 +127,17 @@ const FormContainer = async ({ table, type, data, id, relatedData: externalRelat
           select: { id: true, name: true },
         });
         relatedData = { classes: eventClasses };
+        break;
+
+      case "parent":
+        const parentStudents = await prisma.student.findMany({
+          select: {
+            id: true,
+            name: true,
+            surname: true,
+          },
+        });
+        relatedData = { students: parentStudents }; // This sends the list to the form
         break;
 
       default:

@@ -105,13 +105,13 @@ export const announcementSchema = z.object({
 // ✅ You MUST export this so actions.ts can see it
 export type AnnouncementSchema = z.infer<typeof announcementSchema>;
 
-// --- LESSON ---
+// Ensure it looks like this:
 export const lessonSchema = z.object({
-  id: z.coerce.number().optional(),
+  id: z.coerce.number().optional(), // Add this line
   name: z.string().min(1, { message: "Lesson name is required!" }),
   day: z.enum(["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]),
-  startTime: z.coerce.date({ message: "Start time is required!" }),
-  endTime: z.coerce.date({ message: "End time is required!" }),
+  startTime: z.string().min(1, { message: "Start time is required!" }),
+  endTime: z.string().min(1, { message: "End time is required!" }),
   subjectId: z.coerce.number(),
   classId: z.coerce.number(),
   teacherId: z.string(),
@@ -167,15 +167,17 @@ export type EventSchema = z.infer<typeof eventSchema>;
 // --- PARENT ---
 export const parentSchema = z.object({
   id: z.string().optional(),
-  username: z.string().min(3, { message: "Username must be at least 3 characters!" }),
-  email: z.string().email().optional().or(z.literal("")),
-  password: z.string().min(8, { message: "Password must be at least 8 characters!" }).optional().or(z.literal("")),
+  username: z.string().min(3, { message: "Username must be at least 3 characters long!" }),
+  password: z.string().min(8, { message: "Password must be at least 8 characters long!" }).optional().or(z.literal("")),
   name: z.string().min(1, { message: "First name is required!" }),
   surname: z.string().min(1, { message: "Last name is required!" }),
+  email: z.string().email({ message: "Invalid email address!" }).optional().or(z.literal("")),
   phone: z.string().min(1, { message: "Phone is required!" }),
   address: z.string().min(1, { message: "Address is required!" }),
-  studentId: z.string().optional(),
+  // FIX: Change studentId to students and make it an array
+  students: z.array(z.string()).optional(), 
 });
+
 export type ParentSchema = z.infer<typeof parentSchema>;
 
 

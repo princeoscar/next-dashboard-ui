@@ -4,17 +4,16 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import InputField from "../InputField";
 import Image from "next/image";
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
-import Link from "next/link"; // Added Link import
-
-import { useFormState, useFormStatus } from "react-dom";
+import { Dispatch, SetStateAction, startTransition, useActionState, useEffect, useState } from "react";
+import Link from "next/link"; 
+import { useFormStatus } from "react-dom";
 import { createStudent, updateStudent } from "@/lib/actions";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { CldUploadWidget } from "next-cloudinary";
 import { studentSchema, StudentSchema } from "@/lib/formValidationSchema";
 
-// 1. THE SUBMIT BUTTON COMPONENT (Correctly uses useFormStatus)
+// 1. SUBMIT BUTTON COMPONENT
 const SubmitButton = ({ type }: { type: "create" | "update" }) => {
   const { pending } = useFormStatus();
 
@@ -56,36 +55,49 @@ const StudentForm = ({
   });
 
   const [img, setImg] = useState<any>();
-
-  const [state, formAction] = useFormState(
-    type === "create" ? createStudent : updateStudent,
-    { success: false, error: false }
-  );
-
-  const onSubmit = handleSubmit((data) => {
-    formAction({ ...data, img: img?.secure_url });
-  });
-
   const router = useRouter();
 
+  // 2. ACTION STATE HOOK
+  const [state, formAction] = useActionState<any, any>(
+    type === "create" ? createStudent : updateStudent,
+    { success: false, error: false, message: "" }
+  );
+
+  // 3. SUBMIT HANDLER WITH TRANSITION
+  const onSubmit = handleSubmit((data) => {
+    startTransition(() => {
+      formAction({ ...data, img: img?.secure_url });
+    });
+  });
+
+  // 4. SUCCESS/ERROR NOTIFICATIONS & MODAL CLOSING
   useEffect(() => {
     if (state.success) {
-      toast(`Student has been ${type === "create" ? "created" : "updated"}!`);
-      setOpen(false);
-      router.refresh();
+      toast.success(`Student has been ${type === "create" ? "created" : "updated"}!`);
+      
+      const timer = setTimeout(() => {
+        setOpen(false);
+        router.refresh();
+      }, 200);
+
+      return () => clearTimeout(timer);
     }
-  }, [state, router, type, setOpen]);
+    
+    if (state.error) {
+      toast.error(state.message || "An error occurred!");
+    }
+  }, [state.success, state.error, state.message, router, type, setOpen]);
 
   const { grades, classes, parents } = relatedData;
 
   return (
     <form className="flex flex-col gap-8" onSubmit={onSubmit}>
-      <h1 className="text-xl font-semibold">
+      <h1 className="text-xl font-semibold text-center">
         {type === "create" ? "Create a new student" : "Update the student"}
       </h1>
 
       {/* Authentication Section */}
-      <span className="text-xs text-gray-400 font-medium">Authentication Information</span>
+      <span className="text-xs text-gray-400 font-medium text-center border-b pb-2">Authentication Information</span>
       <div className="flex justify-between flex-wrap gap-4">
         <InputField label="Username" name="username" defaultValue={data?.username} register={register} error={errors?.username} />
         <InputField label="Email" name="email" defaultValue={data?.email} register={register} error={errors?.email} />
@@ -115,7 +127,7 @@ const StudentForm = ({
           {img && <Image src={img.secure_url} alt="" width={40} height={40} className="rounded-full w-10 h-10 object-cover border" />}
         </div>
 
-        {/* PARENT SELECT (The ID is handled here now) */}
+        {/* PARENT SELECT */}
         <div className="flex flex-col gap-2 w-full md:w-1/4">
           <div className="flex justify-between items-center">
             <label className="text-xs text-gray-500">Parent</label>
@@ -184,9 +196,6 @@ const StudentForm = ({
         </div>
       </div>
 
-      {state.error && <span className="text-red-500">Something went wrong!</span>}
-
-      {/* ✅ Use the custom SubmitButton component here */}
       <SubmitButton type={type} />
     </form>
   );

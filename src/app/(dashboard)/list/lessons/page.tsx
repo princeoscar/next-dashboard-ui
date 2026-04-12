@@ -76,11 +76,11 @@ const LessonListPage = async ({
   ]);
 
   const columns = [
-    { header: "Subject", accessor: "name" },
-    { header: "Class", accessor: "class" },
+    { header: "Subject", accessor: "name", className: "text-left px-4",},
+    { header: "Class", accessor: "class", className: "text-left px-4", },
     { header: "Teacher", accessor: "teacher", className: "hidden md:table-cell" },
     { header: "Schedule", accessor: "schedule", className: "hidden lg:table-cell" },
-    ...(role === "admin" ? [{ header: "Actions", accessor: "action" }] : []),
+    ...(role === "admin" ? [{ header: "Actions", accessor: "action", className: "text-center"}] : []),
   ];
 
   const renderRow = (item: LessonList) => {
@@ -94,7 +94,7 @@ const LessonListPage = async ({
       >
         <td className="p-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-rubixSky/10 text-rubixSky rounded-xl group-hover:bg-rubixSky group-hover:text-white transition-all">
+            <div className="w-10 h-10 flex items-center justify-center bg-rubixSky/10 text-rubixSky rounded-xl group-hover:bg-rubixSky group-hover:text-white transition-all shrink-0">
               <BookOpen size={16} />
             </div>
             <span className="font-black text-slate-700 tracking-tight">{item.subject.name}</span>
@@ -127,7 +127,7 @@ const LessonListPage = async ({
         </td>
         {role === "admin" && (
           <td className="p-4 text-right">
-            <div className="flex items-center gap-2 justify-end">
+            <div className="flex items-center gap-2 justify-center">
               <FormContainer table="lesson" type="update" data={item} />
               <FormContainer table="lesson" type="delete" id={item.id} />
             </div>

@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import InputField from "../InputField";
-import { Dispatch, SetStateAction, useActionState, useEffect } from "react";
+import { Dispatch, SetStateAction, startTransition, useActionState, useEffect } from "react";
 import { resultSchema, ResultSchema } from "@/lib/formValidationSchema";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
@@ -48,8 +48,9 @@ const ResultForm = ({
   const { students, exams, assignments } = relatedData || {};
 
   const onSubmit = handleSubmit((formData) => {
-    // We cast to any to bridge the gap between Zod's output and useActionState's expectations
-    formAction(formData as any);
+    startTransition(() => {
+      formAction(formData);
+    });
   });
 
   return (
@@ -114,8 +115,8 @@ const ResultForm = ({
           </label>
           <div className="relative group">
             <select
-              {...register("examId", { 
-                setValueAs: (v) => v === "" ? null : parseInt(v) 
+              {...register("examId", {
+                setValueAs: (v) => v === "" ? null : parseInt(v)
               })}
               className="w-full p-4 rounded-2xl bg-white border border-slate-200 text-sm font-medium focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500 outline-none transition-all appearance-none"
               defaultValue={data?.examId || ""}
@@ -138,8 +139,8 @@ const ResultForm = ({
           </label>
           <div className="relative group">
             <select
-              {...register("assignmentId", { 
-                setValueAs: (v) => v === "" ? null : parseInt(v) 
+              {...register("assignmentId", {
+                setValueAs: (v) => v === "" ? null : parseInt(v)
               })}
               className="w-full p-4 rounded-2xl bg-white border border-slate-200 text-sm font-medium focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500 outline-none transition-all appearance-none"
               defaultValue={data?.assignmentId || ""}

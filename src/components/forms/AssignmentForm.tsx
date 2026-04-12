@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import InputField from "../InputField";
-import { Dispatch, SetStateAction, useActionState, useEffect } from "react";
+import { Dispatch, SetStateAction, startTransition, useActionState, useEffect } from "react";
 import { assignmentSchema, AssignmentSchema } from "@/lib/formValidationSchema";
 import { createAssignment, updateAssignment } from "@/lib/actions";
 import { useRouter } from "next/navigation";
@@ -35,6 +35,13 @@ const AssignmentForm = ({
   );
 
   const router = useRouter();
+
+  const onSubmit = handleSubmit((formData) => {
+        console.log("Form Data being submitted:", formData);
+        startTransition(() => {
+          formAction(formData);
+        });
+      });
 
   useEffect(() => {
     if (state.success) {

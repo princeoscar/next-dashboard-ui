@@ -39,7 +39,7 @@ const count = await prisma.parent.count({ where: query });
   const columns = [
     { header: "Guardian Info", accessor: "info" },
     { header: "Associated Students", accessor: "students", className: "hidden md:table-cell" },
-    { header: "Actions", accessor: "action" },
+    { header: "Actions", accessor: "action", className: "text-center"},
   ];
 
   const renderRow = (item: ParentList) => (
@@ -62,7 +62,7 @@ const count = await prisma.parent.count({ where: query });
         )}
       </td>
       <td className="p-4 text-right">
-        <div className="flex items-center gap-2 justify-end">
+        <div className="flex items-center gap-2 justify-center">
           {/* ✅ FormContainer now works because we are on the server! */}
           <FormContainer table="parent" type="update" data={item} />
           <FormContainer table="parent" type="delete" id={item.id} />

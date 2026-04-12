@@ -34,9 +34,9 @@ const TeacherForm = ({
   const router = useRouter();
 
   // ✅ 1. Next.js 15: useActionState
-  const [state, formAction] = useActionState(
+  const [state, formAction] = useActionState<any, any>(
     type === "create" ? createTeacher : updateTeacher,
-    { success: false, error: false }
+    { success: false, error: false, message: "" }
   );
 
   // ✅ 2. Payload Preparation
@@ -50,10 +50,20 @@ const TeacherForm = ({
   useEffect(() => {
     if (state.success) {
       toast.success(`Teacher has been ${type === "create" ? "created" : "updated"}!`);
-      setOpen(false);
-      router.refresh();
+
+
+      const timer = setTimeout(() => {
+        setOpen(false);
+        router.refresh();
+      }, 200);
+
+      return () => clearTimeout(timer);
     }
-  }, [state, router, type, setOpen]);
+    
+    if (state.error) {
+      toast.error(state.message || "An error occurred!");
+    }
+  }, [state.success, state.error, state.message, router, type, setOpen]);
 
   const { subjects } = relatedData;
 

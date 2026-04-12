@@ -69,9 +69,9 @@ const LoginPage = () => {
                 {/* Mobile-only Logo */}
                 <div className="lg:hidden flex items-center gap-2 mb-8">
                     <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center">
-                        <span className="text-white font-bold text-xl">S</span>
+                        <span className="text-white font-bold text-xl">R</span>
                     </div>
-                    <span className="text-slate-900 font-bold text-2xl">Spark</span>
+                    <span className="text-slate-900 font-bold text-2xl">Rubix</span>
                 </div>
 
                 <div className="w-full max-w-md">
@@ -94,7 +94,7 @@ const LoginPage = () => {
                 </div>
                 
                 <p className="mt-8 text-slate-400 text-sm">
-                    © 2026 Spark Systems. All rights reserved.
+                    © 2026 RubixTech Systems. All rights reserved.
                 </p>
             </div>
         </div>

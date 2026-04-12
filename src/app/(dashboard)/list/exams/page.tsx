@@ -2,9 +2,8 @@ import FormContainer from "@/components/FormContainer";
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
-import {prisma} from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import { ITEM_PER_PAGE } from "@/lib/settings";
-
 import { auth } from "@clerk/nextjs/server";
 import { Exam, Lesson, Subject, Class, Teacher, Prisma } from "@prisma/client";
 import { GraduationCap, Calendar, User } from "lucide-react";
@@ -24,11 +23,10 @@ const ExamListPage = async ({
   const { page, ...queryParams } = await searchParams;
   const p = page ? parseInt(page) : 1;
 
-  // --- 1. TYPE-SAFE NESTED QUERY BUILDING ---
+  // --- 1. QUERY BUILDING ---
   const query: Prisma.ExamWhereInput = {};
   const lessonQuery: Prisma.LessonWhereInput = {};
 
-  // --- 2. ROLE-BASED VISIBILITY (Security Layer) ---
   switch (role) {
     case "admin":
       break;
@@ -36,35 +34,28 @@ const ExamListPage = async ({
       lessonQuery.teacherId = userId!;
       break;
     case "student":
-      lessonQuery.class = { 
-        students: { some: { id: userId! } } 
-      };
+      lessonQuery.class = { students: { some: { id: userId! } } };
       break;
     case "parent":
-      lessonQuery.class = { 
-        students: { some: { parentId: userId! } } 
-      };
+      lessonQuery.class = { students: { some: { parentId: userId! } } };
       break;
     default:
-      lessonQuery.id = -1; // Fallback for unknown roles
+      lessonQuery.id = -1;
       break;
   }
 
-  // --- 3. SEARCH & PARAMS ---
   if (queryParams.search) {
     lessonQuery.subject = {
       name: { contains: queryParams.search, mode: "insensitive" },
     };
   }
-  
   if (queryParams.classId) {
     lessonQuery.classId = parseInt(queryParams.classId);
   }
 
-  // Assign the lesson filter to the main exam query
   query.lesson = lessonQuery;
 
-  // --- 4. DATA FETCHING ---
+  // --- 2. DATA FETCHING ---
   const [data, count] = await prisma.$transaction([
     prisma.exam.findMany({
       where: query,
@@ -75,18 +66,36 @@ const ExamListPage = async ({
       },
       take: ITEM_PER_PAGE,
       skip: ITEM_PER_PAGE * (p - 1),
-      orderBy: { startTime: "asc" }, 
+      orderBy: { startTime: "asc" },
     }),
     prisma.exam.count({ where: query }),
   ]);
 
-  // --- 5. TABLE CONFIGURATION ---
+  // --- 3. TABLE CONFIGURATION ---
   const columns = [
-    { header: "Subject", accessor: "name" },
-    { header: "Class", accessor: "class" },
-    { header: "Teacher", accessor: "teacher", className: "hidden md:table-cell" },
-    { header: "Exam Date", accessor: "date", className: "hidden lg:table-cell" },
-    ...(role === "admin" || role === "teacher" ? [{ header: "Actions", accessor: "action" }] : []),
+    { 
+      header: "Subject", 
+      accessor: "name", 
+      className: "pl-4" 
+    },
+    { 
+      header: "Class", 
+      accessor: "class", 
+      className: "hidden md:table-cell text-center" 
+    },
+    { 
+      header: "Teacher", 
+      accessor: "teacher", 
+      className: "hidden lg:table-cell" 
+    },
+    { 
+      header: "Date", 
+      accessor: "date", 
+      className: "hidden lg:table-cell" 
+    },
+    ...(role === "admin" || role === "teacher" 
+      ? [{ header: "Actions", accessor: "action", className: "text-right pr-4" }] 
+      : []),
   ];
 
   const renderRow = (item: ExamList) => {
@@ -94,27 +103,44 @@ const ExamListPage = async ({
 
     return (
       <tr key={item.id} className="border-b border-slate-100 last:border-0 text-sm hover:bg-slate-50/50 transition-all group">
+        {/* MAIN INFO CELL (Mobile Responsive) */}
         <td className="p-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-rubixPurple/10 text-rubixPurple rounded-xl group-hover:bg-rubixPurple group-hover:text-white transition-all">
+            <div className="hidden sm:flex p-2 bg-rubixPurple/10 text-rubixPurple rounded-xl group-hover:bg-rubixPurple group-hover:text-white transition-all shrink-0">
               <GraduationCap size={16} />
             </div>
-            <div>
-              <span className="font-black text-slate-700 block tracking-tight">
+            <div className="flex flex-col">
+              <span className="font-black text-slate-700 block tracking-tight leading-tight">
                 {item.title || item.lesson.subject.name}
               </span>
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-                Final Assessment
+              
+              {/* MOBILE-ONLY METADATA */}
+              <div className="flex items-center gap-2 mt-1 md:hidden">
+                <span className="px-1.5 py-0.5 bg-slate-100 rounded text-[9px] font-black uppercase text-slate-500 border border-slate-200">
+                  {item.lesson.class.name}
+                </span>
+                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                  {new Intl.DateTimeFormat("en-GB", { day: '2-digit', month: 'short' }).format(item.startTime)}
+                </span>
+              </div>
+              
+              {/* DESKTOP-ONLY SUBTEXT */}
+              <span className="hidden md:block text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
+                Official Assessment
               </span>
             </div>
           </div>
         </td>
-        <td className="p-4">
+
+        {/* CLASS CELL (Hidden on Mobile) */}
+        <td className="hidden md:table-cell p-4 text-center">
           <span className="px-2 py-1 bg-slate-100 rounded-lg text-[10px] font-black uppercase tracking-widest text-slate-500 border border-slate-200">
             {item.lesson.class.name}
           </span>
         </td>
-        <td className="hidden md:table-cell p-4 text-slate-500">
+
+        {/* TEACHER CELL (Hidden on Tablet/Mobile) */}
+        <td className="hidden lg:table-cell p-4 text-slate-500">
           <div className="flex items-center gap-2">
             <User size={14} className="text-slate-300" />
             <span className="font-medium text-xs">
@@ -122,6 +148,8 @@ const ExamListPage = async ({
             </span>
           </div>
         </td>
+
+        {/* DATE CELL (Hidden on Tablet/Mobile) */}
         <td className="hidden lg:table-cell p-4">
           <div className={`flex items-center gap-2 font-bold ${isToday ? 'text-amber-500' : 'text-slate-600'}`}>
             <Calendar size={14} className={isToday ? 'animate-bounce' : ''} />
@@ -130,8 +158,10 @@ const ExamListPage = async ({
             </span>
           </div>
         </td>
+
+        {/* ACTIONS CELL */}
         {(role === "admin" || role === "teacher") && (
-          <td className="p-4 text-right">
+          <td className="p-4">
             <div className="flex items-center gap-2 justify-end">
               <FormContainer table="exam" type="update" data={item} />
               <FormContainer table="exam" type="delete" id={item.id} />
@@ -143,15 +173,16 @@ const ExamListPage = async ({
   };
 
   return (
-    <div className="bg-white p-8 rounded-[2.5rem] flex-1 m-4 mt-0 shadow-sm border border-slate-100">
+    <div className="bg-white p-4 md:p-8 rounded-[2rem] md:rounded-[2.5rem] flex-1 m-2 md:m-4 mt-0 shadow-sm border border-slate-100">
+      {/* HEADER SECTION */}
       <div className="flex flex-col md:flex-row items-center justify-between mb-8 gap-6">
         <div>
-          <h1 className="text-2xl font-black text-slate-800 tracking-tighter uppercase">Exam Schedule</h1>
+          <h1 className="text-xl md:text-2xl font-black text-slate-800 tracking-tighter uppercase">Exam Schedule</h1>
           <p className="text-[10px] text-slate-400 font-black tracking-widest uppercase mt-1">Official Performance Reviews</p>
         </div>
         <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
           <TableSearch />
-          <div className="flex items-center gap-3 self-end">
+          <div className="flex items-center gap-3 self-end md:self-center">
             {(role === "admin" || role === "teacher") && (
               <div className="p-1 bg-slate-900 rounded-2xl shadow-xl shadow-slate-200">
                 <FormContainer table="exam" type="create" />
@@ -161,10 +192,12 @@ const ExamListPage = async ({
         </div>
       </div>
 
+      {/* TABLE SECTION */}
       <div className="rounded-3xl border border-slate-50 overflow-hidden bg-white">
         <Table columns={columns} renderRow={renderRow} data={data} />
       </div>
 
+      {/* FOOTER SECTION */}
       <div className="mt-8 border-t border-slate-50 pt-6">
         <Pagination page={p} count={count} />
       </div>

@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import InputField from "../InputField";
 import { createExam, updateExam } from "@/lib/actions"; // Cleaned up unused imports
-import { Dispatch, SetStateAction, useActionState, useEffect } from "react";
+import { Dispatch, SetStateAction, startTransition, useActionState, useEffect } from "react";
 import { toast } from "react-toastify"; // Switched to toast for better UX
 import { useRouter } from "next/navigation";
 import { examSchema, ExamSchema } from "@/lib/formValidationSchema";
@@ -33,11 +33,6 @@ const ExamForm = ({
     { success: false, error: false }
   );
 
-  const onSubmit = handleSubmit((formData) => {
-    // FIX: Using the double-cast for TypeScript safety
-    formAction(formData as unknown as ExamSchema);
-  });
-
   const router = useRouter();
 
   useEffect(() => {
@@ -47,6 +42,13 @@ const ExamForm = ({
       router.refresh();
     }
   }, [state.success, setOpen, router, type]);
+
+  const onSubmit = handleSubmit((formData) => {
+      console.log("Form Data being submitted:", formData);
+      startTransition(() => {
+        formAction(formData);
+      });
+    });
 
   const { lessons } = relatedData;
 
@@ -59,7 +61,7 @@ const ExamForm = ({
 
   return (
     <form className="flex flex-col gap-8" onSubmit={onSubmit}>
-      <h1 className="text-xl font-semibold">
+      <h1 className="text-xl font-semibold text-center">
         {type === "create" ? "Create a new exam" : "Update the exam"}
       </h1>
 
