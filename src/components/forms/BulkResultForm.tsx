@@ -1,85 +1,92 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { CheckCircle2, Loader2, AlertCircle } from "lucide-react";
+import { useFormState } from "react-dom";
+import { useState, useEffect } from "react";
+import { toast } from "react-hot-toast";
+import { useRouter } from "next/navigation";
 
-interface BulkResultFormProps {
-  students: any[];
-  action: (formData: FormData) => Promise<any>;
-}
+export default function BulkResultForm({ students, action }: { students: any[], action: any }) {
+  const [state, formAction] = useFormState(action, { success: false, error: false });
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
-export default function BulkResultForm({ students, action }: BulkResultFormProps) {
-  const [state, setState] = useState<{ success?: boolean; error?: boolean; message?: string } | null>(null);
-  const [isPending, startTransition] = useTransition();
+  // FIX: One state object to hold all scores instead of a hook in a loop
+  const [scores, setScores] = useState<{ [key: string]: string }>({});
 
-  const handleSubmit = (formData: FormData) => {
-    startTransition(async () => {
-      const result = await action(formData);
-      setState(result);
-    });
+  const getGrade = (score: number) => {
+    if (score >= 85) return { label: "A+", color: "bg-emerald-500" };
+    if (score >= 70) return { label: "A", color: "bg-blue-500" };
+    if (score >= 50) return { label: "C", color: "bg-amber-500" };
+    return { label: "F", color: "bg-rose-500" };
   };
 
+  useEffect(() => {
+    if (state.success) {
+      toast.success("Results saved successfully!");
+      router.push("/list/results");
+      router.refresh();
+    } else if (state.error) {
+      toast.error("An error occurred while saving.");
+      setLoading(false);
+    }
+  }, [state, router]);
+
   return (
-    <form
-      action={handleSubmit}
-      className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100 max-w-4xl"
-    >
-      {/* SUCCESS FEEDBACK */}
-      {state?.success && (
-        <div className="mb-6 p-4 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-center gap-3 text-emerald-700">
-          <CheckCircle2 size={18} />
-          <p className="text-xs font-black uppercase tracking-widest">{state.message || "Grades Saved!"}</p>
-        </div>
-      )}
-
-      {/* ERROR FEEDBACK */}
-      {state?.error && (
-        <div className="mb-6 p-4 bg-rose-50 border border-rose-100 rounded-2xl flex items-center gap-3 text-rose-700">
-          <AlertCircle size={18} />
-          <p className="text-xs font-black uppercase tracking-widest">{state.message || "Something went wrong"}</p>
-        </div>
-      )}
-
-      <div className="overflow-x-auto">
+    <form action={formAction} onSubmit={() => setLoading(true)} className="space-y-6">
+      <div className="overflow-hidden rounded-3xl border border-slate-100 shadow-sm bg-white">
         <table className="w-full text-left">
-          <thead>
-            <tr className="border-b border-slate-50">
-              <th className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Student</th>
-              <th className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest w-40 text-center">Score (%)</th>
+          <thead className="bg-slate-50 border-b border-slate-100">
+            <tr>
+              <th className="p-4 text-[10px] font-black uppercase text-slate-400">Student</th>
+              <th className="p-4 text-[10px] font-black uppercase text-slate-400 w-40">Score (%)</th>
+              <th className="p-4 text-[10px] font-black uppercase text-slate-400 w-32">Grade</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-50">
-            {students.map((student) => (
-              <tr key={student.id} className="group hover:bg-slate-50/50 transition-colors">
-                <td className="px-4 py-5 font-bold text-slate-700">
-                  {student.name} {student.surname}
-                </td>
-                <td className="px-4 py-5 text-center">
-                  <input
-                    type="number"
-                    name={`score-${student.id}`}
-                    min="0"
-                    max="100"
-                    required
-                    className="w-24 px-4 py-2 bg-slate-50 border border-slate-100 rounded-2xl text-center font-black focus:ring-2 focus:ring-sky-500 outline-none transition-all"
-                  />
-                </td>
-              </tr>
-            ))}
+          <tbody>
+            {students.map((student) => {
+              // Pull the specific score for this student from our state object
+              const currentScore = scores[student.id] || "";
+              const grade = currentScore !== "" ? getGrade(parseInt(currentScore)) : null;
+
+              return (
+                <tr key={student.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-colors">
+                  <td className="p-4 font-bold text-slate-700 text-xs uppercase">
+                    {student.name} {student.surname}
+                    {/* These hidden inputs are vital for the Server Action to receive the data arrays */}
+                    <input type="hidden" name="studentId" value={student.id} />
+                  </td>
+                  <td className="p-4">
+                    <input
+                      type="number"
+                      name="score"
+                      max="100"
+                      min="0"
+                      value={currentScore}
+                      onChange={(e) => setScores(prev => ({ ...prev, [student.id]: e.target.value }))}
+                      className="w-full p-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none font-black text-sm"
+                      placeholder="0-100"
+                    />
+                  </td>
+                  <td className="p-4">
+                    {grade && (
+                      <span className={`${grade.color} text-white text-[9px] font-black px-2.5 py-1 rounded-lg uppercase shadow-sm transition-all animate-in fade-in zoom-in duration-300`}>
+                        {grade.label}
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
 
-      <div className="mt-10 flex justify-end">
-        <button
-          type="submit"
-          disabled={isPending}
-          className={`flex items-center gap-2 px-10 py-4 rounded-3xl font-black text-[11px] uppercase tracking-widest transition-all ${
-            isPending ? "bg-slate-400 cursor-not-allowed" : "bg-slate-900 text-white hover:bg-sky-600"
-          }`}
+      <div className="flex justify-end">
+        <button 
+          disabled={loading}
+          className="bg-slate-900 text-white px-10 py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest hover:bg-blue-600 transition-all disabled:opacity-50 shadow-lg active:scale-95"
         >
-          {isPending && <Loader2 size={16} className="animate-spin" />}
-          {isPending ? "Saving..." : "Publish All Grades"}
+          {loading ? "Saving Records..." : "Save All Results"}
         </button>
       </div>
     </form>

@@ -7,33 +7,21 @@ import { auth } from "@clerk/nextjs/server";
 const ReportPrintPage = async ({ params }: { params: Promise<{ id: string }> }) => {
   const { id } = await params;
 
-  // 1. SECURITY CHECK (The Guard)
+ // 1. SECURITY CHECK (The Guard)
   const { userId, sessionClaims } = await auth();
-  const role = (sessionClaims?.metadata as any)?.role;
+  const role = (sessionClaims?.metadata as any)?.role?.toLowerCase();
 
-  if (role === "parent") {
-    const parent = await prisma.parent.findFirst({
-      where: { clerkId: userId as string },
-      include: { students: true }
-    });
-    
-    // Check if the student ID in the URL is one of the parent's children
-    const isTheirChild = parent?.students.some((s) => s.id === id);
-    
-    if (!isTheirChild) {
-      return (
-        <div className="flex items-center justify-center min-h-screen bg-rose-50">
-          <p className="text-rose-600 font-black uppercase tracking-tight">
-            Access Denied: You can only view reports for your own children.
-          </p>
-        </div>
-      );
-    }
-  }
+  // Inside your Page function
+const currentYear = await prisma.academicYear.findFirst({
+  where: { isCurrent: true }
+});
 
-  // 1. Fetch the student and their results from Prisma
+// If for some reason there's no year in the DB, fallback to a string
+const yearLabel = currentYear?.name || "2025/2026";
+
+  // First, fetch the student purely by ID (since ID is a string)
   const student = await prisma.student.findUnique({
-    where: { id },
+    where: { id: id },
     include: {
       class: true,
       results: {
@@ -45,9 +33,31 @@ const ReportPrintPage = async ({ params }: { params: Promise<{ id: string }> }) 
     },
   });
 
-  if (!student || !student.class) return notFound();
+  if (!student) return notFound();
 
-  // 2. The Calculation Brain
+ // Now, check if the parent is allowed to see this student
+  if (role === "parent") {
+    // We compare both as strings to be 100% sure
+    const isAuthorized = String(student.parentId) === String(userId);
+
+    if (!isAuthorized) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-screen bg-rose-50 p-6 text-center">
+          <div className="bg-white p-8 rounded-[2rem] shadow-xl border border-rose-100">
+            <h1 className="text-rose-600 font-black uppercase tracking-tighter text-2xl mb-2">Access Denied</h1>
+            <p className="text-slate-500 text-sm font-medium">
+              Verification Failed: This student is not linked to your account.
+            </p>
+            <div className="mt-4 text-[10px] text-slate-300 font-mono">
+              User: {userId} | Student Parent: {student.parentId}
+            </div>
+          </div>
+        </div>
+      );
+    }
+  }
+  
+  // 3. The Calculation Brain
   const subjectMap: Record<string, { ca: number; exam: number }> = {};
 
   student.results.forEach((res) => {
@@ -61,11 +71,10 @@ const ReportPrintPage = async ({ params }: { params: Promise<{ id: string }> }) 
     if (res.type === "ASSIGNMENT") subjectMap[subjectName].ca = res.score;
   });
 
-  // 3. Format the data for the ReportCardSheet
+  // 4. Format the data for the ReportCardSheet
   const processedData = {
     studentName: `${student.name} ${student.surname}`,
     studentId: student.id,
-    // Use ?. and ?? to handle the potential null value
     className: student.class?.name ?? "No Class Assigned", 
     subjects: Object.entries(subjectMap).map(([name, scores]) => {
       const total = (scores.ca * 0.4) + (scores.exam * 0.6);
@@ -80,13 +89,19 @@ const ReportPrintPage = async ({ params }: { params: Promise<{ id: string }> }) 
   };
 
   return (
-    <div className="bg-slate-100 min-h-screen py-10 print:bg-white print:py-0">
-      <div className="max-w-[210mm] mx-auto mb-6 flex justify-end print:hidden">
+    <div className="bg-slate-100 min-h-screen py-10 print:bg-white print:py-0 overflow-x-hidden">
+      <div className="max-w-[210mm] mx-auto px-4 sm:px-0 mb-6 flex justify-end print:hidden">
         <PrintButton />
       </div>
 
-      {/* Pass the calculated data to your component */}
-      <ReportCardSheet data={processedData} />
+      <div className="max-w-[210mm] mx-auto bg-white shadow-2xl print:shadow-none print:w-full">
+         <ReportCardSheet data={{
+           ...processedData,
+          academicYear: yearLabel,
+          studentName: student.name,
+         
+          }} />
+      </div>
     </div>
   );
 };

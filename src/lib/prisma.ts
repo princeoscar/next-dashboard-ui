@@ -1,18 +1,19 @@
+// src/lib/prisma.ts
 import { PrismaClient } from "@prisma/client";
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
+const prismaClientSingleton = () => {
+  return new PrismaClient({
+    datasources: {
+      db: { url: process.env.DATABASE_URL },
+    },
+    // This helps log exactly what's happening when it hangs
+    log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
+  });
 };
 
-export const prisma =
-  globalForPrisma.prisma ??
-  new PrismaClient({
-    log: ["error", "warn"],
-  });
-
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
+declare global {
+  var prisma: undefined | ReturnType<typeof prismaClientSingleton>;
 }
 
-// Add this at the bottom
-export default prisma;
+export const prisma = globalThis.prisma ?? prismaClientSingleton();
+if (process.env.NODE_ENV !== "production") globalThis.prisma = prisma;

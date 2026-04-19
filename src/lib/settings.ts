@@ -1,3 +1,5 @@
+import { prisma } from "./prisma";
+
 export const ITEM_PER_PAGE = 10
 
 type RouteAccessMap = {
@@ -20,4 +22,27 @@ export const routeAccessMap: RouteAccessMap = {
   "/list/attendance": ["admin", "teacher", "student", "parent"],
   "/list/events": ["admin", "teacher", "student", "parent"],
   "/list/announcements": ["admin", "teacher", "student", "parent"],
+};
+
+export const getActiveConfig = async () => {
+  const session = await prisma.academicYear.findFirst({
+    where: { isCurrent: true },
+  });
+  return session;
+};
+
+// Example Server Action: src/lib/actions/session.ts
+export const activateNewSession = async (yearName: string) => {
+  return await prisma.$transaction([
+    // 1. Set all years to NOT current
+    prisma.academicYear.updateMany({
+      data: { isCurrent: false }
+    }),
+    // 2. Create or Update the new year to be current
+    prisma.academicYear.upsert({
+      where: { name: yearName },
+      update: { isCurrent: true },
+      create: { name: yearName, isCurrent: true }
+    })
+  ]);
 };

@@ -19,7 +19,9 @@ const config: Config = {
         rubixPurple:"#CFCEFF",
         rubixPurpleLight:"#F1F0FF",
         rubixYellow:"#FAE27C",
-        rubixYellowLight: "#FEFCE8"
+        rubixYellowLight: "#FEFCE8",
+        rubixPink: "#FFD6E0",
+      rubixPinkLight: "#FFF0F3",
       }
     },
   },

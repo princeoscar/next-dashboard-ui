@@ -16,13 +16,11 @@ const MobileMenu = ({ role }: { role: string }) => {
     } else {
       document.body.style.overflow = "";
     }
-
     return () => {
       document.body.style.overflow = "";
     };
   }, [isOpen]);
 
-  // CORRECTION: Function to handle closing the menu
   const handleClose = () => setIsOpen(false);
 
   return (
@@ -30,7 +28,7 @@ const MobileMenu = ({ role }: { role: string }) => {
       {/* TRIGGER BUTTON */}
       <button
         onClick={() => setIsOpen(true)}
-        className="flex items-center gap-2"
+        className="flex items-center gap-2 hover:opacity-80 transition-opacity"
       >
         <Image src="/logo.png" alt="logo" width={32} height={32} />
       </button>
@@ -39,39 +37,44 @@ const MobileMenu = ({ role }: { role: string }) => {
       {isOpen && (
         <div className="fixed inset-0 z-[9999] flex">
 
-          {/* OVERLAY */}
+          {/* OVERLAY with smoother blur */}
           <div
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300"
+            className="absolute inset-0 bg-slate-900/40 backdrop-blur-md transition-opacity duration-300"
             onClick={handleClose}
           />
 
           {/* SIDEBAR */}
-          <div className="relative w-72 h-screen max-h-screen bg-white flex flex-col overflow-hidden animate-in slide-in-from-left duration-300 shadow-2xl">
+          <div className="relative w-80 h-screen max-h-screen bg-white flex flex-col overflow-hidden animate-in slide-in-from-left duration-500 shadow-2xl">
 
-            {/* HEADER */}
-            <div className="flex items-center justify-between p-5 border-b flex-shrink-0 bg-white z-10">
+            {/* HEADER - BEAUTIFIED LOGO SECTION */}
+            <div className="flex items-center justify-between p-6 border-b border-slate-50 flex-shrink-0 bg-white z-10">
               <Link
                 href="/"
                 onClick={handleClose}
                 className="flex items-center gap-2"
               >
-                {/* <Image src="/logo.png" alt="logo" width={32} height={32} /> */}
-                <span className="font-bold text-lg text-slate-800">Rubix Schools</span>
+                {/* Apply Premium font 'font-playfair' here */}
+                <span className="text-2xl font-bold font-playfair tracking-tight text-slate-900">
+                  <span className="text-blue-600">Rubix</span> Schools
+                </span>
               </Link>
 
               <button
                 onClick={handleClose}
-                className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors text-slate-500"
+                className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-100 transition-all text-slate-400 hover:text-slate-600"
               >
-                <X size={24} />
+                <X size={24} strokeWidth={2.5} />
               </button>
             </div>
 
-            {/* SCROLLABLE MENU AREA */}
-            <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
-              {/* CORRECTION: Passing handleClose as a prop to Menu */}
-              <Menu role={role} onClose={handleClose} />
+            {/* SCROLLABLE MENU AREA - PERFECT ALIGNMENT */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar bg-white">
+              {/* Added a small container to ensure internal padding matches the header */}
+              <div className="py-2">
+                 <Menu role={role} onClose={handleClose} />
+              </div>
 
+              {/* Bottom Spacer for thumb-reach clearance */}
               <div className="h-20" />
             </div>
           </div>

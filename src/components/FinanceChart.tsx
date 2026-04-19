@@ -28,18 +28,12 @@ const FinanceChart = () => {
     const fetchFinance = async () => {
       try {
         const res = await fetch("/api/finance");
-
-        if (!res.ok) {
-          throw new Error(`Server responded with ${res.status}`);
-        }
-
+        if (!res.ok) throw new Error("Failed to fetch");
         const result = await res.json();
-
-        if (Array.isArray(result)) {
-          setData(result);
-        }
-      } catch (err) {
-        console.error("Finance fetch error:", err);
+        setData(result);
+      } catch (error) {
+        console.log("Chart Error:", error);
+        setData([]); // Set to empty array so the chart doesn't crash the page
       } finally {
         setLoading(false);
       }
@@ -66,54 +60,54 @@ const FinanceChart = () => {
           </div>
         ) : (
           <div className="absolute inset-0">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-              <XAxis
-                dataKey="name"
-                axisLine={false}
-                tick={{ fill: "#94a3b8", fontSize: 12 }}
-                tickLine={false}
-                tickMargin={15}
-              />
-              <YAxis 
-                axisLine={false} 
-                tick={{ fill: "#94a3b8", fontSize: 12 }} 
-                tickLine={false} 
-                tickMargin={15}
-                // Formats numbers like 1000 to 1k
-                tickFormatter={(value) => value >= 1000 ? `${value / 1000}k` : value}
-              />
-              <Tooltip 
-                contentStyle={{ borderRadius: "12px", border: "none", boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)" }}
-                cursor={{ stroke: "#e2e8f0", strokeWidth: 2 }}
-              />
-              <Legend
-                align="center"
-                verticalAlign="top"
-                wrapperStyle={{ paddingTop: "10px", paddingBottom: "40px", fontSize: "12px" }}
-                iconType="circle"
-              />
-              <Line
-                type="monotone"
-                dataKey="income"
-                stroke="#C3EBFA" // RubixBlue
-                strokeWidth={4}
-                dot={{ fill: "#C3EBFA", strokeWidth: 2, r: 4 }}
-                activeDot={{ r: 8, stroke: "white", strokeWidth: 2 }}
-                name="Income"
-              />
-              <Line
-                type="monotone"
-                dataKey="expense"
-                stroke="#CFCEFF" // RubixPurple
-                strokeWidth={4}
-                dot={{ fill: "#CFCEFF", strokeWidth: 2, r: 4 }}
-                activeDot={{ r: 8, stroke: "white", strokeWidth: 2 }}
-                name="Expense"
-              />
-            </LineChart>
-          </ResponsiveContainer>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={data} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                <XAxis
+                  dataKey="name"
+                  axisLine={false}
+                  tick={{ fill: "#94a3b8", fontSize: 12 }}
+                  tickLine={false}
+                  tickMargin={15}
+                />
+                <YAxis
+                  axisLine={false}
+                  tick={{ fill: "#94a3b8", fontSize: 12 }}
+                  tickLine={false}
+                  tickMargin={15}
+                  // Formats numbers like 1000 to 1k
+                  tickFormatter={(value) => value >= 1000 ? `${value / 1000}k` : value}
+                />
+                <Tooltip
+                  contentStyle={{ borderRadius: "12px", border: "none", boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)" }}
+                  cursor={{ stroke: "#e2e8f0", strokeWidth: 2 }}
+                />
+                <Legend
+                  align="center"
+                  verticalAlign="top"
+                  wrapperStyle={{ paddingTop: "10px", paddingBottom: "40px", fontSize: "12px" }}
+                  iconType="circle"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="income"
+                  stroke="#C3EBFA" // RubixBlue
+                  strokeWidth={4}
+                  dot={{ fill: "#C3EBFA", strokeWidth: 2, r: 4 }}
+                  activeDot={{ r: 8, stroke: "white", strokeWidth: 2 }}
+                  name="Income"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="expense"
+                  stroke="#CFCEFF" // RubixPurple
+                  strokeWidth={4}
+                  dot={{ fill: "#CFCEFF", strokeWidth: 2, r: 4 }}
+                  activeDot={{ r: 8, stroke: "white", strokeWidth: 2 }}
+                  name="Expense"
+                />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
         )}
       </div>

@@ -6,10 +6,8 @@ import InputField from "../InputField";
 
 import {
   createClass,
-  createSubject,
   updateClass,
-  updateSubject,
-} from "@/lib/actions";parent
+} from "@/lib/actions";
 import { Dispatch, SetStateAction, startTransition, useActionState, useEffect } from "react";
 import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
@@ -31,11 +29,10 @@ const ClassForm = ({
     handleSubmit,
     formState: { errors },
   } = useForm<ClassSchema>({
-    resolver: zodResolver(classSchema)as any,
+    resolver: zodResolver(classSchema) as any,
   });
 
-  // AFTER REACT 19 IT'LL BE USEACTIONSTATE
-
+  // Action state for handling server-side logic
   const [state, formAction] = useActionState(
     type === "create" ? createClass : updateClass,
     {
@@ -54,7 +51,7 @@ const ClassForm = ({
 
   useEffect(() => {
     if (state.success) {
-      toast(`Subject has been ${type === "create" ? "created" : "updated"}!`);
+      toast(`Class has been ${type === "create" ? "created" : "updated"}!`);
       setOpen(false);
       router.refresh();
     }
@@ -93,19 +90,22 @@ const ClassForm = ({
             hidden
           />
         )}
+        
+        {/* SUPERVISOR SELECT */}
         <div className="flex flex-col gap-2 w-full md:w-1/4">
           <label className="text-xs text-gray-500">Supervisor</label>
           <select
             className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
             {...register("supervisorId")}
-            defaultValue={data?.teachers}
+            defaultValue={data?.supervisorId} // Corrected to use ID
           >
+            <option value="">Select a teacher</option>
             {teachers.map(
               (teacher: { id: string; name: string; surname: string }) => (
                 <option
                   value={teacher.id}
                   key={teacher.id}
-                  selected={data && teacher.id === data.supervisorId}
+                  // Removed 'selected' attribute - React uses defaultValue on parent select
                 >
                   {teacher.name + " " + teacher.surname}
                 </option>
@@ -118,6 +118,8 @@ const ClassForm = ({
             </p>
           )}
         </div>
+
+        {/* GRADE SELECT */}
         <div className="flex flex-col gap-2 w-full md:w-1/4">
           <label className="text-xs text-gray-500">Grade</label>
           <select
@@ -125,11 +127,12 @@ const ClassForm = ({
             {...register("gradeId")}
             defaultValue={data?.gradeId}
           >
+            <option value="">Select a grade</option>
             {grades.map((grade: { id: number; level: number }) => (
               <option
                 value={grade.id}
                 key={grade.id}
-                selected={data && grade.id === data.gradeId}
+                // Removed 'selected' attribute
               >
                 {grade.level}
               </option>
@@ -142,10 +145,12 @@ const ClassForm = ({
           )}
         </div>
       </div>
+
       {state.error && (
         <span className="text-red-500">Something went wrong!</span>
       )}
-      <button className="bg-blue-400 text-white p-2 rounded-md">
+      
+      <button className="bg-blue-400 text-white p-2 rounded-md transition-colors hover:bg-blue-500">
         {type === "create" ? "Create" : "Update"}
       </button>
     </form>

@@ -10,11 +10,18 @@ const LoginPage = () => {
     const router = useRouter()
 
     useEffect(() => {
-        if (isLoaded && isSignedIn && user) {
-            const role = (user.publicMetadata?.role as string)?.toLowerCase();
-            router.push(role ? `/${role}` : '/admin');
+    if (isLoaded && isSignedIn && user) {
+        const role = (user.publicMetadata?.role as string)?.toLowerCase();
+        console.log("Current User Role:", role); // <--- Add this
+        
+        if (role) {
+            router.push(`/${role}`);
+        } else {
+            console.log("No role found, trying to redirect to /admin...");
+            router.push('/admin');
         }
-    }, [isLoaded, isSignedIn, user, router])
+    }
+}, [isLoaded, isSignedIn, user, router])
 
     if (!isLoaded) return null;
 

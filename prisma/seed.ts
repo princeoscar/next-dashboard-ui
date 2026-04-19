@@ -1,10 +1,8 @@
-import prisma from "../src/lib/prisma";
-import { Day, UserSex } from "@prisma/client";
+import { prisma } from "../src/lib/prisma";
+import { Day, UserSex, Class, Subject, Teacher } from "@prisma/client";
 
 async function main() {
   console.log("Cleaning database...");
-
-  // Delete in order to avoid FK errors
   await prisma.attendance.deleteMany();
   await prisma.result.deleteMany();
   await prisma.assignment.deleteMany();
@@ -19,261 +17,458 @@ async function main() {
   await prisma.subject.deleteMany();
   await prisma.class.deleteMany();
   await prisma.grade.deleteMany();
-  await prisma.income.deleteMany();
-  await prisma.expense.deleteMany();
-  await prisma.user.deleteMany();
 
-  console.log("Seeding new data...");
-  const currentYear = new Date().getFullYear();
+  console.log("Seeding Full Data (16 Subjects, 16 Teachers, 18 Classes)...");
 
-  // 1️⃣ ADMIN
-  await prisma.user.create({
-    data: {
-      id: "admin1",
-      username: "admin",
-      role: "ADMIN",
-    },
-  });
+  // 1. GRADES & CLASSES
+  const gradeNames = ["JSS 1", "JSS 2", "JSS 3", "SSS 1", "SSS 2", "SSS 3"];
+  const classPool: Class[] = [];
 
-  // 2️⃣ GRADES
-  const createdGrades = [];
-  for (let i = 1; i <= 6; i++) {
-    const grade = await prisma.grade.create({ data: { level: i } });
-    createdGrades.push(grade);
-  }
-
-  // 3️⃣ CLASSES
-  const createdClasses = [];
-  for (const grade of createdGrades) {
-    const newClass = await prisma.class.create({
-      data: { name: `${grade.level}A`, gradeId: grade.id, capacity: 20 },
+  for (let i = 0; i < gradeNames.length; i++) {
+    const grade = await prisma.grade.create({
+      data: { level: i + 7, name: gradeNames[i] },
     });
-    createdClasses.push(newClass);
+    for (const arm of ["A", "B", "C"]) {
+      const cls = await prisma.class.create({
+        data: {
+          name: `${gradeNames[i]}${arm}`,
+          gradeId: grade.id,
+          capacity: 10,
+        },
+      });
+      classPool.push(cls);
+    }
   }
 
-  // 4️⃣ SUBJECTS
-  const subjectNames = ["Math", "Science", "English", "History", "CS"];
-  const createdSubjects = [];
-  for (const name of subjectNames) {
-    const sub = await prisma.subject.create({ data: { name } });
-    createdSubjects.push(sub);
-  }
+  // 2. SUBJECTS (Added 4 new: History, Geography, CRS, Commerce)
+  const subjectNames = [
+    "Mathematics",
+    "English Studies",
+    "Basic Science",
+    "Digital Technologies",
+    "Citizenship Studies",
+    "Biology",
+    "Physics",
+    "Chemistry",
+    "Economics",
+    "Financial Accounting",
+    "Government",
+    "Literature",
+    "History",
+    "Geography",
+    "CRS",
+    "Commerce",
+  ];
 
-  // 5️⃣ TEACHERS
-  const createdTeachers = [];
-  for (let i = 1; i <= 10; i++) {
-    const user = await prisma.user.create({
+  await prisma.subject.createMany({
+    data: subjectNames.map((name) => ({ name })),
+  });
+  const subjectPool: Subject[] = await prisma.subject.findMany();
+
+  // 3. TEACHERS (16 Teachers for 16 Subjects)
+  const teacherNames = [
+    "Olawale Adeoga",
+    "Ifeanyi Okafor",
+    "Bisi Akande",
+    "Musa Yar'Adua",
+    "Chioma Ajoke",
+    "Funke Oshodi",
+    "Zubairu Dikko",
+    "Ngozi Ezekwesili",
+    "Segun Arinze",
+    "Yinka Ayefele",
+    "Genevieve Nnaji",
+    "Davido Adeleke",
+    "Wizkid Balogun",
+    "Tiwa Savage",
+    "Burna Boy",
+    "Tems Openiyi",
+  ];
+
+  const teacherPool: Teacher[] = [];
+  for (let i = 0; i < teacherNames.length; i++) {
+    const [name, surname] = teacherNames[i].split(" ");
+    const t = await prisma.teacher.create({
       data: {
         id: `teacher${i}`,
-        username: `teacher${i}`,
-        role: "TEACHER",
-      },
-    });
-
-    const teacher = await prisma.teacher.create({
-      data: {
-        id: user.id,
-        username: user.username,
-        name: `TName${i}`,
-        surname: `TSurname${i}`,
-        email: `t${i}@school.com`,
-        phone: `123${i}`,
-        address: `Address${i}`,
-        bloodType: "A+",
+        username: `t_${name.toLowerCase()}${i}`,
+        clerkId: `clerk_t_${i}`,
+        name,
+        surname,
+        email: `teacher${i}@rubix.com`,
+        phone: `080${1000000 + i}`,
+        address: "Staff Quarters, Rubix Academy",
+        bloodType: "A_PLUS",
         sex: i % 2 === 0 ? UserSex.MALE : UserSex.FEMALE,
-        birthday: new Date(1990, 0, 1),
-        subjects: {
-          connect: [{ id: createdSubjects[i % createdSubjects.length].id }],
-        },
+        birthday: new Date(1985, 5, 15),
+        img: `https://i.pravatar.cc/150?u=teacher${i}`,
+        subjects: { connect: [{ id: subjectPool[i].id }] },
       },
     });
-    createdTeachers.push(teacher);
+    teacherPool.push(t);
   }
 
-  // 6️⃣ LESSONS
-  const createdLessons = [];
-  const days = [Day.MONDAY, Day.TUESDAY, Day.WEDNESDAY, Day.THURSDAY, Day.FRIDAY];
-
-  for (let i = 0; i < 10; i++) {
-    const lesson = await prisma.lesson.create({
-      data: {
-        name: `Lesson ${i + 1}`,
-        day: days[i % days.length],
-        startTime: new Date(currentYear, 8, 1, 8, 0),
-        endTime: new Date(currentYear, 8, 1, 9, 30),
-        subjectId: createdSubjects[i % createdSubjects.length].id,
-        classId: createdClasses[i % createdClasses.length].id,
-        teacherId: createdTeachers[i % createdTeachers.length].id,
-      },
-    });
-    createdLessons.push(lesson);
-  }
-
-  // 7️⃣ PARENTS & STUDENTS
-  console.log("Creating Parents and Students...");
-  const createdStudents = [];
-
-  for (let i = 1; i <= 10; i++) {
-    // Parent
-    const parentUser = await prisma.user.create({
-      data: {
-        id: `parent${i}`,
-        username: `parent${i}`,
-        role: "PARENT",
-      },
-    });
-
+  // 4. PARENTS
+  const parentNames = [
+    "Okonkwo",
+    "Abubakar",
+    "Adeyemi",
+    "Eze",
+    "Bello",
+    "Danuma",
+    "Fashola",
+    "Ubah",
+    "Tinubu",
+    "Salami",
+    "Soyinka",
+    "Achebe",
+    "Aliyu",
+    "Balogun",
+    "Chukwu",
+    "Danjuma",
+    "Egwu",
+    "Falana",
+  ];
+  const parentPool = [];
+  for (let i = 0; i < 18; i++) {
     const parent = await prisma.parent.create({
       data: {
-        id: parentUser.id,
-        username: parentUser.username,
-        name: `PName${i}`,
-        surname: `PSurname${i}`,
-        email: `parent${i}@school.com`,
-        phone: `1234567${i}`,
-        address: `Address ${i}`,
-        clerkId: "clerk_parent1",
+        id: `p_id_${i}`,
+        clerkId: `clerk_p_${i}`,
+        username: `p_user_${i}`,
+        name: "Mr/Mrs",
+        surname: parentNames[i],
+        email: `parent${i}@mail.com`,
+        phone: `090${2000000 + i}`,
+        address: `${parentNames[i]} Estate, Lagos`,
       },
     });
-
-    // Student
-    const studentUser = await prisma.user.create({
-      data: {
-        id: `student${i}`,
-        username: `student${i}`,
-        role: "STUDENT",
-      },
-    });
-
-    const student = await prisma.student.create({
-      data: {
-        id: studentUser.id,
-        username: studentUser.username,
-        name: `SName${i}`,
-        surname: `SSurname${i}`,
-        email: `student${i}@school.com`,
-        phone: `987${i}`,
-        address: `Addr${i}`,
-        bloodType: "O-",
-        sex: i % 2 === 0 ? UserSex.MALE : UserSex.FEMALE,
-        parentId: parent.id, // Direct link to parent created above
-        gradeId: createdGrades[i % createdGrades.length].id,
-        classId: createdClasses[i % createdClasses.length].id,
-        birthday: new Date(2015, 0, 1),
-      },
-    });
-    createdStudents.push(student);
+    parentPool.push(parent);
   }
 
-  // 8️⃣ EXAMS, ASSIGNMENTS & RESULTS
-console.log("Creating Exams, Assignments and Results...");
+  // 5. STUDENTS
+  const studentFirstNames = [
+    "Chidi",
+    "Aminu",
+    "Olumide",
+    "Blessing",
+    "Zainab",
+    "Ngozi",
+    "Tunde",
+    "Aisha",
+    "Kelechi",
+    "Femi",
+    "Sade",
+    "Umar",
+    "Tosin",
+    "Emeka",
+    "Amaka",
+    "Bolaji",
+    "Dami",
+    "Efe",
+    "Gani",
+    "Hassan",
+    "Ife",
+    "Jide",
+    "Kunle",
+    "Lola",
+    "Mofe",
+    "Nosa",
+    "Obi",
+    "Patience",
+    "Quasim",
+    "Roli",
+    "Sola",
+    "Taiwo",
+    "Uche",
+    "Victoria",
+    "Wale",
+    "Yemi",
+  ];
 
-for (const lesson of createdLessons) {
-  // 1. Create an Exam for this lesson
-  const exam = await prisma.exam.create({
-    data: {
-      title: `Termly Exam for ${lesson.name}`,
-      startTime: new Date(currentYear, 10, 1),
-      endTime: new Date(currentYear, 10, 1, 2),
-      lessonId: lesson.id,
-    },
-  });
+  let studentCounter = 0;
+  for (const cls of classPool) {
+    for (let i = 0; i < 2; i++) {
+      if (studentCounter >= 36) break;
+      const parentIndex = Math.floor(studentCounter / 2);
+      const parent = parentPool[parentIndex];
+      const name = studentFirstNames[studentCounter];
 
-  // 2. Create an Assignment for this lesson
-  const assignment = await prisma.assignment.create({
-    data: {
-      title: `Class Test for ${lesson.name}`,
-      startDate: new Date(currentYear, 9, 15),
-      dueDate: new Date(currentYear, 9, 20),
-      lessonId: lesson.id,
-    },
-  });
-
-  for (const student of createdStudents) {
-    if (student.classId === lesson.classId) {
-      // 3. Create Exam Result
-      await prisma.result.create({
+      await prisma.student.create({
         data: {
-          score: Math.floor(Math.random() * 40) + 60, // Scores 60-100
-          studentId: student.id,
-          examId: exam.id,
-          type: "EXAM", // 👈 IMPORTANT: This matches your schema
+          id: `s_id_${studentCounter}`,
+          clerkId: `clerk_s_${studentCounter}`,
+          username: `s_${name.toLowerCase()}${studentCounter}`,
+          name,
+          surname: parent.surname,
+          email: `${name.toLowerCase()}@student.com`,
+          phone: `070${3000000 + studentCounter}`,
+          address: parent.address,
+          bloodType: "O_PLUS",
+          sex: i % 2 === 0 ? UserSex.MALE : UserSex.FEMALE,
+          birthday: new Date(2012, 1, 1),
+          img: `https://i.pravatar.cc/150?u=s_id_${studentCounter}`,
+          parentId: parent.id,
+          gradeId: cls.gradeId,
+          classId: cls.id,
         },
       });
+      studentCounter++;
+    }
+  }
 
-      // 4. Create Assignment/Test Result
+  // 6. DYNAMIC DAILY SCHEDULE (Rotating Periods)
+  console.log("Creating Dynamic Shuffled Lessons...");
+
+  const now = new Date();
+  const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay() + 1));
+  const daysEnum = [
+    Day.MONDAY,
+    Day.TUESDAY,
+    Day.WEDNESDAY,
+    Day.THURSDAY,
+    Day.FRIDAY,
+  ];
+  const periods = [8, 9, 10, 11, 12, 13, 14];
+
+  for (const cls of classPool) {
+    for (let dayIndex = 0; dayIndex < daysEnum.length; dayIndex++) {
+      const targetDate = new Date(startOfWeek);
+      targetDate.setDate(startOfWeek.getDate() + dayIndex);
+
+      // 1. Define the stream subjects
+      let streamSubjects: string[] = [];
+      if (cls.name.startsWith("JSS")) {
+        streamSubjects = [
+          "Mathematics",
+          "English Studies",
+          "Basic Science",
+          "Digital Technologies",
+          "Citizenship Studies",
+          "History",
+          "CRS",
+        ];
+      } else if (cls.name.endsWith("A")) {
+        streamSubjects = [
+          "Mathematics",
+          "English Studies",
+          "Physics",
+          "Chemistry",
+          "Biology",
+          "Geography",
+          "Digital Technologies",
+        ];
+      } else if (cls.name.endsWith("B")) {
+        streamSubjects = [
+          "English Studies",
+          "Government",
+          "Literature",
+          "History",
+          "CRS",
+          "Geography",
+          "Mathematics",
+        ];
+      } else if (cls.name.endsWith("C")) {
+        streamSubjects = [
+          "Mathematics",
+          "Economics",
+          "Financial Accounting",
+          "Commerce",
+          "Government",
+          "English Studies",
+          "Geography",
+        ];
+      }
+
+      // 2. SHUFFLE/ROTATE LOGIC:
+      // We shift the array based on the day of the week so the 8am subject on Monday
+      // becomes the 9am subject on Tuesday, etc.
+      const dailyRotation = [
+        ...streamSubjects.slice(dayIndex),
+        ...streamSubjects.slice(0, dayIndex),
+      ];
+
+      for (let p = 0; p < periods.length; p++) {
+        const hour = periods[p];
+        if (hour === 11) continue; // BREAK TIME
+
+        // Pick the subject from the rotated list
+        const subjectName = dailyRotation[p % dailyRotation.length];
+        const subject = subjectPool.find((s) => s.name === subjectName);
+        const teacher = teacherPool.find(
+          (t) => t.id === `teacher${subjectPool.indexOf(subject!)}`,
+        );
+
+        if (subject && teacher) {
+          const startTime = new Date(targetDate);
+          startTime.setHours(hour, 0, 0, 0);
+          const endTime = new Date(targetDate);
+          endTime.setHours(hour, 45, 0, 0);
+
+          await prisma.lesson.create({
+            data: {
+              name: subject.name,
+              day: daysEnum[dayIndex],
+              startTime,
+              endTime,
+              subjectId: subject.id,
+              classId: cls.id,
+              teacherId: teacher.id,
+            },
+          });
+        }
+      }
+    }
+  }
+
+  // 7. EXAMS & ASSIGNMENTS
+  console.log("Creating Exams and Assignments in high-speed batches...");
+
+  const lessons = await prisma.lesson.findMany();
+
+  // 1. Map the lessons to data arrays instead of calling the DB in a loop
+  const examData = lessons.map((lesson) => ({
+    title: `${lesson.name} Exam`,
+    startTime: lesson.startTime,
+    endTime: lesson.endTime,
+    lessonId: lesson.id,
+  }));
+
+  const assignmentData = lessons.map((lesson) => ({
+    title: `${lesson.name} Assignment`,
+    startDate: lesson.startTime,
+    dueDate: new Date(lesson.startTime.getTime() + 1000 * 60 * 60 * 24 * 7),
+    lessonId: lesson.id,
+  }));
+
+  // 2. Fire two single requests to create everything at once
+  await prisma.exam.createMany({
+    data: examData,
+    skipDuplicates: true,
+  });
+
+  await prisma.assignment.createMany({
+    data: assignmentData,
+    skipDuplicates: true,
+  });
+
+  // 3. To keep your results logic working, we fetch the IDs back
+  const examPool = await prisma.exam.findMany();
+  const assignmentPool = await prisma.assignment.findMany();
+
+  console.log(`✅ Success: Batched ${examData.length} Exams and ${assignmentData.length} Assignments.`);
+
+  /// 8. RESULTS
+  console.log("Generating Student Results...");
+
+  const students = await prisma.student.findMany();
+  const resultData = []; // Collect all results here first
+
+  for (const exam of examPool) {
+    const lesson = lessons.find((l) => l.id === exam.lessonId);
+    const classStudents = students.filter((s) => s.classId === lesson?.classId);
+
+    for (const student of classStudents) {
+      resultData.push({
+        score: Math.floor(Math.random() * 51) + 40,
+        studentId: student.id,
+        examId: exam.id,
+        type: "EXAM",
+      });
+    }
+  }
+  await prisma.result.createMany({
+    data: resultData,
+    skipDuplicates: true, // This respects your @@unique constraint
+  });
+
+  // Generate Assignment Results
+  for (const assignment of assignmentPool) {
+    const lesson = lessons.find((l) => l.id === assignment.lessonId);
+    const classStudents = students.filter((s) => s.classId === lesson?.classId);
+
+    for (const student of classStudents) {
       await prisma.result.create({
         data: {
-          score: Math.floor(Math.random() * 50) + 50, // Scores 50-100
+          score: Math.floor(Math.random() * 31) + 60, // Range: 60-90
           studentId: student.id,
           assignmentId: assignment.id,
-          type: "ASSIGNMENT", // 👈 IMPORTANT: This matches your schema
+          type: "ASSIGNMENT", // Required by your schema
         },
       });
     }
   }
-}
-
-// 8️⃣ EXAMS, ASSIGNMENTS & RESULTS
-console.log("Creating Exams, Assignments and Results...");
-
-for (const lesson of createdLessons) {
-  // 1. Create a Final Exam for this specific lesson
-  const exam = await prisma.exam.create({
-    data: {
-      title: `Termly Exam for ${lesson.name}`,
-      startTime: new Date(currentYear, 10, 1),
-      endTime: new Date(currentYear, 10, 1, 2),
-      lessonId: lesson.id,
-    },
+// --- 1. SCHOOL-WIDE EVENTS ---
+  console.log("Creating school-wide events...");
+  await prisma.event.createMany({
+    data: [
+      {
+        title: "Annual Inter-House Sports",
+        description: "All students to gather at the main field for track and field events.",
+        startTime: new Date("2026-05-15T08:00:00Z"),
+        endTime: new Date("2026-05-15T16:00:00Z"),
+      },
+      {
+        title: "Science & Tech Exhibition",
+        description: "Showcasing student projects in full-stack dev and AI.",
+        startTime: new Date("2026-06-10T09:00:00Z"),
+        endTime: new Date("2026-06-10T15:00:00Z"),
+      },
+    ],
   });
 
-  // 2. Create a Class Assignment/Test for this specific lesson
-  const assignment = await prisma.assignment.create({
-    data: {
-      title: `Continuous Assessment for ${lesson.name}`,
-      startDate: new Date(currentYear, 9, 15),
-      dueDate: new Date(currentYear, 9, 20),
-      lessonId: lesson.id,
-    },
-  });
+  // --- 2. MULTI-CLASS ANNOUNCEMENTS ---
+  console.log("Creating targeted announcements...");
 
-  for (const student of createdStudents) {
-    // Only give results to students who are actually in this lesson's class
-    if (student.classId === lesson.classId) {
-      
-      // 3. Create the EXAM Result (Worth 60%)
-      await prisma.result.create({
-        data: {
-          score: Math.floor(Math.random() * 41) + 60, // Scores between 60-100
-          studentId: student.id,
-          examId: exam.id,
-          type: "EXAM", // 👈 Crucial for your report card logic!
-        },
-      });
+// 🚀 FIX: Instead of hardcoded [1, 2, 3...], we fetch the actual class IDs
+const actualClasses = await prisma.class.findMany({
+  take: 10,
+  select: { id: true, name: true }
+});
 
-      // 4. Create the ASSIGNMENT Result (Worth 40%)
-      await prisma.result.create({
-        data: {
-          score: Math.floor(Math.random() * 51) + 50, // Scores between 50-100
-          studentId: student.id,
-          assignmentId: assignment.id,
-          type: "ASSIGNMENT", // 👈 Crucial for your report card logic!
-        },
-      });
-    }
+const announcements = actualClasses.map((cls) => ({
+  title: `Mid-Term Project for ${cls.name}`,
+  description: "Please ensure your project repositories are pushed to GitHub by Friday midnight.",
+  date: new Date(),
+  classId: cls.id, // Now using a guaranteed valid ID
+}));
+
+await prisma.announcement.createMany({
+  data: announcements,
+});
+
+console.log(`✅ Successfully sent ${announcements.length} targeted announcements.`);
+
+const currentSession = await prisma.academicYear.create({
+  data: {
+    name: "2025/2026",
+    isCurrent: true,
+  },
+});
+
+console.log("Seeding Fee Structure linked to Active Year...");
+  const grades = await prisma.grade.findMany();
+  
+  for (const grade of grades) {
+    await prisma.feeStructure.create({
+      data: {
+        amount: grade.level < 10 ? 150000 : 200000,
+        description: "Full Session Tuition & Levies",
+        gradeId: grade.id,
+        academicYearId: currentSession.id,
+      }
+    });
   }
-}
 
-  console.log("Seeding completed successfully.");
+  console.log("✅ Database seeded successfully!");
 }
 
 main()
-  .then(async () => {
-    await prisma.$disconnect();
-  })
-  .catch(async (e) => {
+  .catch((e) => {
     console.error(e);
-    await prisma.$disconnect();
+    // @ts-ignore
     process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
   });

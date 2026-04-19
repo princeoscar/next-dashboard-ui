@@ -22,12 +22,13 @@ const BigCalendarContainer = async ({
     },
   });
 
-  // 2. Format data for react-big-calendar
-  // We use the lesson name as the title, or fallback to the ID
+  // 2. Format data for react-big-calendar with more detail
   const data = dataRes.map((lesson) => ({
     title: lesson.name,
-    start: lesson.startTime,
-    end: lesson.endTime,
+    start: new Date(lesson.startTime), // Ensure these are Date objects
+    end: new Date(lesson.endTime),
+    // Optional: add extra info if you want to show it on hover or in a custom event component
+    resourceId: lesson.id, 
   }));
 
   // 3. Normalize the dates to the current viewing week

@@ -1,12 +1,11 @@
 // src/app/(dashboard)/list/parents/page.tsx
-// ✅ NO "use client" here!
-
 import FormContainer from "@/components/FormContainer";
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
-import {prisma} from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import { ITEM_PER_PAGE } from "@/lib/settings";
+import { auth } from "@clerk/nextjs/server";
 import { Parent, Prisma, Student } from "@prisma/client";
 
 type ParentList = Parent & { students: Student[] };
@@ -16,30 +15,40 @@ const ParentListPage = async ({
 }: {
   searchParams: Promise<{ [key: string]: string | undefined }>;
 }) => {
-  const { page, search, ...params } = await searchParams;
+  const { page, search } = await searchParams;
   const p = page ? parseInt(page) : 1;
 
-  // --- 1. HANDLE SEARCH LOGIC ON SERVER ---
-  const query: Prisma.ParentWhereInput = {};
+  // 1. AUTH & ROLE CHECK
+  const { sessionClaims } = await auth();
+  const role = (sessionClaims?.metadata as { role?: string })?.role?.toLowerCase();
+  
+  if (role !== "admin") {
+    return <div className="p-8 text-center font-bold">Access Denied</div>;
+  }
 
+  // 2. SEARCH LOGIC
+  const query: Prisma.ParentWhereInput = {};
   if (search) {
     query.name = { contains: search, mode: "insensitive" };
   }
 
-  // --- 2. FETCH DATA ON SERVER ---
- const data = await prisma.parent.findMany({
-  where: query,
-  include: { students: true },
-  take: ITEM_PER_PAGE,
-  skip: ITEM_PER_PAGE * (p - 1),
-});
+  // 3. FETCH DATA (Using Transaction for efficiency)
+  const [data, count] = await prisma.$transaction([
+    prisma.parent.findMany({
+      where: query,
+      include: { students: true },
+      take: ITEM_PER_PAGE,
+      skip: ITEM_PER_PAGE * (p - 1),
+    }),
+    prisma.parent.count({ where: query }),
+  ]);
 
-const count = await prisma.parent.count({ where: query });
-
+  // 4. TABLE COLUMNS
   const columns = [
     { header: "Guardian Info", accessor: "info" },
+    { header: "Contact", accessor: "phone", className: "hidden lg:table-cell" },
     { header: "Associated Students", accessor: "students", className: "hidden md:table-cell" },
-    { header: "Actions", accessor: "action", className: "text-center"},
+    { header: "Actions", accessor: "action", className: "text-center" },
   ];
 
   const renderRow = (item: ParentList) => (
@@ -50,20 +59,24 @@ const count = await prisma.parent.count({ where: query });
           <span className="text-[10px] text-slate-400">{item.email || "No Email"}</span>
         </div>
       </td>
-      <td className="hidden md:table-cell p-4">
-        {item.students.length > 0 ? (
-          item.students.map((s) => (
-            <span key={s.id} className="px-2 py-0.5 bg-slate-50 text-slate-500 rounded-md text-[9px] font-black uppercase mr-1 border border-slate-100">
-              {s.name}
-            </span>
-          ))
-        ) : (
-          <span className="text-[10px] font-bold text-slate-300 italic">Unlinked</span>
-        )}
+      <td className="hidden lg:table-cell p-4">
+        <span className="text-xs font-bold text-slate-500">{item.phone || "---"}</span>
       </td>
-      <td className="p-4 text-right">
+      <td className="hidden md:table-cell p-4">
+        <div className="flex flex-wrap gap-1">
+          {item.students.length > 0 ? (
+            item.students.map((s) => (
+              <span key={s.id} className="px-2 py-0.5 bg-slate-50 text-slate-500 rounded-md text-[9px] font-black uppercase border border-slate-100">
+                {s.name}
+              </span>
+            ))
+          ) : (
+            <span className="text-[10px] font-bold text-slate-300 italic">Unlinked</span>
+          )}
+        </div>
+      </td>
+      <td className="p-4">
         <div className="flex items-center gap-2 justify-center">
-          {/* ✅ FormContainer now works because we are on the server! */}
           <FormContainer table="parent" type="update" data={item} />
           <FormContainer table="parent" type="delete" id={item.id} />
         </div>
@@ -73,6 +86,7 @@ const count = await prisma.parent.count({ where: query });
 
   return (
     <div className="bg-white p-8 rounded-[2.5rem] flex-1 m-4 mt-0 shadow-sm border border-slate-100">
+      {/* HEADER */}
       <div className="flex flex-col md:flex-row items-center justify-between mb-8 gap-6">
         <div>
           <h1 className="text-2xl font-black text-slate-800 tracking-tighter uppercase">Parent Registry</h1>
@@ -86,10 +100,12 @@ const count = await prisma.parent.count({ where: query });
         </div>
       </div>
 
+      {/* TABLE */}
       <div className="rounded-3xl border border-slate-50 overflow-hidden bg-white">
         <Table columns={columns} renderRow={renderRow} data={data} />
       </div>
 
+      {/* PAGINATION */}
       <div className="mt-8 border-t border-slate-50 pt-6">
         <Pagination page={p} count={count} />
       </div>

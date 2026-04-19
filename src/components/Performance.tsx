@@ -33,7 +33,7 @@ const Performance = () => {
             <h1 className="text-3xl font-bold">9.2</h1>
             <p className="text-xs text-gray-3 00">10 max. RTS</p>
          </div>
-         <h2 className="font-medium absolute bottom-16 left-0 right-0 m-auto text-center">1st Semester - 2nd Semester</h2>
+         <h2 className="font-medium absolute bottom-16 left-0 right-0 m-auto text-center">1st Term - 2nd Term</h2>
     </div>
   )
 }

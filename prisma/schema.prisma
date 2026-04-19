@@ -13,33 +13,39 @@ model Admin {
 }
 
 model Student {
-  id          String       @id
-  username    String       @unique
-  name        String
-  surname     String
-  email       String?      @unique
-  phone       String?      @unique
-  address     String
-  img         String?
-  bloodType   String
-  sex         UserSex
-  createdAt   DateTime     @default(now())
-  parentId    String?
-  classId     Int?
-  gradeId     Int
-  birthday    DateTime
+  id        String   @id
+  username  String   @unique
+  clerkId   String   @unique
+  name      String
+  surname   String
+  email     String?  @unique
+  phone     String?  @unique
+  address   String
+  img       String?
+  bloodType String
+  sex       UserSex
+  createdAt DateTime @default(now())
+  parentId  String?
+  classId   Int?
+  gradeId   Int
+  birthday  DateTime
+
+  payments    Payment[]
   attendances Attendance[]
   results     Result[]
   class       Class?       @relation(fields: [classId], references: [id])
   grade       Grade        @relation(fields: [gradeId], references: [id])
   parent      Parent?      @relation(fields: [parentId], references: [id])
+  promotions  Promotion[]
 
   @@index([name])
+  @@index([username])
 }
 
 model Teacher {
   id        String    @id
   username  String    @unique
+  clerkId   String    @unique
   name      String
   surname   String
   email     String?   @unique
@@ -55,11 +61,12 @@ model Teacher {
   subjects  Subject[] @relation("SubjectToTeacher")
 
   @@index([name])
+  @@index([username])
 }
 
 model Parent {
   id        String    @id
-  clerkId  String
+  clerkId   String   @unique
   username  String    @unique
   name      String
   surname   String
@@ -71,9 +78,13 @@ model Parent {
 }
 
 model Grade {
-  id       Int       @id @default(autoincrement())
-  level    Int       @unique
-  classess Class[]
+  id    Int    @id @default(autoincrement())
+  level Int    @unique
+  name  String @unique
+
+  feeStructures FeeStructure[]
+
+  classes  Class[]
   students Student[]
 }
 
@@ -145,8 +156,11 @@ model Result {
   exam         Exam?       @relation(fields: [examId], references: [id])
   student      Student     @relation(fields: [studentId], references: [id])
 
-   type      String   // "TEST", "ASSIGNMENT", "EXAM"
-  
+  academicYearId Int? // The ID of the year
+  academicYear   AcademicYear? @relation(fields: [academicYearId], references: [id])
+
+  type String // "TEST", "ASSIGNMENT", "EXAM"
+
   @@unique([studentId, examId])
 }
 
@@ -198,7 +212,6 @@ model User {
   img              String?
   receivedMessages Message[] @relation("ReceivedMessages")
   sentMessages     Message[] @relation("SentMessages")
-  
 }
 
 model Income {
@@ -222,6 +235,50 @@ model SchoolSettings {
   currentTerm  String   @default("Term 1")
   passingGrade Int      @default(50)
   updatedAt    DateTime @updatedAt
+}
+
+model AcademicYear {
+  id            Int            @id @default(autoincrement())
+  name          String         @unique // e.g., "2025/2026"
+  isCurrent     Boolean        @default(false)
+  results       Result[]
+  promotions    Promotion[]
+  // ADD THESE LINES:
+  feeStructures FeeStructure[]
+  payments      Payment[]
+}
+
+model Promotion {
+  id             Int          @id @default(autoincrement())
+  studentId      String
+  student        Student      @relation(fields: [studentId], references: [id])
+  academicYearId Int
+  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id])
+  oldClassId     Int
+  newClassId     Int
+  status         String // "PROMOTED", "REPEATED", "GRADUATED"
+  createdAt      DateTime     @default(now())
+}
+
+model FeeStructure {
+  id             Int          @id @default(autoincrement())
+  academicYearId Int
+  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id])
+  gradeId        Int
+  grade          Grade        @relation(fields: [gradeId], references: [id])
+  amount         Decimal // Total amount for this grade this year
+  description    String? // e.g., "Tuition + Library + Uniform"
+}
+
+model Payment {
+  id             Int          @id @default(autoincrement())
+  studentId      String
+  student        Student      @relation(fields: [studentId], references: [id])
+  amountPaid     Decimal
+  date           DateTime     @default(now())
+  method         String // "BANK_TRANSFER", "CASH", "ONLINE"
+  academicYearId Int
+  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id])
 }
 
 enum UserSex {

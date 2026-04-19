@@ -153,3 +153,48 @@
     }
   }
 }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 10px;
+}
+
+/* Inside your <style jsx global> in BigCalendar.tsx */
+
+/* 1. Force a minimum height for every hour slot */
+.rubix-big-calendar .rbc-timeslot-group {
+  min-height: 80px !important; 
+  border-bottom: 1px solid #f1f5f9 !important;
+}
+
+/* 2. Prevent events from being "thin strips" */
+.rubix-big-calendar .rbc-day-slot .rbc-events-container {
+  margin-right: 2px !important;
+}
+
+.rubix-big-calendar .rbc-event {
+  width: 98% !important; /* Ensure they take up the full column width */
+  left: 0 !important;
+}
+
+/* 3. Style the text so it doesn't wrap awkwardly */
+.rubix-big-calendar .rbc-event-content {
+  font-size: 0.75rem !important;
+  line-height: 1.2 !important;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+

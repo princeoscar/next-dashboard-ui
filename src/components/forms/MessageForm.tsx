@@ -32,7 +32,7 @@ const MessageForm = ({
     }
   }, [state, router, setOpen]);
 
-  const { receivers } = relatedData;
+  const { receivers } = relatedData || {};
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
@@ -51,11 +51,11 @@ const MessageForm = ({
     required
   >
     <option value="" disabled>Choose a person...</option>
-    {receivers?.map((receiver: { id: string; name: string }) => (
-      <option key={receiver.id} value={receiver.id}>
-        {receiver.name}
-      </option>
-    ))}
+    {receivers?.map((receiver: { id: string; username: string }) => (
+  <option key={receiver.id} value={receiver.id}>
+    {receiver.username} {/* Changed from .name to .username to match your fetch */}
+  </option>
+))}
   </select>
 </div>
 

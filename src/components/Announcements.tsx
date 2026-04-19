@@ -8,6 +8,7 @@ interface AnnouncementProps {
     description: string;
     date: Date | string;
   }[];
+  onSelect?: (announcement: any) => void;
 }
 
 const Announcements = ({ data = [] }: AnnouncementProps) => {

@@ -1,121 +1,98 @@
 import FormContainer from "@/components/FormContainer";
-import Pagination from "@/components/Pagination";
-import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
-import {prisma} from "@/lib/prisma";
-import { ITEM_PER_PAGE } from "@/lib/settings";
-import { Prisma, Subject, Teacher } from "@prisma/client";
-import Image from "next/image";
+import { prisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
-
-type SubjectList = Subject & { teachers: Teacher[] };
+import { redirect } from "next/navigation";
+import ClassSelector from "@/components/ClassSelector"; 
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
 
 const SubjectListPage = async ({
   searchParams,
 }: {
   searchParams: Promise<{ [key: string]: string | undefined }>;
 }) => {
-  // 1. Await once at the top
-  const { page, ...queryParams } = await searchParams;
-  const p = page ? parseInt(page) : 1;
-
+  const params = await searchParams;
+  const { classId, search } = params;
   const { sessionClaims } = await auth();
-  const role = (sessionClaims?.metadata as { role?: string })?.role;
+  const role = (sessionClaims?.metadata as { role?: string })?.role?.toLowerCase();
 
-  const columns = [
-    {
-      header: "Subject Name",
-      accessor: "name",
-    },
-    {
-      header: "Teachers",
-      accessor: "teachers",
-      className: "hidden md:table-cell",
-    },
-    {
-      header: "Actions",
-      accessor: "action",
-    },
-  ];
+  if (role !== "admin") redirect(`/${role}`);
 
-  const renderRow = (item: SubjectList) => (
-    <tr
-      key={item.id}
-      className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-rubixPurpleLight"
-    >
-      <td className="flex items-center gap-4 p-4">{item.name}</td>
-      <td className="hidden md:table-cell">
-        {item.teachers.map((teacher) => teacher.name).join(",")}
-      </td>
-      <td>
-        <div className="flex items-center gap-2">
-          {role === "admin" && (
-            <>
-              <FormContainer table="subject" type="update" data={item} />
-              <FormContainer table="subject" type="delete" id={item.id} />
-            </>
-          )}
+  // 1. DATA FOR SEGMENT VIEW (Classes)
+  if (!classId && !search) {
+    const classes = await prisma.class.findMany({
+      include: { 
+        grade: true,
+        _count: { select: { lessons: true } } // Counts subjects/lessons in this class
+      },
+      orderBy: { name: "asc" },
+    });
+
+    return (
+      <div className="bg-white p-8 rounded-[2.5rem] flex-1 m-4 mt-0 shadow-sm border border-slate-100">
+        <div className="mb-10">
+          <h1 className="text-3xl font-black text-slate-800 tracking-tighter uppercase">
+            Curriculum <span className="text-rubixPurple">Hub</span>
+          </h1>
+          <p className="text-sm text-slate-400 font-medium italic">Select a class to manage its subjects</p>
         </div>
-      </td>
-    </tr>
-  );
-
-  
-
-  // URL PARAMS CONDITION
-
-  const query: Prisma.SubjectWhereInput = {};
-
-  if (queryParams) {
-    for (const [key, value] of Object.entries(queryParams)) {
-      if (value !== undefined) {
-        switch (key) {
-          case "search":
-            query.name = { contains: value, mode: "insensitive" };
-            break;
-          default:
-            break;
-        }
-      }
-    }
+        <ClassSelector classes={classes} role={role} target="subjects" relatedData={{}} />
+      </div>
+    );
   }
 
-  const [data, count] = await prisma.$transaction([
+  // 2. DATA FOR SUBJECT LIST VIEW (Specific Class or Search)
+  const [subjects, teachers] = await prisma.$transaction([
     prisma.subject.findMany({
-      where: query,
-      include: {
-        teachers: true,
+      where: {
+        ...(classId ? { lessons: { some: { classId: parseInt(classId) } } } : {}),
+        ...(search ? { name: { contains: search, mode: "insensitive" } } : {}),
       },
-      take: ITEM_PER_PAGE,
-      skip: ITEM_PER_PAGE * (p - 1),
+      include: { teachers: true },
+      orderBy: { name: "asc" },
     }),
-    prisma.subject.count({ where: query }),
+    prisma.teacher.findMany({ select: { id: true, name: true, surname: true } }),
   ]);
 
+  const relatedData = { teachers };
+
   return (
-    <div className="bg-white p-4 rounded-md flex-1 m-4 mt-0">
-      {/* TOP */}
-      <div className="flex items-center justify-between">
-        <h1 className="hidden md:block text-lg font-semibold">All Subjects</h1>
-        <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+    <div className="bg-white p-8 rounded-[2.5rem] flex-1 m-4 mt-0 shadow-sm border border-slate-100">
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center gap-4">
+          <Link href="/list/subjects" className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400">
+            <ArrowLeft size={20} />
+          </Link>
+          <h1 className="text-xl font-black text-slate-800 uppercase tracking-tight">
+            {classId ? `Class Subjects` : "Search Results"}
+          </h1>
+        </div>
+        <div className="flex items-center gap-4">
           <TableSearch />
-          <div className="flex items-center gap-4 self-end">
-            <button className="w-8 h-8 flex items-center justify-center rounded-full bg-rubixYellow">
-              <Image src="/filter.png" alt="" width={14} height={14} />
-            </button>
-            <button className="w-8 h-8 flex items-center justify-center rounded-full bg-rubixYellow">
-              <Image src="/sort.png" alt="" width={14} height={14} />
-            </button>
-            {role === "admin" && (
-              <FormContainer table="subject" type="create" />
-            )}
-          </div>
+          <FormContainer table="subject" type="create" relatedData={relatedData} />
         </div>
       </div>
-      {/* LIST */}
-      <Table columns={columns} renderRow={renderRow} data={data} />
-      {/* PAGINATION */}
-      <Pagination page={p} count={count} />
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {subjects.map((subject) => (
+          <div key={subject.id} className="p-6 bg-slate-50 rounded-[2rem] border border-slate-100 group relative hover:border-rubixPurple transition-all">
+            <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <FormContainer table="subject" type="update" data={subject} relatedData={relatedData} />
+              <FormContainer table="subject" type="delete" id={subject.id} />
+            </div>
+            <h3 className="font-black text-lg text-slate-800">{subject.name}</h3>
+            <div className="mt-4 flex flex-wrap gap-1">
+              {subject.teachers.map((t) => (
+                <span key={t.id} className="text-[10px] font-bold px-2 py-1 bg-white rounded-md text-slate-500 border border-slate-100">
+                  {t.name} {t.surname}
+                </span>
+              ))}
+            </div>
+          </div>
+        ))}
+        {subjects.length === 0 && <p className="text-slate-400 italic">No subjects assigned yet.</p>}
+      </div>
     </div>
   );
 };

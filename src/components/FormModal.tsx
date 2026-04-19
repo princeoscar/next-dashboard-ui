@@ -17,7 +17,8 @@ import {
   deleteResult, 
   deleteStudent, 
   deleteSubject, 
-  deleteTeacher 
+  deleteTeacher,
+  deleteGrade, 
 } from "@/lib/actions";
 
 // 1. Action Map for Deletions
@@ -33,6 +34,7 @@ const deleteActionMap: any = {
   result: deleteResult,
   parent: deleteParent,
   assignment: deleteAssignment,
+  grade: deleteGrade,
 };
 
 // 2. Dynamic Imports
@@ -49,6 +51,7 @@ const LessonForm = dynamic(() => import("./forms/LessonForm"), { loading: () => 
 const ResultForm = dynamic(() => import("./forms/ResultForm"), { loading: () => <div>Loading...</div> });
 const AttendanceForm = dynamic(() => import("./forms/AttendanceForm"), { loading: () => <div>Loading...</div> });
 const AnnouncementForm = dynamic(() => import("./forms/AnnouncementForm"), { loading: () => <div>Loading...</div> });
+const GradeForm = dynamic(() => import("./forms/GradeForm"), { loading: () => <h1>Loading...</h1> });
 
 // 3. Form Mapping
 const forms: {
@@ -67,6 +70,7 @@ const forms: {
   result: (setOpen, type, data, relatedData) => <ResultForm type={type} data={data} setOpen={setOpen} relatedData={relatedData} />,
   attendance: (setOpen, type, data, relatedData) => <AttendanceForm type={type} data={data} setOpen={setOpen} relatedData={relatedData} />,
   announcement: (setOpen, type, data, relatedData) => <AnnouncementForm type={type} data={data} setOpen={setOpen} relatedData={relatedData} />,
+  grade: (setOpen, type, data) => <GradeForm type={type} data={data} setOpen={setOpen} />,
 };
 
 const FormModal = ({ table, type, data, id, relatedData }: FormContainerProps & { relatedData?: any }) => {
@@ -75,14 +79,12 @@ const FormModal = ({ table, type, data, id, relatedData }: FormContainerProps & 
   const [open, setOpen] = useState(false);
   const router = useRouter();
 
-  // Handle Action State for DELETE only (Create/Update are handled inside their respective forms)
-  const [state, deleteAction] = useActionState(deleteActionMap[table], {
-    success: false,
-    error: false,
-    message: "",
-  });
+  const [state, deleteAction] = useActionState(deleteActionMap[table] || (() => {}), {
+  success: false,
+  error: false,
+  message: "",
+});
 
-  // Effect for Deletion Success
   useEffect(() => {
     if (state.success) {
       toast.success(`${table} has been deleted!`);
@@ -94,7 +96,6 @@ const FormModal = ({ table, type, data, id, relatedData }: FormContainerProps & 
     }
   }, [state, router, table]);
 
-  // Handle scroll lock
   useEffect(() => {
     if (open) document.body.style.overflow = "hidden";
     else document.body.style.overflow = "unset";
@@ -117,9 +118,9 @@ const FormModal = ({ table, type, data, id, relatedData }: FormContainerProps & 
               <form action={deleteAction} className="p-4 flex flex-col gap-4">
                 <input type="hidden" name="id" value={id} />
                 <span className="text-center font-medium">
-                  All data will be lost. Are you sure you want to delete this {table}?
+                  Are you sure you want to delete this {table}?
                 </span>
-                <button className="bg-red-700 text-white py-2 px-4 rounded-md border-none w-max self-center">
+                <button className="bg-red-700 text-white py-2 px-4 rounded-md w-max self-center">
                   Delete
                 </button>
               </form>
@@ -129,11 +130,9 @@ const FormModal = ({ table, type, data, id, relatedData }: FormContainerProps & 
               forms[table] ? (
                 forms[table](setOpen, type, data, relatedData)
               ) : (
-                <div className="p-4 text-center">Form for {table} is still under development! 🛠️</div>
+                <div className="p-4 text-center">Form for {table} is missing!</div>
               )
-            ) : (
-              <div className="p-4 text-center">Form not found!</div>
-            )}
+            ) : null}
 
             {/* CLOSE BUTTON */}
             <div className="absolute top-4 right-4 cursor-pointer" onClick={() => setOpen(false)}>

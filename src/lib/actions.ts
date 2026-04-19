@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import {
   AnnouncementSchema,
   AssignmentSchema,
@@ -15,9 +15,18 @@ import {
   SubjectSchema,
   TeacherSchema,
 } from "./formValidationSchema";
-import prisma from "./prisma";
+import {prisma} from "./prisma";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { isClerkAPIResponseError } from "@clerk/shared/error";
+import Pusher from "pusher";
+
+const pusher = new Pusher({
+  appId: process.env.PUSHER_APP_ID!,
+  key: process.env.NEXT_PUBLIC_PUSHER_APP_KEY!,
+  secret: process.env.PUSHER_SECRET!,
+  cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
+  useTLS: true,
+});
 
 type CurrentState = { success: boolean; error: boolean; message?: string };
 
@@ -215,6 +224,7 @@ export const createTeacher = async (
     await prisma.teacher.create({
       data: {
         id: user.id, // Must match the Clerk ID
+         clerkId: user.id,
         username: data.username,
         name: data.name,
         surname: data.surname,
@@ -233,6 +243,9 @@ export const createTeacher = async (
     });
 
     revalidatePath("/list/teachers");
+  revalidateTag("teachers", "teachers");
+  revalidateTag("profile", "profile");
+  revalidateTag("dashboard-stats", "dashboard-stats");
     return { success: true, error: false, message: "" };
 
   } catch (err: any) {
@@ -293,6 +306,7 @@ export const deleteTeacher = async (
     await client.users.deleteUser(id);
     await prisma.teacher.delete({ where: { id } });
     revalidatePath("/list/teachers");
+    revalidateTag("dashboard-stats", "dashboard-stats");
      return { success: true, error: false, message: "" };
   } catch (err: any) {
     console.log(err);
@@ -339,6 +353,7 @@ export const createStudent = async (
     await prisma.student.create({
       data: {
         id: user.id,
+        clerkId: user.id,
         username: data.username,
         name: data.name,
         surname: data.surname,
@@ -356,6 +371,8 @@ export const createStudent = async (
     });
 
     revalidatePath("/list/students");
+    revalidateTag("student", "student");
+    revalidateTag("dashboard-stats", "dashboard-stats");
     return { success: true, error: false, message: "" };
   } catch (err: any) {
     console.log(err);
@@ -363,6 +380,7 @@ export const createStudent = async (
     const errorMessage = err.errors?.[0]?.longMessage || "Failed to create student.";
     return { success: false, error: true, message: errorMessage };
   }
+  
 };
 
 export const updateStudent = async (
@@ -402,12 +420,15 @@ export const updateStudent = async (
     });
 
     revalidatePath("/list/students");
+    revalidateTag("students", "profile");
+    revalidateTag("profile", "profile");
     return { success: true, error: false, message: "" };
   } catch (err: any) {
     console.log(err);
     const errorMessage = err.errors?.[0]?.longMessage || "Failed to update student.";
     return { success: false, error: true, message: errorMessage };
   }
+  
 };
 
 export const deleteStudent = async (
@@ -426,6 +447,7 @@ export const deleteStudent = async (
     });
 
     revalidatePath("/list/students");
+    revalidateTag("dashboard-stats", "dashboard-stats");
     return { success: true, error: false, message: "" };
   } catch (err: any) {
     console.log(err);
@@ -599,6 +621,46 @@ export const createMessage = async (currentState: any, formData: FormData) => {
   }
 };
 
+export const sendMessage = async (formData: FormData) => {
+  const content = formData.get("content") as string;
+  const receiverId = formData.get("receiverId") as string;
+  const senderId = formData.get("senderId") as string;
+
+  await prisma.message.create({
+    data: {
+      content,
+      senderId,
+      receiverId,
+    },
+  });
+  
+  // You might want to revalidate the path here
+}
+
+export const sendReplyMessage = async (receiverId: string, content: string) => {
+  const { userId } = await auth();
+
+  if (!userId) throw new Error("Unauthorized");
+  if (!content.trim()) return { error: "Message cannot be empty" };
+
+  try {
+    await prisma.message.create({
+      data: {
+        content,
+        senderId: userId,
+        receiverId,
+      },
+    });
+
+    // Refresh the admin page to show the latest state if needed
+    revalidatePath("/admin");
+    return { success: true };
+  } catch (err) {
+    console.error(err);
+    return { error: "Failed to send message" };
+  }
+};
+
 export const deleteParent = async (currentState: CurrentState, data: FormData) => {
   const id = data.get("id") as string;
   try {
@@ -622,11 +684,14 @@ export const createAnnouncement = async (currentState: CurrentState, data: Annou
       data: {
         title: data.title,
         description: data.description,
-        date: new Date(data.date),
-        classId: data.classId || null,
+        date: new Date(), // Always use current date for new posts
+        classId: data.classId ? Number(data.classId) : null,
       },
     });
+    
+    // Refresh both views
     revalidatePath("/list/announcements");
+    revalidatePath("/admin"); 
     return { success: true, error: false };
   } catch (err) {
     console.error(err);
@@ -643,10 +708,11 @@ export const updateAnnouncement = async (currentState: CurrentState, data: Annou
         title: data.title,
         description: data.description,
         date: new Date(data.date),
-        classId: data.classId || null,
+        classId: data.classId ? Number(data.classId) : null,
       },
     });
     revalidatePath("/list/announcements");
+    revalidatePath("/admin");
     return { success: true, error: false };
   } catch (err) {
     console.error(err);
@@ -660,7 +726,7 @@ export const deleteAnnouncement = async (currentState: CurrentState, data: FormD
     await prisma.announcement.delete({
       where: { id: Number(id) },
     });
-    revalidatePath("/list/announcements");
+    revalidatePath("/list/admin");
     return { success: true, error: false };
   } catch (err) {
     console.error(err);
@@ -682,6 +748,7 @@ export const createEvent = async (currentState: CurrentState, data: EventSchema)
       },
     });
     revalidatePath("/list/events");
+    revalidatePath("/admin");
     return { success: true, error: false };
   } catch (err) {
     console.error(err);
@@ -716,7 +783,7 @@ export const deleteEvent = async (currentState: CurrentState, data: FormData) =>
     await prisma.event.delete({
       where: { id: Number(id) },
     });
-    revalidatePath("/list/events");
+    revalidatePath("/list/admin");
     return { success: true, error: false };
   } catch (err) {
     console.error(err);
@@ -794,25 +861,23 @@ export const deleteLesson = async (currentState: CurrentState, data: FormData) =
 
 // ---------------- ATTENDANCE ----------------
 
-export const createAttendance = async (prevState: any, data: AttendanceSchema) => {
+export const createAttendance = async (
+  currentState: { success: boolean; error: boolean },
+  data: AttendanceSchema
+) => {
   try {
-    const attendanceDate = new Date(data.date);
-    attendanceDate.setHours(0, 0, 0, 0);
+    // 1. Create multiple records in one transaction
+    const attendanceRecords = data.students.map((s) => ({
+      studentId: s.studentId,
+      lessonId: data.lessonId,
+      date: data.date,
+      present: s.present,
+    }));
 
-    await prisma.$transaction(async (tx) => {
-      await tx.attendance.deleteMany({
-        where: { lessonId: Number(data.lessonId), date: attendanceDate },
-      });
-      await tx.attendance.createMany({
-        data: data.students.map((s: { studentId: string; present: boolean }) => ({
-          studentId: s.studentId,
-          lessonId: Number(data.lessonId),
-          date: attendanceDate,
-          present: s.present,
-        })),
-      });
+    await prisma.attendance.createMany({
+      data: attendanceRecords,
     });
-    revalidatePath("/list/attendance");
+
     return { success: true, error: false };
   } catch (err) {
     console.error(err);
@@ -820,56 +885,9 @@ export const createAttendance = async (prevState: any, data: AttendanceSchema) =
   }
 };
 
-// ---------------- BULK GRADING ----------------
 
-export const saveBulkResultsAction = async (examId: number, formData: FormData) => {
-  const { sessionClaims } = await auth();
-  const role = (sessionClaims?.metadata as { role?: string })?.role?.toLowerCase();
 
-  if (role !== "admin" && role !== "teacher") {
-    return { success: false, error: true, message: "Unauthorized" };
-  }
 
-  try {
-    const resultsToSave = Array.from(formData.entries())
-      .filter(([key]) => key.startsWith("score-"))
-      .map(([key, value]) => ({
-        studentId: key.replace("score-", ""),
-        score: parseInt(value as string),
-        examId: examId,
-      }))
-      .filter((result) => !isNaN(result.score));
-
-    await prisma.$transaction(
-      resultsToSave.map((res) =>
-        prisma.result.upsert({
-          where: {
-            studentId_examId: {
-              studentId: res.studentId,
-              examId: res.examId,
-            },
-          },
-          update: { 
-            score: res.score 
-          },
-          create: {
-            score: res.score,
-            studentId: res.studentId,
-            examId: res.examId,
-            // Add the missing required field here
-            // Ensure "EXAM" matches your Prisma Enum if you use one (e.g., ResultType.EXAM)
-            type: "EXAM", 
-          },
-        })
-      )
-    );
-    revalidatePath("/list/results");
-    return { success: true, error: false, message: "Grades published!" };
-  } catch (err) {
-    console.error(err);
-    return { success: false, error: true };
-  }
-};
 
 export const createAssignment = async (currentState: any, data: any) => {
   try {
@@ -918,14 +936,22 @@ export const deleteAssignment = async (currentState: any, data: { id: number }) 
 
 export const sendReply = async (currentState: any, data: any) => {
   try {
-    await prisma.message.create({
+    const newMessage = await prisma.message.create({
       data: {
         content: data.content,
         senderId: data.senderId,
         receiverId: data.receiverId,
-        // If your schema uses a parentMessageId to link replies:
         ...(data.parentId && { parentId: Number(data.parentId) }),
       },
+    });
+
+    // --- REAL-TIME BROADCAST ---
+    // We send the message to a channel unique to the receiver
+    await pusher.trigger(`chat-${data.receiverId}`, "new-reply", {
+      content: newMessage.content,
+      senderId: data.senderId,
+      senderName: "Your Name Logic Here",
+      parentId: data.parentId || null,
     });
 
     revalidatePath("/list/messages");
@@ -936,5 +962,122 @@ export const sendReply = async (currentState: any, data: any) => {
   }
 };
 
+export const markMessagesAsRead = async (receiverId: string) => {
+  try {
+    await prisma.message.updateMany({
+      where: {
+        receiverId: receiverId,
+        isRead: false,
+      },
+      data: {
+        isRead: true,
+      },
+    });
+    // Revalidate so the server-side count updates
+    revalidatePath("/list/messages");
+    return { success: true };
+  } catch (err) {
+    console.error(err);
+    return { success: false };
+  }
+};
 
-// (Assignment and Result standard actions would follow the same pattern)
+export const createGrade = async (currentState: any, data: { name: string; level: number }) => {
+  try {
+    await prisma.grade.create({
+      data: {
+        name: data.name,
+        level: data.level,
+      },
+    });
+
+    revalidatePath("/list/grades");
+    return { success: true, error: false };
+  } catch (err) {
+    console.log(err);
+    return { success: false, error: true };
+  }
+};
+
+export const updateGrade = async (currentState: any, data: any) => {
+  try {
+    await prisma.grade.update({
+      where: {
+        // Convert ID to integer
+        id: parseInt(data.id), 
+      },
+      data: {
+        name: data.name,
+        // Convert Level to integer
+        level: parseInt(data.level), 
+      },
+    });
+
+    // Don't forget to revalidate so the UI updates
+    revalidatePath("/list/grades");
+    return { success: true, error: false };
+  } catch (err) {
+    console.error(err);
+    return { success: false, error: true };
+  }
+};
+
+export const deleteGrade = async (currentState: any, formData: FormData) => {
+  // We get the ID from the FormData object
+  const id = formData.get("id") as string;
+
+  try {
+    await prisma.grade.delete({
+      where: {
+        // Essential: Convert the string ID to an Integer
+        id: parseInt(id),
+      },
+    });
+
+    // This clears the cache so the Grade disappears from the list immediately
+    revalidatePath("/list/grades");
+    
+    return { success: true, error: false };
+  } catch (err) {
+    console.error("Delete Error:", err);
+    return { success: false, error: true };
+  }
+};
+
+// ---------------- BULK GRADING ----------------
+
+export const saveBulkResultsAction = async (examId: number, prevState: any, formData: FormData) => {
+  const studentIds = formData.getAll("studentId") as string[];
+  const scores = formData.getAll("score") as string[];
+
+  try {
+    const operations = studentIds.map((id, index) => {
+      const scoreValue = parseInt(scores[index]);
+      if (isNaN(scoreValue)) return null;
+
+      return prisma.result.upsert({
+        where: {
+          studentId_examId: { studentId: id, examId: examId },
+        },
+        update: { 
+          score: scoreValue,
+          // If your schema requires 'type' even on update, include it here:
+          // type: "EXAM" 
+        },
+        create: {
+          score: scoreValue,
+          studentId: id,
+          examId: examId,
+          // FIX: Add the missing required property here
+          type: "EXAM", 
+        },
+      });
+    }).filter(Boolean);
+
+    await prisma.$transaction(operations as any);
+    return { success: true, error: false };
+  } catch (err) {
+    console.error("Database Error:", err);
+    return { success: false, error: true };
+  }
+};

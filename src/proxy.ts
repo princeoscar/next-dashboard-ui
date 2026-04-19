@@ -2,60 +2,48 @@ import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 import { routeAccessMap } from './lib/rules';
 
-/**
- * 1. DEFINE PUBLIC ROUTES
- * These routes are accessible to everyone. 
- * This prevents the "Login page redirects to Login page" loop.
- */
 const isPublicRoute = createRouteMatcher([
   '/sign-in(.*)',
   '/sign-up(.*)',
-  '/', // Landing page
-  '/api/webhooks(.*)' // If you use Clerk or Stripe webhooks
+  '/', 
+  '/api/webhooks(.*)'
 ]);
 
-// Pre-compute matchers for protected routes from your rules file
+// Cache matchers outside the handler
 const matchers = Object.entries(routeAccessMap).map(([route, allowedRoles]) => ({
   matcher: createRouteMatcher([route]),
-  allowedRoles: allowedRoles as string[],
+  allowedRoles: allowedRoles.map(r => r.toLowerCase()),
 }));
 
 export default clerkMiddleware(async (auth, req) => {
+  const { userId, sessionClaims, redirectToSignIn } = await auth();
   const currentPath = req.nextUrl.pathname;
 
-  // 2. EXEMPT PUBLIC ROUTES
-  // If the path is /sign-in, we stop here and let the user see the page.
+  // 1. PUBLIC ROUTES
   if (isPublicRoute(req)) {
     return NextResponse.next();
   }
 
-  const authObject = await auth();
-  const { sessionClaims, userId } = authObject;
+  // 2. AUTHENTICATION CHECK
+  if (!userId) {
+    return redirectToSignIn();
+  }
 
-  // 3. EXTRACT ROLE
-  // Safely grab the role from Clerk Metadata
-  const role = (sessionClaims?.metadata as { role?: string })?.role?.toLowerCase();
+  // 3. ROLE EXTRACTION
+  const role = (sessionClaims?.metadata as { role?: string })?.role?.toLowerCase() || "";
 
-  // 4. CHECK PROTECTED ROUTES
+  // 4. RBAC CHECK
   for (const { matcher, allowedRoles } of matchers) {
     if (matcher(req)) {
-      
-      // If the route is protected and user isn't logged in, redirect to sign-in
-      if (!userId) {
-        return authObject.redirectToSignIn();
-      }
-
-      // 5. ROLE-BASED ACCESS CONTROL (RBAC)
-      // If user is logged in but doesn't have the required role for this specific route
-      if (!role || !allowedRoles.includes(role)) {
+      // If the user's role isn't in the allowed list for this path
+      if (!allowedRoles.includes(role)) {
         
-        // Decide where to send them if they are unauthorized
-        // If they have a role (e.g. "student"), send them to /student. 
-        // If no role at all, send them to a default dashboard or onboarding.
-        const fallbackPath = role ? `/${role}` : '/admin'; 
+        // Define destination based on role
+        const fallbackPath = role ? `/${role}` : '/list/subjects';
 
-        // Final safety check: if they are already on the fallback path, don't redirect
-        if (currentPath === fallbackPath) {
+        // CRITICAL: Prevent Infinite Redirect Loop
+        // If the current path is already the destination, let them in
+        if (currentPath.startsWith(fallbackPath)) {
           return NextResponse.next();
         }
 
@@ -69,9 +57,7 @@ export default clerkMiddleware(async (auth, req) => {
 
 export const config = {
   matcher: [
-    // Skip Next.js internals and all static files, unless found in search params
     '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
-    // Always run for API routes
     '/(api|trpc)(.*)',
   ],
 };

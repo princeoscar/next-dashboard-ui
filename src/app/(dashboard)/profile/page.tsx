@@ -1,8 +1,9 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import prisma from "@/lib/prisma"; // Standardized import
+import prisma from "@/lib/prisma";
 import Image from "next/image";
 import Link from "next/link";
+import { unstable_cache } from "next/cache"; // 1. IMPORT CACHE
 import { 
   User, 
   Phone, 
@@ -16,6 +17,45 @@ import {
   Settings
 } from "lucide-react";
 
+// --- 2. CACHED DATA FETCHERS ---
+// This prevents the "Can't reach database" error on frequent refreshes
+const getCachedUser = unstable_cache(
+  async (userId: string, role: string) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (role === "teacher") {
+      return await prisma.teacher.findUnique({
+        where: { id: userId },
+        include: { subjects: true, classes: true },
+      });
+    } 
+    if (role === "student") {
+      return await prisma.student.findUnique({
+        where: { id: userId },
+        include: { class: true },
+      });
+    } 
+    if (role === "parent") {
+      return await prisma.parent.findUnique({
+        where: { id: userId },
+        include: {
+          students: { // <--- This must be here!
+            include: {
+              class: true,
+            },
+          },
+        },
+      });
+    }
+    if (role === "admin") {
+      return await prisma.admin.findUnique({ where: { id: userId } });
+    }
+    return null;
+  },
+  ["user-profile-cache"],
+  { revalidate: 3600, tags: ["profile"] }
+);
+
 const ProfilePage = async () => {
   const { userId, sessionClaims } = await auth();
   const user = await currentUser();
@@ -25,49 +65,24 @@ const ProfilePage = async () => {
   const rawRole = (sessionClaims?.metadata as { role?: string })?.role || "student";
   const role = rawRole.toLowerCase();
 
-  // --- 1. DYNAMIC DATABASE FETCH ---
-  let dbUser: any = null;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  // 2. FETCH DATA ONCE
+  const fetchedUser = await getCachedUser(userId, role);
 
-  // Fetching logic based on role
-  if (role === "teacher") {
-    dbUser = await prisma.teacher.findUnique({
-      where: { id: userId },
-      include: { subjects: true, classes: true },
-    });
-  } else if (role === "student") {
-    dbUser = await prisma.student.findUnique({
-      where: { id: userId },
-      include: { class: true },
-    });
-  } else if (role === "parent") {
-    dbUser = await prisma.parent.findUnique({
-      where: { id: userId },
-      include: {
-        students: {
-          include: {
-            class: true,
-            results: { orderBy: { id: 'desc' }, take: 1 },
-            attendances: { where: { date: { gte: today } } } 
-          },
-        },
-      },
-    });
-  } else if (role === "admin") {
-    dbUser = await prisma.admin.findUnique({ where: { id: userId } });
-  }
-
-  if (!dbUser) {
+  if (!fetchedUser) {
     return (
       <div className="p-12 text-slate-400 font-black text-center flex flex-col items-center gap-4">
         <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center animate-pulse">
            <User size={32} />
         </div>
-        <p className="uppercase tracking-[0.2em] text-xs">Database Record Sync Required</p>
+        <p className="uppercase tracking-[0.2em] text-xs">Record Not Found</p>
       </div>
     );
   }
+
+  // 3. CAST TO ANY TO AVOID PROPERTY ERRORS
+  const dbUser = fetchedUser as any;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
   return (
     <div className="p-8 bg-slate-50/50 min-h-screen">
@@ -86,12 +101,12 @@ const ProfilePage = async () => {
             />
           </div>
           
-          <div className="flex-1 text-center md:text-left relative z-10">
+        <div className="flex-1 text-center md:text-left relative z-10">
             <div className="flex flex-col md:flex-row md:items-center gap-4 mb-4">
               <h1 className="text-4xl font-black text-slate-800 tracking-tighter uppercase">
-                {dbUser.name} {dbUser.surname || ""}
+                {dbUser.name || dbUser.username} {dbUser.surname || ""}
               </h1>
-              <div className="flex items-center gap-2 bg-slate-900 text-white px-4 py-1.5 rounded-2xl shadow-xl">
+              <div className="flex items-center gap-2 bg-slate-900 text-white px-4 py-1.5 rounded-2xl shadow-xl w-fit">
                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                  <span className="text-[10px] font-black uppercase tracking-widest">{role}</span>
               </div>

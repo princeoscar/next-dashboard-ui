@@ -1,26 +1,32 @@
+// src/app/(dashboard)/list/teachers/page.tsx
 import FormContainer from "@/components/FormContainer";
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
-import {prisma} from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import { Class, Prisma, Subject, Teacher } from "@prisma/client";
 import Image from "next/image";
 import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
 import { ITEM_PER_PAGE } from "@/lib/settings";
+import { getCachedTeachers } from "@/lib/data-fetchers";
+import { redirect } from "next/navigation";
 
 type TeacherList = Teacher & { subjects: Subject[] } & { classes: Class[] };
 
 const TeacherListPage = async ({
   searchParams,
 }: {
-  searchParams: Promise<{ [key: string]: string | undefined }>; // ✅ Next.js 15 Fix
+  searchParams: Promise<{ [key: string]: string | undefined }>;
 }) => {
-  // ✅ 1. Await auth and searchParams
   const { sessionClaims } = await auth(); 
   const resolvedSearchParams = await searchParams;
-  
-  const role = (sessionClaims?.metadata as { role?: string })?.role;
+  const role = (sessionClaims?.metadata as { role?: string })?.role?.toLowerCase();
+
+  // Block anyone who isn't an admin or teacher
+  if (role !== "admin" && role !== "teacher") {
+    redirect(`/${role}`);
+  }
 
   const columns = [
     { header: "Info", accessor: "info" },
@@ -28,12 +34,11 @@ const TeacherListPage = async ({
     { header: "Subjects", accessor: "subjects", className: "hidden md:table-cell" },
     { header: "Classes", accessor: "classes", className: "hidden md:table-cell" },
     { header: "Phone", accessor: "phone", className: "hidden lg:table-cell" },
-    { header: "Address", accessor: "address", className: "hidden lg:table-cell" },
-    ...(role === "admin" ? [{ header: "Actions", accessor: "action" }] : []),
+    { header: "Actions", accessor: "action", className: "text-right" },
   ];
 
   const renderRow = (item: TeacherList) => (
-    <tr key={item.id} className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-rubixPurpleLight">
+    <tr key={item.id} className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-rubixPurpleLight/20 transition-all">
       <td className="flex items-center gap-4 p-4">
         <Image
           src={item.img || "/noAvatar.png"}
@@ -43,19 +48,18 @@ const TeacherListPage = async ({
           className="md:hidden xl:block w-10 h-10 rounded-full object-cover"
         />
         <div className="flex flex-col">
-          <h3 className="font-semibold">{item.name}</h3>
+          <h3 className="font-semibold text-slate-700">{item.name}</h3>
           <p className="text-xs text-gray-500">{item?.email}</p>
         </div>
       </td>
       <td className="hidden md:table-cell">{item.username}</td>
       <td className="hidden md:table-cell">{item.subjects.map((s) => s.name).join(", ")}</td>
       <td className="hidden md:table-cell">{item.classes.map((c) => c.name).join(", ")}</td>
-      <td className="hidden md:table-cell">{item.phone}</td>
-      <td className="hidden md:table-cell">{item.address}</td>
+      <td className="hidden lg:table-cell">{item.phone || "---"}</td>
       <td>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 justify-end">
           <Link href={`/list/teachers/${item.id}`}>
-            <button className="w-7 h-7 flex items-center justify-center rounded-full bg-rubixSky">
+            <button className="w-8 h-8 flex items-center justify-center rounded-full bg-rubixSky hover:bg-sky-200 transition-colors">
               <Image src="/view.png" alt="" width={16} height={16} />
             </button>
           </Link>
@@ -67,60 +71,42 @@ const TeacherListPage = async ({
     </tr>
   );
 
-  // ✅ 2. Use the resolved params
   const { page, ...queryParams } = resolvedSearchParams;
   const p = page ? parseInt(page) : 1;
 
   const query: Prisma.TeacherWhereInput = {};
-
-  if (queryParams) {
-    for (const [key, value] of Object.entries(queryParams)) {
-      if (value !== undefined) {
-        switch (key) {
-          case "classId":
-            query.lessons = { some: { classId: parseInt(value) } };
-            break;
-          case "search":
-            query.name = { contains: value, mode: "insensitive" };
-            break;
-        }
-      }
-    }
+  if (queryParams.search) {
+    query.name = { contains: queryParams.search, mode: "insensitive" };
+  }
+  if (queryParams.classId) {
+    query.classes = { some: { id: parseInt(queryParams.classId) } };
   }
 
-  const [data, count] = await Promise.all([
-  prisma.teacher.findMany({
-    where: query,
-    include: {
-      subjects: { select: { id: true, name: true } }, // Optimization: Only select what's needed
-      classes: { select: { id: true, name: true } },
-    },
-    take: ITEM_PER_PAGE,
-    skip: ITEM_PER_PAGE * (p - 1),
-    orderBy: { name: "asc" },
-  }),
-  prisma.teacher.count({ where: query }),
-]);
+  const [teachers, count] = await Promise.all([
+    getCachedTeachers(query, p),
+    prisma.teacher.count({ where: query }),
+  ]);
 
   return (
-    <div className="bg-white p-4 rounded-md flex-1 m-4 mt-0">
-      <div className="flex items-center justify-between">
-        <h1 className="hidden md:block text-lg font-semibold">All Teachers</h1>
+    <div className="bg-white p-8 rounded-[2.5rem] flex-1 m-4 mt-0 shadow-sm border border-slate-100">
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="hidden md:block text-2xl font-black text-slate-800 uppercase tracking-tighter">Teacher Registry</h1>
         <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
           <TableSearch />
-          <div className="flex items-center gap-4 self-end">
-            <button className="w-8 h-8 flex items-center justify-center rounded-full bg-rubixYellow">
-              <Image src="/filter.png" alt="" width={14} height={14} />
-            </button>
-            <button className="w-8 h-8 flex items-center justify-center rounded-full bg-rubixYellow">
-              <Image src="/sort.png" alt="" width={14} height={14} />
+          <div className="flex items-center gap-3 self-end">
+            <button className="w-10 h-10 flex items-center justify-center rounded-2xl bg-slate-50 hover:bg-slate-100 transition-all border border-slate-100">
+              <Image src="/filter.png" alt="" width={16} height={16} />
             </button>
             {role === "admin" && <FormContainer table="teacher" type="create" />}
           </div>
         </div>
       </div>
-      <Table columns={columns} renderRow={renderRow} data={data} />
-      <Pagination page={p} count={count} />
+      <div className="rounded-3xl border border-slate-50 overflow-hidden">
+        <Table columns={columns} renderRow={renderRow} data={teachers} />
+      </div>
+      <div className="mt-8 border-t border-slate-50 pt-6">
+        <Pagination page={p} count={count} />
+      </div>
     </div>
   );
 };
