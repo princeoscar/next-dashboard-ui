@@ -1,4 +1,12 @@
+import { UserProfile } from "@clerk/nextjs";
 import { prisma } from "./prisma";
+
+
+const SettingsPage = () => (
+  <div className="flex items-center justify-center p-4">
+    <UserProfile routing="hash" />
+  </div>
+);
 
 export const ITEM_PER_PAGE = 10
 
@@ -24,6 +32,8 @@ export const routeAccessMap: RouteAccessMap = {
   "/list/announcements": ["admin", "teacher", "student", "parent"],
 };
 
+
+
 export const getActiveConfig = async () => {
   const session = await prisma.academicYear.findFirst({
     where: { isCurrent: true },
@@ -46,3 +56,4 @@ export const activateNewSession = async (yearName: string) => {
     })
   ]);
 };
+

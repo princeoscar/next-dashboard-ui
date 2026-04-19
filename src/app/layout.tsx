@@ -8,10 +8,10 @@ import "react-toastify/dist/ReactToastify.css";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 // Load the premium font for logos/titles
-const playfair = Playfair_Display({ 
-  subsets: ["latin"], 
+const playfair = Playfair_Display({
+  subsets: ["latin"],
   weight: ["700"], // Use bold weight
-  variable: "--font-playfair" 
+  variable: "--font-playfair"
 });
 
 export const metadata: Metadata = {
@@ -25,10 +25,24 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
+    <ClerkProvider
+      appearance={{
+        layout: {
+          helpPageUrl: "https://your-support-link.com", // Optional: redirects help links
+          logoPlacement: "none",
+        },
+        elements: {
+          footer: "hidden",
+          // Wrap this in quotes because it has a hyphen!
+          "clerk-branding": "hidden",
+          // Specifically target the "Development Mode" and badge
+          internal: "display-none",
+        },
+      }}
+    >
       <html lang="en">
         <body className={`${inter.variable} ${playfair.variable} font-inter antialiased`} suppressHydrationWarning>
-          {children} 
+          {children}
           <ToastContainer position="bottom-right" theme="dark" />
         </body>
       </html>

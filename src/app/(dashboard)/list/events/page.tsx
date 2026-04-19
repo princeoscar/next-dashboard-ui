@@ -3,7 +3,7 @@ import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
 import FormContainer from "@/components/FormContainer";
 import { CalendarDays, Clock, Sparkles, ArrowLeft, Calendar } from "lucide-react";
-import prisma from "@/lib/prisma";
+import {prisma} from "@/lib/prisma";
 import { ITEM_PER_PAGE } from "@/lib/settings";
 import { auth } from "@clerk/nextjs/server";
 import { Prisma, Class, Event } from "@prisma/client";
@@ -178,7 +178,7 @@ const EventListPage = async ({
             </Link>
           )}
           <h1 className="text-xl md:text-2xl font-black text-slate-800 tracking-tighter uppercase">
-            {classId ? `Activity Log` : "Campus Events"}
+            {classId ? `Activity Log` : "School Events"}
           </h1>
         </div>
         <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">

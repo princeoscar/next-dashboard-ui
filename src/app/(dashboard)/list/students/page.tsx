@@ -46,15 +46,16 @@ const StudentListPage = async ({
     // 2. Fetch filtered data
 const [announcements, events, messages] = await prisma.$transaction([
   prisma.announcement.findMany({
-    where: {
-      OR: [
-        { classId: null }, // School-wide
-        { classId: student?.classId } // Their specific class
-      ]
-    },
-    take: 5,
-    orderBy: { date: "desc" }
-  }),
+  where: {
+    OR: [
+      { classId: null }, // School-wide
+      // Use || -1 or similar to ensure a value is always passed
+      { classId: student?.classId || -1 } 
+    ]
+  },
+  take: 5,
+  orderBy: { date: "desc" }
+}),
   prisma.event.findMany({
     where: {
       OR: [
@@ -67,17 +68,22 @@ const [announcements, events, messages] = await prisma.$transaction([
     orderBy: { startTime: "asc" }
   }),
   prisma.message.findMany({
-    where: { receiverId: userId! },
-    include: {
-       sender: { 
-        select: {
-          username: true,
-           name: true,
-            surname: true
-           } } }, 
-    take: 5,
-    orderBy: { createdAt: "desc" }
-  })
+  where: { receiverId: userId! },
+  include: {
+    sender: { 
+      select: {
+        username: true,
+        // Check your schema: if you use 'name' on Teacher/Student,
+        // but this 'sender' is a 'User', it might not have 'name'.
+        // If it throws an error again, remove 'name' and 'surname' below:
+        // name: true, 
+        // surname: true
+      } 
+    } 
+  }, 
+  take: 5,
+  orderBy: { createdAt: "desc" }
+})
 ]);
 
     // Fetch teachers and grades once for the "Create Class" form (if needed)

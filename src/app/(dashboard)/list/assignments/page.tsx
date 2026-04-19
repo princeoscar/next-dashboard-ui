@@ -30,8 +30,8 @@ const AssignmentListPage = async ({
   if (role === "parent" && !selectedStudentId) {
     const children = await prisma.student.findMany({
       where: { parentId: userId! },
-      include: { 
-        class: true, 
+      include: {
+        class: true,
       }
     });
 
@@ -51,25 +51,25 @@ const AssignmentListPage = async ({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {children.map((child) => (
-            <Link 
-              key={child.id} 
+            <Link
+              key={child.id}
               href={`/list/assignments?studentId=${child.id}`}
               className="group p-8 rounded-[2.5rem] border border-slate-100 bg-slate-50/50 hover:bg-white hover:shadow-2xl hover:shadow-slate-200/50 transition-all duration-300"
             >
               <div className="flex flex-col items-center text-center">
-                 <div className="w-24 h-24 rounded-3xl bg-sky-50 flex items-center justify-center text-sky-400 mb-6 group-hover:scale-110 group-hover:bg-sky-400 group-hover:text-white transition-all">
-                   <User size={40} strokeWidth={2.5} />
-                 </div>
-                 <h2 className="font-black text-xl text-slate-800 uppercase tracking-tighter">{child.name} {child.surname}</h2>
-                 <span className="px-4 py-1 bg-white border border-slate-100 rounded-full text-[10px] font-black text-slate-400 uppercase mt-3 tracking-widest">
-                   Class {child.class?.name || "N/A"}
-                 </span>
-                 
-                 <div className="mt-8 w-full pt-6 border-t border-slate-100 flex justify-end items-center">
-                   <div className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all">
-                     <ArrowRight size={20} />
-                   </div>
-                 </div>
+                <div className="w-24 h-24 rounded-3xl bg-sky-50 flex items-center justify-center text-sky-400 mb-6 group-hover:scale-110 group-hover:bg-sky-400 group-hover:text-white transition-all">
+                  <User size={40} strokeWidth={2.5} />
+                </div>
+                <h2 className="font-black text-xl text-slate-800 uppercase tracking-tighter">{child.name} {child.surname}</h2>
+                <span className="px-4 py-1 bg-white border border-slate-100 rounded-full text-[10px] font-black text-slate-400 uppercase mt-3 tracking-widest">
+                  Class {child.class?.name || "N/A"}
+                </span>
+
+                <div className="mt-8 w-full pt-6 border-t border-slate-100 flex justify-end items-center">
+                  <div className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all">
+                    <ArrowRight size={20} />
+                  </div>
+                </div>
               </div>
             </Link>
           ))}
@@ -115,14 +115,14 @@ const AssignmentListPage = async ({
       break;
     case "parent":
       // 🔒 Lockdown: Parent sees assignments for the class their selected child belongs to
-      andConditions.push({ 
-        lesson: { 
-            class: { 
-                students: { 
-                    some: { id: selectedStudentId, parentId: userId! } 
-                } 
-            } 
-        } 
+      andConditions.push({
+        lesson: {
+          class: {
+            students: {
+              some: { id: selectedStudentId, parentId: userId! }
+            }
+          }
+        }
       });
       break;
     default:
@@ -218,16 +218,18 @@ const AssignmentListPage = async ({
 
   return (
     <div className="bg-white p-4 md:p-8 rounded-[2rem] md:rounded-[2.5rem] flex-1 m-2 md:m-4 mt-0 shadow-sm border border-slate-100">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4 md:gap-6">
         <div className="flex items-center gap-4">
           <Link href="/list/assignments" className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400">
             <ArrowLeft size={20} />
           </Link>
           <h1 className="text-xl md:text-2xl font-black text-slate-800 tracking-tighter uppercase">
-             {selectedStudentId ? "Pending Tasks" : "Assignment Registry"}
+            {selectedStudentId ? "Pending Tasks" : "Assignment Registry"}
           </h1>
         </div>
-        <TableSearch />
+        <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end">
+          <TableSearch />
+        </div>
       </div>
 
       <div className="rounded-3xl border border-slate-50 overflow-hidden bg-white shadow-sm">
@@ -235,9 +237,9 @@ const AssignmentListPage = async ({
       </div>
 
       {!data.length && (
-         <div className="py-20 text-center border-2 border-dashed border-slate-50 rounded-[2rem] mt-4">
-           <p className="text-xs font-black text-slate-300 uppercase tracking-widest">No assignments found</p>
-         </div>
+        <div className="py-20 text-center border-2 border-dashed border-slate-50 rounded-[2rem] mt-4">
+          <p className="text-xs font-black text-slate-300 uppercase tracking-widest">No assignments found</p>
+        </div>
       )}
 
       <div className="mt-8 border-t border-slate-50 pt-6">

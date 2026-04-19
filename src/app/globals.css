@@ -198,3 +198,23 @@
   justify-content: center;
 }
 
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* Target the Clerk Branding and Development mode banners */
+.cl-internal-b3fm6y,
+.cl-internal-1dauvpw,
+.cl-userButtonPopoverFooter,
+.cl-footer,
+.cl-internal-60u9ee {
+  display: none !important;
+}
+
+/* A more aggressive catch-all for any Clerk footer/branding */
+div[data-localization-key="branding"],
+div[class*="cl-internal-"][class*="footer"] {
+  display: none !important;
+}

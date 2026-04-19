@@ -2,13 +2,15 @@
 
 import { UserButton } from "@clerk/nextjs";
 import MobileMenu from "./MobileMenu";
-import { MessageCircle, Bell, Search } from "lucide-react"; // Swapped Image for Lucide icons for consistency
+
+import { Bell, Search, MessageSquare } from "lucide-react"; // Swapped Image for Lucide icons for consistency
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Pusher from "pusher-js";
 import toast, { Toaster } from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import { markMessagesAsRead } from "@/lib/actions";
+
 
 interface NavbarProps {
   role: string;
@@ -120,7 +122,7 @@ const Navbar = ({
         
         {/* Messages Icon */}
         <div onClick={handleMessageClick} className="group relative bg-slate-50 p-2.5 rounded-full hover:bg-blue-50 transition-all cursor-pointer border border-slate-100">
-          <MessageCircle size={18} className="text-slate-500 group-hover:text-blue-600" />
+          <MessageSquare size={18} className="text-slate-500 group-hover:text-blue-600" />
           {messageNotify > 0 && (
             <div className="absolute -top-1 -right-1 w-4 h-4 flex items-center justify-center bg-blue-600 text-white rounded-full text-[9px] font-black border-2 border-white animate-pulse">
               {messageNotify}
@@ -138,13 +140,21 @@ const Navbar = ({
           )}
         </div>
 
+
         {/* User Profile */}
         <div className="flex items-center gap-3 border-l pl-4 border-slate-200 ml-1">
           <div className="hidden sm:flex flex-col items-end">
             <span className="text-[11px] font-bold text-slate-800 leading-tight">{firstName || "User"}</span>
             <span className="text-[9px] uppercase font-black text-blue-600 tracking-tighter">{role}</span>
           </div>
-          <UserButton appearance={{ elements: { userButtonAvatarBox: "w-9 h-9 border border-slate-200 shadow-sm" } }} />
+          <UserButton
+           appearance={{
+             elements: {
+               userButtonAvatarBox: "w-9 h-9 border border-slate-200 shadow-sm",
+               footer: "hidden",
+            footerAction: "hidden",
+            internal: "display-none",
+               } }} />
         </div>
       </div>
     </div>

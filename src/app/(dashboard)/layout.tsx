@@ -68,7 +68,7 @@ export default async function DashboardLayout({
   const firstName = user?.firstName || "User";
 
   return (
-    <div className="h-screen flex overflow-hidden bg-white">
+    <div className="flex h-screen bg-slate-50 transition-colors duration-300">
       {/* LEFT - SIDEBAR */}
       <div className="hidden md:block md:w-[8%] lg:w-[16%] xl:w-[14%] p-4 border-r border-slate-100 overflow-y-auto custom-scrollbar">
         <Link href="/" className="flex items-center gap-1.5 mb-10 px-1 w-full justify-start overflow-hidden">
@@ -92,7 +92,6 @@ export default async function DashboardLayout({
           firstName={firstName}
           announcementCount={filteredAnnouncementCount}
         />
-
         <main className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6">
           <div className="max-w-[1600px] mx-auto pb-24 md:pb-6 animate-fadeIn">
             {children}

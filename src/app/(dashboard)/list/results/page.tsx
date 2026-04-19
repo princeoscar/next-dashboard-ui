@@ -26,9 +26,9 @@ const ResultListPage = async ({
   if (role === "parent" && !selectedStudentId) {
     const children = await prisma.student.findMany({
       where: { parentId: userId! },
-      include: { 
-        class: true, 
-        _count: { select: { results: true } } 
+      include: {
+        class: true,
+        _count: { select: { results: true } }
       }
     });
 
@@ -48,29 +48,29 @@ const ResultListPage = async ({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {children.map((child) => (
-            <Link 
-              key={child.id} 
+            <Link
+              key={child.id}
               href={`/list/results?studentId=${child.id}`}
               className="group p-8 rounded-[2.5rem] border border-slate-100 bg-slate-50/50 hover:bg-white hover:shadow-2xl hover:shadow-slate-200/50 transition-all duration-300"
             >
               <div className="flex flex-col items-center text-center">
-                 <div className="w-24 h-24 rounded-3xl bg-amber-500/10 flex items-center justify-center text-amber-500 mb-6 group-hover:scale-110 group-hover:bg-amber-500 group-hover:text-white transition-all">
-                   <User size={40} strokeWidth={2.5} />
-                 </div>
-                 <h2 className="font-black text-xl text-slate-800 uppercase tracking-tighter">{child.name} {child.surname}</h2>
-                 <span className="px-4 py-1 bg-white border border-slate-100 rounded-full text-[10px] font-black text-slate-400 uppercase mt-3 tracking-widest">
-                   Class {child.class?.name || "N/A"}
-                 </span>
-                 
-                 <div className="mt-8 w-full pt-6 border-t border-slate-100 flex justify-between items-center">
-                   <div className="text-left">
-                     <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Database</p>
-                     <p className="text-sm font-black text-slate-600">{child._count.results} Records Found</p>
-                   </div>
-                   <div className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all">
-                     <ArrowRight size={20} />
-                   </div>
-                 </div>
+                <div className="w-24 h-24 rounded-3xl bg-amber-500/10 flex items-center justify-center text-amber-500 mb-6 group-hover:scale-110 group-hover:bg-amber-500 group-hover:text-white transition-all">
+                  <User size={40} strokeWidth={2.5} />
+                </div>
+                <h2 className="font-black text-xl text-slate-800 uppercase tracking-tighter">{child.name} {child.surname}</h2>
+                <span className="px-4 py-1 bg-white border border-slate-100 rounded-full text-[10px] font-black text-slate-400 uppercase mt-3 tracking-widest">
+                  Class {child.class?.name || "N/A"}
+                </span>
+
+                <div className="mt-8 w-full pt-6 border-t border-slate-100 flex justify-between items-center">
+                  <div className="text-left">
+                    <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Database</p>
+                    <p className="text-sm font-black text-slate-600">{child._count.results} Records Found</p>
+                  </div>
+                  <div className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all">
+                    <ArrowRight size={20} />
+                  </div>
+                </div>
               </div>
             </Link>
           ))}
@@ -118,9 +118,9 @@ const ResultListPage = async ({
       break;
     case "parent":
       // 🔒 Ensure results are for the chosen child AND the parent owns that child
-      andConditions.push({ 
+      andConditions.push({
         studentId: selectedStudentId,
-        student: { parentId: userId! } 
+        student: { parentId: userId! }
       });
       break;
     default:
@@ -192,15 +192,15 @@ const ResultListPage = async ({
         </td>
         <td className={`p-4 text-center font-black text-lg ${scoreColor}`}>{item.score}%</td>
         <td className="hidden md:table-cell p-4">
-            <span className="text-[9px] font-black uppercase text-slate-400">{isExam ? "Exam" : "Assignment"}</span>
+          <span className="text-[9px] font-black uppercase text-slate-400">{isExam ? "Exam" : "Assignment"}</span>
         </td>
         <td className="hidden sm:table-cell p-4">
-           <span className="text-xs font-bold text-slate-500">{item.student.name}</span>
+          <span className="text-xs font-bold text-slate-500">{item.student.name}</span>
         </td>
         <td className="p-4 text-right">
           <div className="flex items-center gap-2 justify-end">
             <Link href={`/print/${item.studentId}`}>
-               <button className="p-2 bg-slate-100 rounded-full hover:bg-amber-500 hover:text-white transition-all"><FileText size={14} /></button>
+              <button className="p-2 bg-slate-100 rounded-full hover:bg-amber-500 hover:text-white transition-all"><FileText size={14} /></button>
             </Link>
             {(role === "admin" || role === "teacher") && (
               <>
@@ -216,7 +216,7 @@ const ResultListPage = async ({
 
   return (
     <div className="bg-white p-8 rounded-[2.5rem] flex-1 m-4 mt-0 shadow-sm border border-slate-100">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4 md:gap-6">
         <div className="flex items-center gap-4">
           <Link href="/list/results" className="p-2 hover:bg-slate-100 rounded-full transition-colors">
             <ArrowLeft size={20} />
@@ -225,13 +225,16 @@ const ResultListPage = async ({
             {role === "parent" ? "Child Performance" : "Registry"}
           </h1>
         </div>
-        <TableSearch />
+        <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end">
+          <TableSearch />
+        </div>
+
       </div>
 
       <div className="rounded-3xl border border-slate-50 overflow-hidden bg-white shadow-sm">
         <Table columns={columns} renderRow={renderRow} data={data} />
       </div>
-      
+
       <div className="mt-8 border-t border-slate-50 pt-6">
         <Pagination page={p} count={count} />
       </div>
