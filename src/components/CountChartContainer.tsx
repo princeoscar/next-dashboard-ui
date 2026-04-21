@@ -10,12 +10,12 @@ interface CountChartProps {
 }
 
 const CountChartContainer = ({ data }: CountChartProps) => {
-  const boys = data.find((d) => d.name === "Boys")?.count || 0;
-  const girls = data.find((d) => d.name === "Girls")?.count || 0;
-  const total = boys + girls;
+  const maleData = data.find((d) => d.name === "MALE")?.count || 0;
+  const femaleData = data.find((d) => d.name === "FEMALE")?.count || 0;
+  const total = maleData + femaleData;
 
-  const boysPercent = total > 0 ? Math.round((boys / total) * 100) : 0;
-  const girlsPercent = total > 0 ? Math.round((girls / total) * 100) : 0;
+  const boysPercent = total > 0 ? Math.round((maleData / total) * 100) : 0;
+  const girlsPercent = total > 0 ? Math.round((femaleData / total) * 100) : 0;
 
   return (
     <div className="bg-white rounded-2xl w-full p-5 shadow-sm">
@@ -28,7 +28,7 @@ const CountChartContainer = ({ data }: CountChartProps) => {
 
       {/* CHART */}
       <div className="relative w-full h-[220px] flex items-center justify-center">
-        <CountChart boys={boys} girls={girls} />
+        <CountChart boys={maleData} girls={femaleData} />
 
         {/* CENTER TEXT */}
         {/* <div className="absolute flex flex-col items-center justify-center">
@@ -52,7 +52,7 @@ const CountChartContainer = ({ data }: CountChartProps) => {
             <span className="text-xs text-gray-400">{boysPercent}%</span>
           </div>
           <span className="ml-2 text-base font-semibold text-gray-800">
-            {boys}
+            {maleData}
           </span>
         </div>
 
@@ -64,7 +64,7 @@ const CountChartContainer = ({ data }: CountChartProps) => {
             <span className="text-xs text-gray-400">{girlsPercent}%</span>
           </div>
           <span className="ml-2 text-base font-semibold text-gray-800">
-            {girls}
+            {femaleData}
           </span>
         </div>
 
