@@ -7,17 +7,19 @@ import { auth } from "@clerk/nextjs/server";
 const MessageListPage = async () => {
   const { userId } = await auth();
   
-  // 1. FETCH RECIPIENTS
-  // Fetching users so the 'Create' form knows who you can message
+  // 1. FETCH RECIPIENTS (Filtering out current user)
   const users = await prisma.user.findMany({
-  where: {
-    id: { not: userId! } // 👈 Prevents messaging yourself
-  },
-  select: { 
-    id: true, 
-    username: true,
-  },
-});
+    where: {
+      id: { not: userId! } 
+    },
+    select: { 
+      id: true, 
+      username: true,
+    },
+    orderBy: { username: "asc" }
+  });
+
+  console.log("DEBUG: Users found in Page:", users.length);
 
   // 2. FETCH MESSAGES
   const realMessages = await prisma.message.findMany({
@@ -28,24 +30,14 @@ const MessageListPage = async () => {
       ]
     },
     include: {
-      sender: { 
-        select: { 
-          username: true, 
-          img: true 
-        } 
-      },
-      receiver: { 
-        select: { 
-          username: true, 
-          img: true 
-        } 
-      },
+      sender: { select: { username: true, img: true } },
+      receiver: { select: { username: true, img: true } },
     },
     orderBy: { createdAt: "desc" },
   });
 
   return (
-    <div className="bg-white p-4 md:p-8 rounded-[2rem] md:rounded-[2.5rem] flex-1 m-2 md:m-4 mt-0 shadow-sm border border-slate-100 min-h-[700px]">
+    <div className="bg-white p-4 md:p-8 rounded-[2.5rem] flex-1 m-2 md:m-4 mt-0 shadow-sm border border-slate-100 min-h-[700px]">
       {/* HEADER SECTION */}
       <div className="flex flex-col md:flex-row items-center justify-between mb-8 gap-6">
         <div className="flex items-center gap-4">
@@ -64,13 +56,16 @@ const MessageListPage = async () => {
           </button>
           
           <div className="p-1 bg-slate-900 rounded-2xl shadow-xl shadow-slate-200">
-             <FormContainer table="message" type="create" relatedData={{ receivers: users }}/>
+             {/* 💡 Passing 'users' as 'receivers' here fixes the empty dropdown */}
+             <FormContainer 
+                table="message" 
+                type="create" 
+                relatedData={{ receivers: users }} 
+             />
           </div>
         </div>
       </div>
 
-      {/* 3. CLIENT-SIDE LIST HANDLING */}
-      {/* This component will handle the mapping, searching, and empty states */}
       <div className="bg-slate-50/50 rounded-[2rem] p-2 border border-slate-50">
         <MessageListClient 
           initialMessages={realMessages} 

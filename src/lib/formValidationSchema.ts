@@ -143,19 +143,17 @@ export type ResultSchema = z.infer<typeof resultSchema>;
 
 // --- ATTENDANCE ---
 export const attendanceSchema = z.object({
-  id: z.coerce.number().optional(),
   date: z.coerce.date(),
-  lessonId: z.coerce.number().min(1, "Lesson is required"),
+  lessonId: z.number({ message: "Lesson is required!" }),
   students: z.array(
     z.object({
-      studentId: z.string().min(1, "Student ID required"),
+      studentId: z.string(),
       present: z.boolean(),
     })
-  ).min(1, "Roster cannot be empty"),
+  ),
 });
 
 export type AttendanceSchema = z.infer<typeof attendanceSchema>;
-
 // --- EVENT ---
 export const eventSchema = z.object({
   id: z.coerce.number().optional(),

@@ -29,24 +29,24 @@ const ClassSelector = ({
   }, {} as Record<string, any[]>);
 
   return (
-    <div className="space-y-8 pb-10">
+    <div className="space-y-6 md:space-y-8 pb-10 px-1 md:px-0">
       {Object.keys(grouped).map((grade) => (
         <div key={grade} className="animate-fadeIn">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-rubixPurple/10 text-rubixPurple rounded-lg">
-              <GraduationCap size={20} />
+          <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-4">
+            <div className="p-1.5 md:p-2 bg-rubixPurple/10 text-rubixPurple rounded-lg shrink-0">
+              <GraduationCap size={20} className="md:w-5 md:h-5" />
             </div>
-            <h3 className="text-sm font-black uppercase tracking-[0.2em] text-slate-400">
+            <h3 className="text-[10px] md:text-sm font-black uppercase tracking-[0.15em] md:tracking-[0.2em] text-slate-400 truncate">
               {grade}
             </h3>
-            <div className="flex-1 h-[1px] bg-slate-100 ml-2"></div>
+            <div className="flex-1 h-[1px] bg-slate-100 ml-1"></div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {grouped[grade].map((cls: any) => (
               <div
                 key={cls.id}
-                className="group relative bg-white border border-slate-100 p-5 rounded-3xl hover:border-rubixPurple hover:shadow-xl hover:shadow-rubixPurple/5 transition-all duration-300 overflow-hidden flex flex-col justify-between min-h-[140px]"
+                className="group relative bg-white border border-slate-100 p-4 md:p-5 rounded-[1.5rem] md:rounded-3xl hover:border-rubixPurple hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col justify-between min-h-[120px] md:min-h-[140px]"
               >
                 {/* ADMIN ACTIONS: Only show if admin and NOT in student view (where we want it clean) */}
                 {role === "admin" && target !== "students" && (
@@ -70,7 +70,7 @@ const ClassSelector = ({
                       ? `${cls.supervisor.name} ${cls.supervisor.surname}`
                       : `Section ${cls.name.slice(-1)}`}
                   </p>
-                  <h4 className="text-xl font-black text-slate-800 tracking-tight">
+                  <h4 className="text-lg md:text-xl font-black text-slate-800 tracking-tight">
                     Class {cls.name}
                   </h4>
 
@@ -88,7 +88,7 @@ const ClassSelector = ({
 
                 <Link
                   href={`/list/${target}?classId=${cls.id}`}
-                  className="relative z-10 mt-4 flex items-center justify-between bg-slate-50 group-hover:bg-rubixPurple p-3 rounded-2xl transition-all"
+                  className="relative z-10 mt-3 md:mt-4 flex items-center justify-between bg-slate-50 group-hover:bg-rubixPurple p-2.5 md:p-3 rounded-xl md:rounded-2xl transition-all"
                 >
                   <span className="text-[10px] font-bold uppercase tracking-wider group-hover:text-white transition-colors">
                     View {target}
@@ -98,7 +98,7 @@ const ClassSelector = ({
                   </div>
                 </Link>
 
-                <LayoutGrid className="absolute -bottom-2 -right-2 text-slate-50 w-16 h-16 -rotate-12 group-hover:text-rubixPurple/5 transition-colors z-0" />
+                <LayoutGrid className="absolute -bottom-2 -right-2 text-slate-50 w-12 h-12 md:w-16 md:h-16 -rotate-12 group-hover:text-rubixPurple/5 transition-colors z-0" />
               </div>
             ))}
           </div>

@@ -26,12 +26,14 @@ const ExamListPage = async ({
   const p = params.page ? parseInt(params.page) : 1;
   const { classId, search, studentId: selectedStudentId } = params;
 
+
+
   // --- 1. PARENT GALLERY VIEW ---
   if (role === "parent" && !selectedStudentId) {
     const children = await prisma.student.findMany({
       where: { parentId: userId! },
-      include: { 
-        class: true, 
+      include: {
+        class: true,
       }
     });
 
@@ -51,25 +53,25 @@ const ExamListPage = async ({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {children.map((child) => (
-            <Link 
-              key={child.id} 
+            <Link
+              key={child.id}
               href={`/list/exams?studentId=${child.id}`}
               className="group p-8 rounded-[2.5rem] border border-slate-100 bg-slate-50/50 hover:bg-white hover:shadow-2xl hover:shadow-slate-200/50 transition-all duration-300"
             >
               <div className="flex flex-col items-center text-center">
-                 <div className="w-24 h-24 rounded-3xl bg-blue-50 flex items-center justify-center text-blue-600 mb-6 group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all">
-                   <User size={40} strokeWidth={2.5} />
-                 </div>
-                 <h2 className="font-black text-xl text-slate-800 uppercase tracking-tighter">{child.name} {child.surname}</h2>
-                 <span className="px-4 py-1 bg-white border border-slate-100 rounded-full text-[10px] font-black text-slate-400 uppercase mt-3 tracking-widest">
-                   Class {child.class?.name || "Unassigned"}
-                 </span>
-                 
-                 <div className="mt-8 w-full pt-6 border-t border-slate-100 flex justify-end items-center">
-                   <div className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all">
-                     <ArrowRight size={20} />
-                   </div>
-                 </div>
+                <div className="w-24 h-24 rounded-3xl bg-blue-50 flex items-center justify-center text-blue-600 mb-6 group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                  <User size={40} strokeWidth={2.5} />
+                </div>
+                <h2 className="font-black text-xl text-slate-800 uppercase tracking-tighter">{child.name} {child.surname}</h2>
+                <span className="px-4 py-1 bg-white border border-slate-100 rounded-full text-[10px] font-black text-slate-400 uppercase mt-3 tracking-widest">
+                  Class {child.class?.name || "Unassigned"}
+                </span>
+
+                <div className="mt-8 w-full pt-6 border-t border-slate-100 flex justify-end items-center">
+                  <div className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all">
+                    <ArrowRight size={20} />
+                  </div>
+                </div>
               </div>
             </Link>
           ))}
@@ -106,8 +108,8 @@ const ExamListPage = async ({
     andConditions.push({ lesson: { classId: student?.classId || -1 } });
   } else if (role === "parent") {
     const child = await prisma.student.findFirst({
-        where: { id: selectedStudentId, parentId: userId! },
-        select: { classId: true }
+      where: { id: selectedStudentId, parentId: userId! },
+      select: { classId: true }
     });
     andConditions.push({ lesson: { classId: child?.classId || -1 } });
   } else if (role === "teacher") {
@@ -138,7 +140,11 @@ const ExamListPage = async ({
   const [data, count, lessons] = await prisma.$transaction([
     prisma.exam.findMany({
       where: query,
-      include: { lesson: { include: { subject: true, class: true, teacher: true } } },
+      include: {
+        lesson: {
+          include: { subject: true, class: true, teacher: true }
+        }
+      },
       take: ITEM_PER_PAGE,
       skip: ITEM_PER_PAGE * (p - 1),
       orderBy: { startTime: "asc" },
@@ -146,7 +152,12 @@ const ExamListPage = async ({
     prisma.exam.count({ where: query }),
     prisma.lesson.findMany({
       where: role === "teacher" ? { teacherId: userId! } : {},
-      select: { id: true, subject: { select: { name: true } }, class: { select: { name: true } } },
+      select: {
+        id: true,
+        name: true,
+        subject: { select: { name: true } },
+        class: { select: { name: true } }
+      },
     }),
   ]);
 
@@ -209,18 +220,20 @@ const ExamListPage = async ({
   return (
     <div className="bg-white p-4 md:p-8 rounded-[2rem] md:rounded-[2.5rem] flex-1 m-2 md:m-4 mt-0 shadow-sm border border-slate-100">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4 md:gap-6">
-        
+
         <div className="flex items-center gap-4">
           <Link href="/list/exams" className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400">
             <ArrowLeft size={20} />
           </Link>
           <h1 className="text-xl md:text-2xl font-black text-slate-800 tracking-tighter uppercase">
-             {selectedStudentId ? "Schedule" : "Exam Directory"}
+            {selectedStudentId ? "Schedule" : "Exam Directory"}
           </h1>
         </div>
         <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end">
           <TableSearch />
-          {role === "admin" && <FormContainer table="exam" type="create" relatedData={relatedData} />}
+          {(role === "admin" || role === "teacher") && (
+            <FormContainer table="exam" type="create" relatedData={relatedData} />
+          )}
         </div>
       </div>
 
@@ -229,9 +242,9 @@ const ExamListPage = async ({
       </div>
 
       {!data.length && (
-          <div className="py-20 text-center border-2 border-dashed border-slate-50 rounded-[2rem] mt-4">
-            <p className="text-xs font-black text-slate-300 uppercase tracking-widest">No scheduled exams found</p>
-          </div>
+        <div className="py-20 text-center border-2 border-dashed border-slate-50 rounded-[2rem] mt-4">
+          <p className="text-xs font-black text-slate-300 uppercase tracking-widest">No scheduled exams found</p>
+        </div>
       )}
 
       <div className="mt-8 border-t border-slate-50 pt-6">

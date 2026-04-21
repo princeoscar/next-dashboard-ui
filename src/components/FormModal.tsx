@@ -110,36 +110,40 @@ const FormModal = ({ table, type, data, id, relatedData }: FormContainerProps & 
         <Image src={`/${type}.png`} alt="" width={16} height={16} />
       </button>
       {open && (
-        <div className="w-screen h-screen fixed left-0 top-0 bg-black bg-opacity-60 z-50 flex items-center justify-center">
-          <div className="bg-white p-4 rounded-md relative w-[90%] md:w-[70%] lg:w-[60%] xl:w-[50%] 2xl:w-[40%] max-h-[90vh] overflow-y-auto">
-            
-            {/* 1. DELETE FORM */}
-            {type === "delete" && id ? (
-              <form action={deleteAction} className="p-4 flex flex-col gap-4">
-                <input type="hidden" name="id" value={id} />
-                <span className="text-center font-medium">
-                  Are you sure you want to delete this {table}?
-                </span>
-                <button className="bg-red-700 text-white py-2 px-4 rounded-md w-max self-center">
-                  Delete
-                </button>
-              </form>
-            ) : 
-            /* 2. CREATE/UPDATE FORMS */
-            (type === "create" || type === "update") ? (
-              forms[table] ? (
-                forms[table](setOpen, type, data, relatedData)
-              ) : (
-                <div className="p-4 text-center">Form for {table} is missing!</div>
-              )
-            ) : null}
+        <div className="w-full h-screen fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+  
+  <div className="bg-white rounded-[2rem] w-full max-w-3xl h-[85vh] flex flex-col shadow-2xl relative overflow-hidden">
+    
+    {/* CLOSE BUTTON */}
+    <div
+      className="absolute top-5 right-5 z-50 p-2 bg-slate-50 hover:bg-slate-100 rounded-full cursor-pointer"
+      onClick={() => setOpen(false)}
+    >
+      <Image src="/close.png" alt="" width={12} height={12} />
+    </div>
 
-            {/* CLOSE BUTTON */}
-            <div className="absolute top-4 right-4 cursor-pointer" onClick={() => setOpen(false)}>
-              <Image src="/close.png" alt="" width={14} height={14} />
-            </div>
-          </div>
-        </div>
+    {/* ONLY SCROLLABLE AREA */}
+    <div className="flex-1 overflow-y-auto custom-scrollbar">
+      {type === "delete" && id ? (
+        <form action={deleteAction} className="flex flex-col gap-4 py-10 px-6">
+          <input type="hidden" name="id" value={id} />
+          <span className="text-center font-bold text-lg">
+            Are you sure you want to delete this {table}?
+          </span>
+          <button className="bg-red-600 text-white py-3 px-8 rounded-2xl w-max self-center">
+            Delete
+          </button>
+        </form>
+      ) : (type === "create" || type === "update") ? (
+        forms[table] ? (
+          forms[table](setOpen, type, data, relatedData)
+        ) : (
+          <div className="p-4 text-center">Form missing</div>
+        )
+      ) : null}
+    </div>
+  </div>
+</div>
       )}
     </>
   );

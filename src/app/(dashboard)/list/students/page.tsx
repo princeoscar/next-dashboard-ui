@@ -1,14 +1,15 @@
 import { prisma } from "@/lib/prisma";
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
-import TableSearch from "@/components/TableSearch"; 
+import TableSearch from "@/components/TableSearch";
 import { Class, Prisma, Student } from "@prisma/client";
 import Image from "next/image";
 import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
 import FormContainer from "@/components/FormContainer";
-import ClassSelector from "@/components/ClassSelector"; 
+import ClassSelector from "@/components/ClassSelector";
 import { ITEM_PER_PAGE } from "@/lib/settings";
+import { Eye } from "lucide-react";
 
 const StudentListPage = async ({
   searchParams,
@@ -18,19 +19,36 @@ const StudentListPage = async ({
   const params = await searchParams;
   const { sessionClaims, userId } = await auth();
   const role = (sessionClaims?.metadata as { role?: string })?.role?.toLowerCase();
-  
+
   const { page, classId, search } = params;
   const p = page ? parseInt(page) : 1;
 
+  // --- PRE-FETCH COMMON DATA FOR FORMS ---
+  // This prevents the "relatedData is undefined" error in StudentForm
+  const [grades, classesList, parentsList] = await prisma.$transaction([
+    prisma.grade.findMany({ select: { id: true, level: true } }),
+    prisma.class.findMany({
+      select: {
+        id: true,
+        name: true,
+        capacity: true, // You likely need this too if you're showing "X / Capacity"
+        _count: {
+          select: { students: true }
+        }
+      }
+    }),
+    prisma.parent.findMany({ select: { id: true, name: true, surname: true } }),
+  ]);
+
+  const relatedData = { grades, classes: classesList, parents: parentsList };
+
   // --- 1. SEGMENT VIEW (CLASS CARDS) ---
-  // We only show this if NO specific class is selected and NO search is active
   if (!classId && !search && role !== "student" && role !== "parent") {
     const classes = await prisma.class.findMany({
       where: {
-        // 🔒 TEACHER SECURITY: Only show their supervised class
         ...(role === "teacher" ? { supervisorId: userId! } : {}),
       },
-      include: { 
+      include: {
         grade: true,
         _count: { select: { students: true, lessons: true } },
         supervisor: true,
@@ -38,62 +56,8 @@ const StudentListPage = async ({
       orderBy: { name: "asc" },
     });
 
-    const student = await prisma.student.findUnique({
-  where: { id: userId! },
-  select: { classId: true }
-});
-
-    // 2. Fetch filtered data
-const [announcements, events, messages] = await prisma.$transaction([
-  prisma.announcement.findMany({
-  where: {
-    OR: [
-      { classId: null }, // School-wide
-      // Use || -1 or similar to ensure a value is always passed
-      { classId: student?.classId || -1 } 
-    ]
-  },
-  take: 5,
-  orderBy: { date: "desc" }
-}),
-  prisma.event.findMany({
-    where: {
-      OR: [
-        { classId: null },
-        { classId: student?.classId }
-      ],
-      startTime: { gte: new Date() } // Only show future events
-    },
-    take: 5,
-    orderBy: { startTime: "asc" }
-  }),
-  prisma.message.findMany({
-  where: { receiverId: userId! },
-  include: {
-    sender: { 
-      select: {
-        username: true,
-        // Check your schema: if you use 'name' on Teacher/Student,
-        // but this 'sender' is a 'User', it might not have 'name'.
-        // If it throws an error again, remove 'name' and 'surname' below:
-        // name: true, 
-        // surname: true
-      } 
-    } 
-  }, 
-  take: 5,
-  orderBy: { createdAt: "desc" }
-})
-]);
-
-    // Fetch teachers and grades once for the "Create Class" form (if needed)
-    const [teachers, grades] = await prisma.$transaction([
-      prisma.teacher.findMany({ select: { id: true, name: true, surname: true } }),
-      prisma.grade.findMany({ select: { id: true, level: true } }),
-    ]);
-
-    const relatedData = { teachers, grades };
-
+    // Teachers need to see their info, but they aren't 'students', 
+    // so we only fetch student-specific info if the role is student.
     return (
       <div className="bg-white p-8 rounded-[2.5rem] flex-1 m-4 mt-0 shadow-sm border border-slate-100">
         <div className="mb-10">
@@ -104,30 +68,28 @@ const [announcements, events, messages] = await prisma.$transaction([
             Select a class segment to view student rosters
           </p>
         </div>
-        <ClassSelector 
-          classes={classes} 
-          role={role || "admin"} 
-          target="students" 
-          relatedData={relatedData} 
+        <ClassSelector
+          classes={classes}
+          role={role || "admin"}
+          target="students"
+          relatedData={relatedData}
         />
       </div>
     );
   }
 
   // --- 2. TABLE VIEW LOGIC ---
-  // This part only runs if classId is present or search is active
   const columns = [
-    { header: "Info", accessor: "info", className: "pl-4" },
-    { header: "Student ID", accessor: "studentId", className: "hidden md:table-cell" },
+    { header: "Info", accessor: "info", className: "pl-2 md:pl-4" },
+    { header: "Username", accessor: "username", className: "hidden md:table-cell" },
     { header: "Grade", accessor: "grade", className: "hidden md:table-cell" },
     { header: "Phone", accessor: "phone", className: "hidden lg:table-cell" },
     { header: "Address", accessor: "address", className: "hidden lg:table-cell" },
-    { header: "Actions", accessor: "action", className: "text-right pr-4" },
+    { header: "Actions", accessor: "action", className: "text-right pr-2 md:pr-4" },
   ];
 
   const query: Prisma.StudentWhereInput = {};
 
-  // Security: If a teacher tries to access the table, they can only see their class
   if (role === "teacher") {
     query.class = { supervisorId: userId! };
   }
@@ -143,19 +105,18 @@ const [announcements, events, messages] = await prisma.$transaction([
     ];
   }
 
-  const [students, count] = await prisma.$transaction([
-    prisma.student.findMany({
-      where: query,
-      include: { class: true },
-      take: ITEM_PER_PAGE,
-      skip: ITEM_PER_PAGE * (p - 1),
-    }),
-    prisma.student.count({ where: query }),
-  ]);
+  const students = await prisma.student.findMany({
+    where: query,
+    include: { class: true },
+    take: ITEM_PER_PAGE,
+    skip: ITEM_PER_PAGE * (p - 1),
+  });
+
+  const count = await prisma.student.count({ where: query });
 
   const renderRow = (item: Student & { class: Class | null }) => (
     <tr key={item.id} className="border-b border-slate-100 last:border-0 text-sm hover:bg-slate-50/50 transition-all group">
-      <td className="flex items-center gap-4 p-4">
+      <td className="flex items-center gap-2 md:gap-4 p-2 md:p-4">
         <Image
           src={item.img || "/noAvatar.png"}
           alt=""
@@ -170,27 +131,32 @@ const [announcements, events, messages] = await prisma.$transaction([
       </td>
       <td className="hidden md:table-cell text-slate-500">{item.username}</td>
       <td className="hidden md:table-cell">
-         <span className="px-2 py-1 bg-slate-100 rounded text-[10px] font-black uppercase text-slate-500">
-            Grade {item.class?.name[0] || "-"}
-         </span>
+        <span className="px-2 py-1 bg-slate-100 rounded text-[10px] font-black uppercase text-slate-500">
+          {item.class?.name.charAt(0) || "-"}
+        </span>
       </td>
       <td className="hidden md:table-cell text-slate-500">{item.phone || "-"}</td>
-      <td className="hidden md:table-cell text-slate-500">{item.address || "-"}</td>
-      <td className="p-4 text-right">
+      <td className="hidden lg:table-cell text-slate-500">{item.address || "-"}</td>
+      <td className="p-2 md:p-4 text-right">
         <div className="flex items-center gap-2 justify-end">
           <Link href={`/list/students/${item.id}`}>
             <button className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-400 hover:bg-rubixSky hover:text-white transition-all shadow-sm">
-              <Image src="/view.png" alt="" width={14} height={14} className="brightness-0 invert-[0.5] group-hover:brightness-0 group-hover:invert" />
+              <Eye size={16} />
             </button>
           </Link>
-          {role === "admin" && <FormContainer table="student" type="delete" id={item.id} />}
+          {role === "admin" && (
+            <FormContainer table="student" type="delete" id={item.id} />
+          )}
+          {role === "admin" && (
+            <FormContainer table="student" type="update" data={item} relatedData={relatedData} />
+          )}
         </div>
       </td>
     </tr>
   );
 
   return (
-    <div className="bg-white p-4 md:p-8 rounded-[2rem] md:rounded-[2.5rem] flex-1 m-2 md:m-4 mt-0 shadow-sm border border-slate-100">
+    <div className="bg-white p-2 md:p-8 rounded-2xl md:rounded-[2.5rem] flex-1 m-1 md:m-4 mt-0 shadow-sm border border-slate-100">
       <div className="flex flex-col md:flex-row items-center justify-between mb-8 gap-6">
         <div className="flex items-center gap-4">
           <Link href="/list/students" className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400">
@@ -201,12 +167,16 @@ const [announcements, events, messages] = await prisma.$transaction([
           </h1>
         </div>
         <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
-          <TableSearch />
-          {role === "admin" && (
-             <div className="p-1 bg-slate-900 rounded-2xl shadow-xl">
-                <FormContainer table="student" type="create" />
-             </div>
-          )}
+          <div className="w-full md:w-auto">
+            <TableSearch />
+          </div>
+
+          <div className="flex items-center gap-3 w-full md:w-auto justify-end">
+            <button className="w-10 h-10 flex items-center justify-center rounded-2xl bg-slate-50 hover:bg-slate-100 transition-all border border-slate-100">
+              <Image src="/filter.png" alt="" width={16} height={16} />
+            </button>
+            {role === "admin" && <FormContainer table="student" type="create" relatedData={relatedData} />}
+          </div>
         </div>
       </div>
 
@@ -223,7 +193,7 @@ const [announcements, events, messages] = await prisma.$transaction([
 
 const ArrowLeftIcon = ({ size }: { size: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>
+    <path d="m12 19-7-7 7-7" /><path d="M19 12H5" />
   </svg>
 );
 

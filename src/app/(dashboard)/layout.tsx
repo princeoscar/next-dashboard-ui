@@ -1,4 +1,3 @@
-// src/app/(dashboard)/layout.tsx
 import Menu from "@/components/Menu";
 import Navbar from "@/components/Navbar";
 import Link from "next/link";
@@ -12,60 +11,50 @@ export default async function DashboardLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // 1. Get Auth Session
   const { userId, sessionClaims } = await auth();
+  const role = (sessionClaims?.metadata as { role?: string })?.role || "student";
 
   if (!userId) {
     redirect("/sign-in");
   }
 
-  const role = (sessionClaims?.metadata as { role?: string })?.role || "student";
-
-  // 1. Fetch data in parallel for performance
-  let user = null;
+  // 2. Fetch User Profile and Counts
+  let clerkUser = null;
   let unreadMessageCount = 0;
   let filteredAnnouncementCount = 0;
 
   try {
-    const [clerkUser, msgCount, announceCount] = await Promise.all([
+    // We fetch the profile and the database counts together safely
+    const [profile, msgCount, announceCount] = await Promise.all([
       currentUser(),
-      // Count messages for this specific user
       prisma.message.count({
-        where: {
-          receiverId: userId,
-          isRead: false,
-        },
-      }),
-      // Count ONLY announcements this user is allowed to see
+        where: { receiverId: userId, isRead: false },
+      }).catch(() => 0),
       prisma.announcement.count({
         where: {
           OR: [
-            { classId: null }, // Global notices
-            {
-              class: {
-                students: {
-                  some: {
-                    OR: [
-                      { id: userId },      // If student
-                      { parentId: userId } // If parent
-                    ]
-                  },
-                },
-              },
-            },
-          ],
-        },
-      }),
+            { classId: null },
+            { class: { students: { some: { OR: [{ id: userId }, { parentId: userId }] } } } }
+          ]
+        }
+      }).catch(() => 0),
     ]);
 
-    user = clerkUser;
+    clerkUser = profile;
     unreadMessageCount = msgCount;
     filteredAnnouncementCount = announceCount;
-  } catch (err) {
-    console.error("Layout Data Fetch Error:", err);
-    if (!userId) redirect("/sign-in");
+  } catch (error) {
+    console.error("Layout Data Fetch Error:", error);
+    // If it fails, the defaults (0 and null) will prevent a crash
   }
 
-  const firstName = user?.firstName || "User";
+  if (!clerkUser && userId) {
+    // This handles the rare case where Clerk has a session but the API fails
+    console.warn("Clerk user profile could not be fetched.");
+  }
+
+  const firstName = clerkUser?.firstName || "User";
 
   return (
     <div className="flex h-screen bg-slate-50 transition-colors duration-300">

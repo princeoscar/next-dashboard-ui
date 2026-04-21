@@ -46,113 +46,104 @@ const LessonForm = ({
     }
   }, [state, router, type, setOpen]);
 
-  // ✅ FIX: Wrapped in startTransition
   const onSubmit = handleSubmit((formData) => {
-    console.log("Form Data being submitted:", formData);
     startTransition(() => {
-      formAction(formData);
+      formAction({ ...formData, id: data?.id });
     });
   });
 
   const { subjects, classes, teachers } = relatedData || {};
 
   return (
-    <form className="flex flex-col gap-6 p-4" onSubmit={onSubmit}>
-      <h1 className="text-xl font-bold text-slate-800 text-center">
-        {type === "create" ? "Create New Lesson" : "Update Lesson"}
-      </h1>
+    <form className="flex flex-col w-full max-w-2xl mx-auto mt-6 text-center" onSubmit={onSubmit}>
+      <div className="sticky top-0 text-center bg-white z-50 px-6 py-4 border-b">
+        <h1 className="text-xl md:text-2xl font-black text-slate-800 tracking-tight uppercase">
+          {type === "create" ? "Schedule" : "Update"} <span className="text-blue-500">Lesson</span>
+        </h1>
+      </div>
 
-      <div className="flex justify-between flex-wrap gap-4">
-        <InputField
-          label="Lesson Name (e.g. Morning Session)"
-          name="name"
-          defaultValue={data?.name}
-          register={register}
-          error={errors.name}
-        />
-        
-        {/* DAY SELECT */}
-        <div className="flex flex-col gap-2">
-          <label className="text-xs font-semibold text-gray-500 uppercase">Day</label>
-          <select
-            className="ring-[1.5px] ring-gray-300 p-2 rounded-xl text-sm"
-            {...register("day")}
-            defaultValue={data?.day}
-          >
-            <option value="MONDAY">Monday</option>
-            <option value="TUESDAY">Tuesday</option>
-            <option value="WEDNESDAY">Wednesday</option>
-            <option value="THURSDAY">Thursday</option>
-            <option value="FRIDAY">Friday</option>
-          </select>
-          {errors.day?.message && <p className="text-xs text-red-400">{errors.day.message.toString()}</p>}
+      <div className="px-6 py-6 space-y-8 pb-28 mt-5">
+        <div className="flex justify-between flex-wrap gap-4">
+          <InputField
+            label="Lesson Title"
+            name="name"
+            defaultValue={data?.name}
+            register={register}
+            error={errors.name}
+          />
+          
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-bold text-slate-500 uppercase">Day of Week</label>
+            <select
+              className="ring-1 ring-slate-200 p-3 rounded-xl text-sm w-full focus:ring-2 focus:ring-blue-400 outline-none transition-all"
+              {...register("day")}
+              defaultValue={data?.day}
+            >
+              <option value="MONDAY">Monday</option>
+              <option value="TUESDAY">Tuesday</option>
+              <option value="WEDNESDAY">Wednesday</option>
+              <option value="THURSDAY">Thursday</option>
+              <option value="FRIDAY">Friday</option>
+            </select>
+            {errors.day?.message && <p className="text-[10px] text-red-500">{errors.day.message.toString()}</p>}
+          </div>
         </div>
 
-        {/* Start & End Times (Assuming these are in your schema) */}
-        <InputField
-         label="Start Time" 
-         name="startTime"
-          type="time" 
-          defaultValue={data?.startTime}
-           register={register} 
-           error={errors.startTime} />
-
-        <InputField 
-        label="End Time"
-         name="endTime" 
-         type="time" 
-         defaultValue={data?.endTime}
-          register={register} 
-          error={errors.endTime} />
-
-        {data && <input type="hidden" {...register("id")} defaultValue={data.id} />}
-
-        {/* SUBJECT SELECT */}
-        <div className="flex flex-col gap-2">
-          <label className="text-xs font-semibold text-gray-500 uppercase">Subject</label>
-          <select
-            className="ring-[1.5px] ring-gray-300 p-2 rounded-xl text-sm"
-            {...register("subjectId")} // Add {valueAsNumber: true} if your schema expects Int
-            defaultValue={data?.subjectId}
-          >
-            {subjects?.map((s: { id: number; name: string }) => (
-              <option value={s.id} key={s.id}>{s.name}</option>
-            ))}
-          </select>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <InputField label="Start Time" name="startTime" type="time" defaultValue={data?.startTime} register={register} error={errors.startTime} />
+          <InputField label="End Time" name="endTime" type="time" defaultValue={data?.endTime} register={register} error={errors.endTime} />
         </div>
 
-        {/* CLASS SELECT */}
-        <div className="flex flex-col gap-2">
-          <label className="text-xs font-semibold text-gray-500 uppercase">Class</label>
-          <select
-            className="ring-[1.5px] ring-gray-300 p-2 rounded-xl text-sm"
-            {...register("classId")}
-            defaultValue={data?.classId}
-          >
-            {classes?.map((c: { id: number; name: string }) => (
-              <option value={c.id} key={c.id}>{c.name}</option>
-            ))}
-          </select>
-        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* SUBJECT */}
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-bold text-slate-500 uppercase">Subject</label>
+            <select
+              className="ring-1 ring-slate-200 p-3 rounded-xl text-sm focus:ring-2 focus:ring-blue-400 outline-none"
+              {...register("subjectId")}
+              defaultValue={data?.subjectId}
+            >
+              {subjects?.map((s: any) => (
+                <option value={s.id} key={s.id}>{s.name}</option>
+              ))}
+            </select>
+          </div>
 
-        {/* TEACHER SELECT */}
-        <div className="flex flex-col gap-2 md:col-span-2">
-          <label className="text-xs font-semibold text-gray-500 uppercase">Teacher</label>
-          <select
-            className="ring-[1.5px] ring-gray-300 p-2 rounded-xl text-sm"
-            {...register("teacherId")}
-            defaultValue={data?.teacherId}
-          >
-            {teachers?.map((t: { id: string; name: string; surname: string }) => (
-              <option value={t.id} key={t.id}>{t.name} {t.surname}</option>
-            ))}
-          </select>
+          {/* CLASS */}
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-bold text-slate-500 uppercase">Class</label>
+            <select
+              className="ring-1 ring-slate-200 p-3 rounded-xl text-sm focus:ring-2 focus:ring-blue-400 outline-none"
+              {...register("classId")}
+              defaultValue={data?.classId}
+            >
+              {classes?.map((c: any) => (
+                <option value={c.id} key={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* TEACHER */}
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-bold text-slate-500 uppercase">Teacher</label>
+            <select
+              className="ring-1 ring-slate-200 p-3 rounded-xl text-sm focus:ring-2 focus:ring-blue-400 outline-none"
+              {...register("teacherId")}
+              defaultValue={data?.teacherId}
+            >
+              {teachers?.map((t: any) => (
+                <option value={t.id} key={t.id}>{t.name} {t.surname}</option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
-      <button className="bg-blue-400 text-white py-3 px-6 rounded-xl font-bold hover:bg-blue-500 transition-all">
-        {type === "create" ? "Create Lesson" : "Update Lesson"}
-      </button>
+      <div className="sticky bottom-0 bg-white px-6 py-4 border-t z-50">
+        <button className="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold hover:bg-blue-600 transition-all shadow-lg active:scale-95">
+          {type === "create" ? "Confirm Schedule" : "Update Schedule"}
+        </button>
+      </div>
     </form>
   );
 };

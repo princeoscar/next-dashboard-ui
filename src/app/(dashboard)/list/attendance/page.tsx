@@ -50,25 +50,25 @@ const AttendanceListPage = async ({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {children.map((child) => (
-            <Link 
-              key={child.id} 
+            <Link
+              key={child.id}
               href={`/list/attendance?studentId=${child.id}`}
               className="group p-8 rounded-[2.5rem] border border-slate-100 bg-slate-50/50 hover:bg-white hover:shadow-2xl hover:shadow-slate-200/50 transition-all duration-300"
             >
               <div className="flex flex-col items-center text-center">
-                 <div className="w-24 h-24 rounded-3xl bg-blue-50 flex items-center justify-center text-blue-500 mb-6 group-hover:scale-110 group-hover:bg-blue-500 group-hover:text-white transition-all">
-                   <User size={40} strokeWidth={2.5} />
-                 </div>
-                 <h2 className="font-black text-xl text-slate-800 uppercase tracking-tighter">{child.name} {child.surname}</h2>
-                 <span className="px-4 py-1 bg-white border border-slate-100 rounded-full text-[10px] font-black text-slate-400 uppercase mt-3 tracking-widest">
-                   Class {child.class?.name || "Unassigned"}
-                 </span>
-                 
-                 <div className="mt-8 w-full pt-6 border-t border-slate-100 flex justify-end items-center">
-                   <div className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all">
-                     <ArrowRight size={20} />
-                   </div>
-                 </div>
+                <div className="w-24 h-24 rounded-3xl bg-blue-50 flex items-center justify-center text-blue-500 mb-6 group-hover:scale-110 group-hover:bg-blue-500 group-hover:text-white transition-all">
+                  <User size={40} strokeWidth={2.5} />
+                </div>
+                <h2 className="font-black text-xl text-slate-800 uppercase tracking-tighter">{child.name} {child.surname}</h2>
+                <span className="px-4 py-1 bg-white border border-slate-100 rounded-full text-[10px] font-black text-slate-400 uppercase mt-3 tracking-widest">
+                  Class {child.class?.name || "Unassigned"}
+                </span>
+
+                <div className="mt-8 w-full pt-6 border-t border-slate-100 flex justify-end items-center">
+                  <div className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all">
+                    <ArrowRight size={20} />
+                  </div>
+                </div>
               </div>
             </Link>
           ))}
@@ -96,12 +96,13 @@ const AttendanceListPage = async ({
     );
   }
 
-  // --- 3. QUERY BUILDING ---
+  // --- 3. CONSOLIDATED QUERY BUILDING ---
   const query: Prisma.AttendanceWhereInput = {};
   const andConditions: Prisma.AttendanceWhereInput[] = [];
 
   switch (role) {
-    case "admin": break;
+    case "admin":
+      break;
     case "teacher":
       andConditions.push({
         OR: [
@@ -114,10 +115,9 @@ const AttendanceListPage = async ({
       andConditions.push({ studentId: userId! });
       break;
     case "parent":
-      // 🔒 Lockdown: Must match the selected child and the parent's ownership
-      andConditions.push({ 
+      andConditions.push({
         studentId: selectedStudentId,
-        student: { parentId: userId! } 
+        student: { parentId: userId! }
       });
       break;
     default:
@@ -159,51 +159,24 @@ const AttendanceListPage = async ({
       where: role === "teacher" ? { teacherId: userId! } : {},
       select: { id: true, name: true, class: { select: { name: true } } }
     }),
-    prisma.student.findMany({ 
-        where: role === "parent" ? { parentId: userId! } : {},
-        select: { id: true, name: true, surname: true } 
-    })
-  ]);
-
-  // 1. Get the parent's children and their class IDs
-const children = await prisma.student.findMany({
-  where: { parentId: userId! },
-  select: { classId: true },
-});
-
-// 2. Extract the IDs into an array and filter out any nulls
-const childClassIds = children
-  .map((child) => child.classId)
-  .filter((id): id is number => id !== null);
-
-  const announcements = await prisma.announcement.findMany({
-  where: {
-    OR: [
-      { classId: null }, // School-wide
-      { classId: { in: childClassIds } } // Specific to their children
-    ]
-  },
-  take: 3,
-  orderBy: { date: "desc" }
-});
-
-const messages = await prisma.message.findMany({
-  where: {
-     receiverId: userId! 
+    prisma.student.findMany({
+    where: {
+      ...(role === "parent" ? { parentId: userId! } : {}),
+      ...(classId ? { classId: parseInt(classId) } : {}), // Link students to the specific class
     },
-  take: 5,
-  orderBy: { createdAt: "desc" }
-});
+    select: { id: true, name: true, surname: true, classId: true }
+  })
+]);
 
   const relatedData = { lessons, students };
 
-  // --- 5. RENDER TABLE ---
+  // --- 5. TABLE CONFIGURATION ---
   const columns = [
     { header: "Student", accessor: "student", className: "pl-4" },
     { header: "Date", accessor: "date", className: "hidden sm:table-cell" },
     { header: "Status", accessor: "present" },
     { header: "Class / Lesson", accessor: "lesson", className: "hidden lg:table-cell" },
-    ...(role === "admin" || role === "teacher" ? [{ header: "Actions", accessor: "action", className: "text-right pr-4" }] : []),
+    ...(role === "admin" || role === "teacher" ? [{ header: "Actions", accessor: "action", className: "w-[100px] text-right", }] : []),
   ];
 
   const renderRow = (item: AttendanceList) => (
@@ -225,9 +198,8 @@ const messages = await prisma.message.findMany({
         </div>
       </td>
       <td className="p-4">
-        <div className={`flex items-center gap-2 w-fit px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border ${
-          item.present ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-rose-50 text-rose-600 border-rose-100"
-        }`}>
+        <div className={`flex items-center gap-2 w-fit px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border ${item.present ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-rose-50 text-rose-600 border-rose-100"
+          }`}>
           <div className={`w-1.5 h-1.5 rounded-full ${item.present ? "bg-emerald-500" : "bg-rose-500"}`} />
           {item.present ? "Present" : "Absent"}
         </div>
@@ -239,7 +211,7 @@ const messages = await prisma.message.findMany({
         </div>
       </td>
       {(role === "admin" || role === "teacher") && (
-        <td className="p-4 text-right">
+        <td className="p-4 text-right gap-2">
           <div className="flex items-center gap-2 justify-end">
             <FormContainer table="attendance" type="update" data={item} relatedData={relatedData} />
             <FormContainer table="attendance" type="delete" id={item.id} />
@@ -262,17 +234,29 @@ const messages = await prisma.message.findMany({
         </div>
         <TableSearch />
       </div>
+      <div className="flex items-center gap-3 w-full md:w-auto justify-end">
+        {role === "teacher" && classId && (
+          <FormContainer
+            table="attendance"
+            type="create"
+            relatedData={{
+              lessons: lessons, // The lessons fetched in your transaction
+              students: students // The students fetched in your transaction
+            }}
+          />
+        )}
+      </div>
 
       <div className="rounded-3xl border border-slate-50 overflow-hidden shadow-sm bg-white">
         <Table columns={columns} renderRow={renderRow} data={data} />
       </div>
 
       {!data.length && (
-         <div className="py-20 text-center border-2 border-dashed border-slate-50 rounded-[2rem] mt-4">
-           <p className="text-xs font-black text-slate-300 uppercase tracking-widest">No attendance records found</p>
-         </div>
+        <div className="py-20 text-center border-2 border-dashed border-slate-50 rounded-[2rem] mt-4">
+          <p className="text-xs font-black text-slate-300 uppercase tracking-widest">No attendance records found</p>
+        </div>
       )}
-      
+
       <div className="mt-8 border-t border-slate-50 pt-6">
         <Pagination page={p} count={count} />
       </div>

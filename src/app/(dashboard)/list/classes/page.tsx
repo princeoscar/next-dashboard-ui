@@ -8,6 +8,7 @@ import { ITEM_PER_PAGE } from "@/lib/settings";
 import { auth } from "@clerk/nextjs/server";
 import { Class, Grade, Teacher, Prisma } from "@prisma/client";
 import { GraduationCap, UserCog, Layout } from "lucide-react";
+import Image from "next/image";
 
 type ClassList = Class & { supervisor: Teacher | null } & { grade: Grade };
 
@@ -143,12 +144,16 @@ const ClassListPage = async ({
           <p className="text-[10px] text-slate-400 font-black tracking-widest uppercase mt-1">Management of Student Groups</p>
         </div>
         <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
-          <TableSearch />
-          {role === "admin" && (
-            <div className="p-1 bg-slate-900 rounded-2xl shadow-xl shadow-slate-200">
-              <FormContainer table="class" type="create" relatedData={relatedData} />
-            </div>
-          )}
+            <div className="w-full md:w-auto">
+             <TableSearch />
+          </div>
+
+         <div className="flex items-center gap-3 w-full md:w-auto justify-end">
+            <button className="w-10 h-10 flex items-center justify-center rounded-2xl bg-slate-50 hover:bg-slate-100 transition-all border border-slate-100">
+              <Image src="/filter.png" alt="" width={16} height={16} />
+            </button>
+            {role === "admin" && <FormContainer table="class" type="create" relatedData={relatedData} />}
+          </div>
         </div>
       </div>
 

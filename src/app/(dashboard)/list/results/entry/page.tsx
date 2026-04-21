@@ -6,7 +6,7 @@ import { auth } from "@clerk/nextjs/server";
 import { ArrowLeft, ClipboardCheck, GraduationCap } from "lucide-react";
 import Link from "next/link";
 
-const BulkEntryPage = async ({
+const ResultEntryPage = async ({
   searchParams,
 }: {
   searchParams: Promise<{ examId: string }>;
@@ -87,4 +87,4 @@ const BulkEntryPage = async ({
   );
 };
 
-export default BulkEntryPage;
+export default ResultEntryPage;

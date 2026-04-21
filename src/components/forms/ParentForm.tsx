@@ -80,28 +80,43 @@ const ParentForm = ({
   const students = relatedData?.students || [];
 
   return (
-    <form className="flex flex-col gap-8" onSubmit={onSubmit}>
-      <h1 className="text-xl font-semibold text-center">
-        {type === "create" ? "Create a new parent" : "Update parent"}
-      </h1>
-      
-      <span className="text-xs text-gray-400 font-medium medium text-center border-b pb-2">Authentication Information</span>
-      <div className="flex justify-between flex-wrap gap-4">
+    <form className="flex flex-col w-full max-w-2xl mx-auto" onSubmit={onSubmit}>
+      <div className="sticky top-0 text-center bg-white z-50 px-6 py-4 border-b">
+        <h1 className="text-xl md:text-2xl font-black text-slate-800 tracking-tight uppercase">
+          {type === "create" ? "Create New" : "Update"}{" "}
+          <span className="text-rubixPurple">Parent</span>
+        </h1>
+      </div>
+
+      <div className="px-6 py-6 space-y-8 pb-28">
+      {/* Authentication Section */}
+        <div className="space-y-4">
+          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 bg-slate-50 px-2 py-1 rounded">
+            Authentication Info
+          </span>
+
+      <div className="flex justify-between flex-wrap gap-4 mt-6">
         <InputField label="Username" name="username" defaultValue={data?.username} register={register} error={errors?.username} />
         <InputField label="Email" name="email" defaultValue={data?.email} register={register} error={errors?.email} />
         <InputField label="Password" name="password" type="password" defaultValue={data?.password} register={register} error={errors?.password} />
       </div>
+      </div>
 
-      <span className="text-xs text-gray-400 font-medium">Personal Information</span>
-      <div className="flex justify-between flex-wrap gap-4">
+      {/* Personal Information Section */}
+        <div className="space-y-4 mt-4">
+          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 bg-slate-50 px-2 py-1 rounded">
+            Personal Information
+          </span>
+
+      <div className="flex justify-between flex-wrap gap-4 t-6">
         <InputField label="First Name" name="name" defaultValue={data?.name} register={register} error={errors.name} />
         <InputField label="Last Name" name="surname" defaultValue={data?.surname} register={register} error={errors.surname} />
         <InputField label="Phone" name="phone" defaultValue={data?.phone} register={register} error={errors.phone} />
         <InputField label="Address" name="address" defaultValue={data?.address} register={register} error={errors.address} />
         
         {data && <InputField label="Id" name="id" defaultValue={data?.id} register={register} error={errors?.id} hidden />}
-
-        <div className="flex flex-col gap-2 w-full md:w-1/4">
+</div>
+        <div className="flex flex-col gap-2 w-full md:w-1/4 mb-5">
           <label className="text-xs text-gray-500">Students (Children)</label>
           <select
             multiple
@@ -119,8 +134,16 @@ const ParentForm = ({
           {errors.students?.message && <p className="text-xs text-red-400">{errors.students.message.toString()}</p>}
         </div>
       </div>
+      </div>
+     
 
-      <SubmitButton type={type} />
+     <div className="sticky bottom-0 bg-white px-6 py-4 border-t z-50 mt-4">
+        {state.error && <p className="text-red-500 text-xs mb-2 font-bold text-center">Update failed. Please check inputs.</p>}
+        <button className="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold hover:bg-rubixPurple transition-all shadow-lg active:scale-[0.98]">
+          {type === "create" ? "Confirm & Create Parent" : "Save Parent Changes"}
+        </button>
+      </div>
+
     </form>
   );
 };

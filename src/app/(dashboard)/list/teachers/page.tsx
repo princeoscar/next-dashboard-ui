@@ -29,16 +29,16 @@ const TeacherListPage = async ({
   }
 
   const columns = [
-    { header: "Staff Member", accessor: "info", className: "pl-6" }, // --> Renamed
+    { header: "Staff Member", accessor: "info", className: "pl-2 md:pl-6" }, // --> Renamed
     { header: "ID", accessor: "teacherId", className: "hidden md:table-cell" },
     { header: "Expertise", accessor: "subjects", className: "hidden md:table-cell" }, // --> Renamed
     { header: "Assignments", accessor: "classes", className: "hidden lg:table-cell" },
-    { header: "Actions", accessor: "action", className: "text-right pr-6" },
+    { header: "Actions", accessor: "action", className: "text-right pr-2 md:pr-6" },
   ];
 
   const renderRow = (item: TeacherList) => (
     <tr key={item.id} className="border-b border-slate-50 last:border-0 text-sm hover:bg-slate-50/80 transition-all group">
-      <td className="flex items-center gap-4 p-4 pl-6">
+      <td className="flex items-center gap-2 md:gap-4 p-2 md:p-4 pl-2 md:pl-6">
         <div className="relative w-10 h-10 shrink-0">
           <Image
             src={item.img || "/noAvatar.png"}
@@ -111,19 +111,22 @@ const TeacherListPage = async ({
     query.classes = { some: { id: parseInt(queryParams.classId) } };
   }
 
-  const [teachers, count] = await Promise.all([
+  const [teachers, count, subjects] = await Promise.all([
     getCachedTeachers(query, p),
     prisma.teacher.count({ where: query }),
+    prisma.subject.findMany({ select: { id: true, name: true } }),
   ]);
+
+  const relatedData = { subjects };
 
   return (
     // --> RESPONSIVE PADDING
-    <div className="bg-white p-4 md:p-8 rounded-[2rem] md:rounded-[2.5rem] flex-1 m-2 md:m-4 mt-0 shadow-sm border border-slate-100">
+    <div className="bg-white p-2 md:p-8 rounded-[1.5rem] md:rounded-[2.5rem] flex-1 m-1 md:m-4 mt-0 shadow-sm border border-slate-100">
       
       {/* --> RESPONSIVE HEADER FIX (STACKS ON MOBILE) */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
         <div>
-          <h1 className="text-xl md:text-2xl font-black text-slate-800 uppercase tracking-tighter">Faculty Registry</h1>
+          <h1 className="text-xl md:text-2xl font-black text-slate-800 uppercase tracking-tighter">Teachers Registry</h1>
           <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Total Staff: {count}</p>
         </div>
 
@@ -137,12 +140,12 @@ const TeacherListPage = async ({
             <button className="w-10 h-10 flex items-center justify-center rounded-2xl bg-slate-50 hover:bg-slate-100 transition-all border border-slate-100">
               <Image src="/filter.png" alt="" width={16} height={16} />
             </button>
-            {role === "admin" && <FormContainer table="teacher" type="create" />}
+            {role === "admin" && <FormContainer table="teacher" type="create" relatedData={relatedData} />}
           </div>
         </div>
       </div>
 
-      <div className="rounded-[1.5rem] md:rounded-[2rem] border border-slate-50 overflow-hidden bg-white shadow-sm">
+      <div className="rounded-[1rem] md:rounded-[2rem] border border-slate-50 overflow-x-auto bg-white shadow-sm">
         <Table columns={columns} renderRow={renderRow} data={teachers} />
       </div>
 

@@ -1,16 +1,16 @@
 "use client";
 
 import { useFormState } from "react-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useActionState } from "react";
 import { toast } from "react-hot-toast";
 import { useRouter } from "next/navigation";
 
 export default function BulkResultForm({ students, action }: { students: any[], action: any }) {
-  const [state, formAction] = useFormState(action, { success: false, error: false });
+  // Ensure the initial state matches what your Server Action returns
+  const [state, formAction, isPending] = useActionState(action, { success: false, error: false, message: "" });
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  // FIX: One state object to hold all scores instead of a hook in a loop
   const [scores, setScores] = useState<{ [key: string]: string }>({});
 
   const getGrade = (score: number) => {
@@ -22,18 +22,21 @@ export default function BulkResultForm({ students, action }: { students: any[], 
 
   useEffect(() => {
     if (state.success) {
-      toast.success("Results saved successfully!");
-      router.push("/list/results");
-      router.refresh();
+     toast.success(state.message || "Results saved successfully!");
+      // Adding a small delay before redirecting helps the user see the success toast
+      setTimeout(() => {
+        router.push("/list/results");
+        router.refresh();
+      }, 500);
     } else if (state.error) {
-      toast.error("An error occurred while saving.");
+      toast.error(state.message || "An error occurred while saving.");
       setLoading(false);
     }
   }, [state, router]);
 
   return (
-    <form action={formAction} onSubmit={() => setLoading(true)} className="space-y-6">
-      <div className="overflow-hidden rounded-3xl border border-slate-100 shadow-sm bg-white">
+    <form action={formAction} className="space-y-6">
+     <div className="overflow-hidden rounded-3xl border border-slate-100 shadow-sm bg-white">
         <table className="w-full text-left">
           <thead className="bg-slate-50 border-b border-slate-100">
             <tr>
@@ -44,7 +47,6 @@ export default function BulkResultForm({ students, action }: { students: any[], 
           </thead>
           <tbody>
             {students.map((student) => {
-              // Pull the specific score for this student from our state object
               const currentScore = scores[student.id] || "";
               const grade = currentScore !== "" ? getGrade(parseInt(currentScore)) : null;
 
@@ -52,7 +54,6 @@ export default function BulkResultForm({ students, action }: { students: any[], 
                 <tr key={student.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-colors">
                   <td className="p-4 font-bold text-slate-700 text-xs uppercase">
                     {student.name} {student.surname}
-                    {/* These hidden inputs are vital for the Server Action to receive the data arrays */}
                     <input type="hidden" name="studentId" value={student.id} />
                   </td>
                   <td className="p-4">
@@ -61,6 +62,7 @@ export default function BulkResultForm({ students, action }: { students: any[], 
                       name="score"
                       max="100"
                       min="0"
+                      required
                       value={currentScore}
                       onChange={(e) => setScores(prev => ({ ...prev, [student.id]: e.target.value }))}
                       className="w-full p-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none font-black text-sm"
@@ -69,7 +71,7 @@ export default function BulkResultForm({ students, action }: { students: any[], 
                   </td>
                   <td className="p-4">
                     {grade && (
-                      <span className={`${grade.color} text-white text-[9px] font-black px-2.5 py-1 rounded-lg uppercase shadow-sm transition-all animate-in fade-in zoom-in duration-300`}>
+                      <span className={`${grade.color} text-white text-[9px] font-black px-2.5 py-1 rounded-lg uppercase shadow-sm transition-all`}>
                         {grade.label}
                       </span>
                     )}
@@ -83,10 +85,10 @@ export default function BulkResultForm({ students, action }: { students: any[], 
 
       <div className="flex justify-end">
         <button 
-          disabled={loading}
+          disabled={isPending} // ✅ Uses isPending from useActionState
           className="bg-slate-900 text-white px-10 py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest hover:bg-blue-600 transition-all disabled:opacity-50 shadow-lg active:scale-95"
         >
-          {loading ? "Saving Records..." : "Save All Results"}
+          {isPending ? "Saving Records..." : "Save All Results"}
         </button>
       </div>
     </form>

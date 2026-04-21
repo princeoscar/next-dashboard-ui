@@ -32,7 +32,7 @@ const SubjectListPage = async ({
     return (
       <div className="bg-white p-8 rounded-[2.5rem] flex-1 m-4 mt-0 shadow-sm border border-slate-100">
         <div className="mb-10">
-          <h1 className="text-3xl font-black text-slate-800 tracking-tighter uppercase">
+          <h1 className="text-2xl text-center font-black text-slate-800 tracking-tighter uppercase">
             Curriculum <span className="text-rubixPurple">Hub</span>
           </h1>
           <p className="text-sm text-slate-400 font-medium italic">Select a class to manage its subjects</p>
@@ -59,7 +59,7 @@ const SubjectListPage = async ({
 
   return (
     <div className="bg-white p-8 rounded-[2.5rem] flex-1 m-4 mt-0 shadow-sm border border-slate-100">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4 md:gap-6">
         <div className="flex items-center gap-4">
           <Link href="/list/subjects" className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400">
             <ArrowLeft size={20} />
@@ -68,7 +68,7 @@ const SubjectListPage = async ({
             {classId ? `Class Subjects` : "Search Results"}
           </h1>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end">
           <TableSearch />
           <FormContainer table="subject" type="create" relatedData={relatedData} />
         </div>

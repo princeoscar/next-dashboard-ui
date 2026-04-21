@@ -3,12 +3,13 @@ import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
 import FormContainer from "@/components/FormContainer";
 import { CalendarDays, Clock, Sparkles, ArrowLeft, Calendar } from "lucide-react";
-import {prisma} from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import { ITEM_PER_PAGE } from "@/lib/settings";
 import { auth } from "@clerk/nextjs/server";
 import { Prisma, Class, Event } from "@prisma/client";
 import Link from "next/link";
 import ClassSelector from "@/components/ClassSelector";
+import Image from "next/image";
 
 type EventList = Event & { class: Class | null };
 
@@ -105,7 +106,7 @@ const EventListPage = async ({
     { header: "Target Class", accessor: "class" },
     { header: "Date", accessor: "date", className: "hidden md:table-cell" },
     { header: "Timeline", accessor: "startTime", className: "hidden lg:table-cell" },
-    ...(role === "admin" ? [{ header: "Actions", accessor: "action", className: "text-right pr-4" }] : []),
+    ...(role === "admin" ? [{ header: "Actions", accessor: "action", className: "w-24 text-right pr-6" }] : []),
   ];
 
   const renderRow = (item: EventList) => {
@@ -118,11 +119,10 @@ const EventListPage = async ({
       <tr key={item.id} className="border-b border-slate-100 last:border-0 text-sm hover:bg-slate-50/50 transition-all group">
         <td className="p-4">
           <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-xl transition-all ${
-              isLive 
-                ? 'bg-rose-50 text-rose-500 animate-pulse' 
+            <div className={`p-2 rounded-xl transition-all ${isLive
+                ? 'bg-rose-50 text-rose-500 animate-pulse'
                 : 'bg-blue-50 text-blue-500 group-hover:bg-blue-600 group-hover:text-white'
-            }`}>
+              }`}>
               <Sparkles size={16} />
             </div>
             <div className="flex flex-col">
@@ -144,7 +144,7 @@ const EventListPage = async ({
           <div className="flex items-center gap-2">
             <CalendarDays size={14} className="text-slate-300" />
             <span className="tabular-nums">
-                {new Intl.DateTimeFormat("en-GB", { day: '2-digit', month: 'short' }).format(start)}
+              {new Intl.DateTimeFormat("en-GB", { day: '2-digit', month: 'short' }).format(start)}
             </span>
           </div>
         </td>
@@ -157,7 +157,7 @@ const EventListPage = async ({
           </div>
         </td>
         {role === "admin" && (
-          <td className="p-4 text-right">
+          <td className="p-4 pl-6 text-right">
             <div className="flex items-center gap-2 justify-end">
               <FormContainer table="event" type="update" data={item} relatedData={{ classes }} />
               <FormContainer table="event" type="delete" id={item.id} />
@@ -184,21 +184,21 @@ const EventListPage = async ({
         <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
           <TableSearch />
           {role === "admin" && (
-            <div className="p-1 bg-slate-900 rounded-2xl shadow-xl shadow-slate-200">
-              <FormContainer table="event" type="create" relatedData={{ classes }} />
+            <div className="flex items-center gap-3 w-full md:w-auto justify-end">
+              {role === "admin" && <FormContainer table="class" type="create" relatedData={classes} />}
             </div>
           )}
         </div>
       </div>
 
-      <div className="rounded-3xl border border-slate-50 overflow-hidden bg-white shadow-sm">
-        <Table columns={columns} renderRow={renderRow} data={data} />
-      </div>
+     <div className="rounded-3xl border border-slate-50 overflow-x-auto bg-white shadow-sm w-full">
+  <Table columns={columns} renderRow={renderRow} data={data} />
+</div>
 
       {!data.length && (
-         <div className="py-20 text-center border-2 border-dashed border-slate-50 rounded-[2rem] mt-4">
-           <p className="text-xs font-black text-slate-300 uppercase tracking-widest">No activities found</p>
-         </div>
+        <div className="py-20 text-center border-2 border-dashed border-slate-50 rounded-[2rem] mt-4">
+          <p className="text-xs font-black text-slate-300 uppercase tracking-widest">No activities found</p>
+        </div>
       )}
 
       <div className="mt-8 border-t border-slate-50 pt-6">

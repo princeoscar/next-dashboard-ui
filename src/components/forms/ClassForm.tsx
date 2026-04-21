@@ -57,14 +57,17 @@ const ClassForm = ({
     }
   }, [state, router, type, setOpen]);
 
-  const { teachers, grades } = relatedData;
+  const { teachers = [], grades = [] } = relatedData || {};
 
   return (
-    <form className="flex flex-col gap-8" onSubmit={onSubmit}>
-      <h1 className="text-xl font-semibold">
-        {type === "create" ? "Create a new class" : "Update the class"}
-      </h1>
-
+    <form className="flex flex-col w-full max-w-2xl mx-auto" onSubmit={onSubmit}>
+      <div className="sticky top-0 text-center bg-white z-50 px-6 py-4 border-b">
+        <h1 className="text-xl md:text-2xl font-black text-slate-800 tracking-tight uppercase">
+          {type === "create" ? "Create New" : "Update"}{" "}
+          <span className="text-rubixPurple">Class</span>
+        </h1>
+      </div>
+          <div className="px-6 py-6 space-y-8 pb-28 mt-5">
       <div className="flex justify-between flex-wrap gap-4">
         <InputField
           label="Class name"
@@ -145,14 +148,17 @@ const ClassForm = ({
           )}
         </div>
       </div>
+      </div>
 
-      {state.error && (
-        <span className="text-red-500">Something went wrong!</span>
-      )}
-      
-      <button className="bg-blue-400 text-white p-2 rounded-md transition-colors hover:bg-blue-500">
-        {type === "create" ? "Create" : "Update"}
-      </button>
+        
+     <div className="sticky bottom-0 bg-white px-6 py-4 border-t z-50">
+        {state.error && (
+          <span className="text-red-500">Something went wrong!</span>
+        )}
+        <button className="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold hover:bg-rubixPurple transition-all shadow-lg active:scale-[0.98]">
+          {type === "create" ? "Create" : "Update"}
+        </button>
+      </div>
     </form>
   );
 };

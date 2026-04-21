@@ -217,7 +217,7 @@ async function main() {
     }
   }
 
-  // 6. DYNAMIC DAILY SCHEDULE (Rotating Periods)
+ // 6. DYNAMIC DAILY SCHEDULE (Rotating Periods)
   console.log("Creating Dynamic Shuffled Lessons...");
 
   const now = new Date();
@@ -231,58 +231,25 @@ async function main() {
   ];
   const periods = [8, 9, 10, 11, 12, 13, 14];
 
+  // 1. COLLECTOR ARRAY: To prevent connection reset errors
+  const lessonsToCreate = [];
+
   for (const cls of classPool) {
     for (let dayIndex = 0; dayIndex < daysEnum.length; dayIndex++) {
       const targetDate = new Date(startOfWeek);
       targetDate.setDate(startOfWeek.getDate() + dayIndex);
 
-      // 1. Define the stream subjects
       let streamSubjects: string[] = [];
       if (cls.name.startsWith("JSS")) {
-        streamSubjects = [
-          "Mathematics",
-          "English Studies",
-          "Basic Science",
-          "Digital Technologies",
-          "Citizenship Studies",
-          "History",
-          "CRS",
-        ];
+        streamSubjects = ["Mathematics", "English Studies", "Basic Science", "Digital Technologies", "Citizenship Studies", "History", "CRS"];
       } else if (cls.name.endsWith("A")) {
-        streamSubjects = [
-          "Mathematics",
-          "English Studies",
-          "Physics",
-          "Chemistry",
-          "Biology",
-          "Geography",
-          "Digital Technologies",
-        ];
+        streamSubjects = ["Mathematics", "English Studies", "Physics", "Chemistry", "Biology", "Geography", "Digital Technologies"];
       } else if (cls.name.endsWith("B")) {
-        streamSubjects = [
-          "English Studies",
-          "Government",
-          "Literature",
-          "History",
-          "CRS",
-          "Geography",
-          "Mathematics",
-        ];
+        streamSubjects = ["English Studies", "Government", "Literature", "History", "CRS", "Geography", "Mathematics"];
       } else if (cls.name.endsWith("C")) {
-        streamSubjects = [
-          "Mathematics",
-          "Economics",
-          "Financial Accounting",
-          "Commerce",
-          "Government",
-          "English Studies",
-          "Geography",
-        ];
+        streamSubjects = ["Mathematics", "Economics", "Financial Accounting", "Commerce", "Government", "English Studies", "Geography"];
       }
 
-      // 2. SHUFFLE/ROTATE LOGIC:
-      // We shift the array based on the day of the week so the 8am subject on Monday
-      // becomes the 9am subject on Tuesday, etc.
       const dailyRotation = [
         ...streamSubjects.slice(dayIndex),
         ...streamSubjects.slice(0, dayIndex),
@@ -292,9 +259,10 @@ async function main() {
         const hour = periods[p];
         if (hour === 11) continue; // BREAK TIME
 
-        // Pick the subject from the rotated list
         const subjectName = dailyRotation[p % dailyRotation.length];
         const subject = subjectPool.find((s) => s.name === subjectName);
+        
+        // Match teacher to subject
         const teacher = teacherPool.find(
           (t) => t.id === `teacher${subjectPool.indexOf(subject!)}`,
         );
@@ -305,21 +273,28 @@ async function main() {
           const endTime = new Date(targetDate);
           endTime.setHours(hour, 45, 0, 0);
 
-          await prisma.lesson.create({
-            data: {
-              name: subject.name,
-              day: daysEnum[dayIndex],
-              startTime,
-              endTime,
-              subjectId: subject.id,
-              classId: cls.id,
-              teacherId: teacher.id,
-            },
+          // 2. STORE IN ARRAY: No database call yet
+          lessonsToCreate.push({
+            name: subject.name,
+            day: daysEnum[dayIndex],
+            startTime,
+            endTime,
+            subjectId: subject.id,
+            classId: cls.id,
+            teacherId: teacher.id,
           });
         }
       }
     }
   }
+
+  // 3. BULK INSERT: One single database hit
+  console.log(`🚀 Sending ${lessonsToCreate.length} lessons to the database in bulk...`);
+  await prisma.lesson.createMany({
+    data: lessonsToCreate,
+    skipDuplicates: true,
+  });
+  console.log("✅ Dynamic lessons seeded successfully!");
 
   // 7. EXAMS & ASSIGNMENTS
   console.log("Creating Exams and Assignments in high-speed batches...");
@@ -361,43 +336,53 @@ async function main() {
   /// 8. RESULTS
   console.log("Generating Student Results...");
 
-  const students = await prisma.student.findMany();
-  const resultData = []; // Collect all results here first
+const students = await prisma.student.findMany();
+const resultData = []; // This will collect EVERYTHING (Exams + Assignments)
 
-  for (const exam of examPool) {
-    const lesson = lessons.find((l) => l.id === exam.lessonId);
-    const classStudents = students.filter((s) => s.classId === lesson?.classId);
+// 1. Collect Exam Results
+for (const exam of examPool) {
+  const lesson = lessons.find((l) => l.id === exam.lessonId);
+  const classStudents = students.filter((s) => s.classId === lesson?.classId);
 
-    for (const student of classStudents) {
-      resultData.push({
-        score: Math.floor(Math.random() * 51) + 40,
-        studentId: student.id,
-        examId: exam.id,
-        type: "EXAM",
-      });
-    }
+  for (const student of classStudents) {
+    resultData.push({
+      score: Math.floor(Math.random() * 51) + 40,
+      studentId: student.id,
+      examId: exam.id,
+      type: "EXAM",
+    });
   }
+}
+
+// 2. Collect Assignment Results (NO AWAIT HERE ANYMORE)
+for (const assignment of assignmentPool) {
+  const lesson = lessons.find((l) => l.id === assignment.lessonId);
+  const classStudents = students.filter((s) => s.classId === lesson?.classId);
+
+  for (const student of classStudents) {
+    resultData.push({
+      score: Math.floor(Math.random() * 31) + 60,
+      studentId: student.id,
+      assignmentId: assignment.id,
+      type: "ASSIGNMENT",
+    });
+  }
+}
+
+// 3. FINAL BULK INSERT: One call for thousands of records
+console.log(`🚀 Sending ${resultData.length} total results (Exams & Assignments) to database...`);
+
+// We use chunks of 5000 just to be safe with PostgreSQL packet limits
+for (let i = 0; i < resultData.length; i += 5000) {
+  const chunk = resultData.slice(i, i + 5000);
   await prisma.result.createMany({
-    data: resultData,
-    skipDuplicates: true, // This respects your @@unique constraint
+    data: chunk,
+    skipDuplicates: true,
   });
+}
 
-  // Generate Assignment Results
-  for (const assignment of assignmentPool) {
-    const lesson = lessons.find((l) => l.id === assignment.lessonId);
-    const classStudents = students.filter((s) => s.classId === lesson?.classId);
+console.log("✅ All results seeded successfully!");
 
-    for (const student of classStudents) {
-      await prisma.result.create({
-        data: {
-          score: Math.floor(Math.random() * 31) + 60, // Range: 60-90
-          studentId: student.id,
-          assignmentId: assignment.id,
-          type: "ASSIGNMENT", // Required by your schema
-        },
-      });
-    }
-  }
 // --- 1. SCHOOL-WIDE EVENTS ---
   console.log("Creating school-wide events...");
   await prisma.event.createMany({

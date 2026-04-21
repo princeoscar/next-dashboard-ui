@@ -53,7 +53,7 @@ const LessonListPage = async ({
           </h1>
           <p className="text-sm text-slate-400 font-medium italic">Select a class to view its active timetable</p>
         </div>
-        <ClassSelector classes={classes} role={role!} target="students" relatedData={{}} />
+        <ClassSelector classes={classes} role={role!} target="lessons" relatedData={{}} />
       </div>
     );
   }
