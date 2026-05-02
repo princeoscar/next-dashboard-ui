@@ -11,7 +11,7 @@ export async function GET() {
 
   // Define role-based visibility conditions
   const roleConditions = {
-    teacher: { subjects: { some: { teacherId: userId! } } },
+    teacher:  { supervisorId: userId! },
     student: { students: { some: { id: userId! } } },
     parent: { students: { some: { parentId: userId! } } },
   };
@@ -24,7 +24,7 @@ export async function GET() {
         ...(role !== "admin" && {
           OR: [
             { classId: null }, // Global announcements
-            { classes: roleConditions[role as keyof typeof roleConditions] || {} },
+            { class: roleConditions[role as keyof typeof roleConditions] || {} },
           ],
         }),
       },
