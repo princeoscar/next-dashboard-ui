@@ -30,22 +30,14 @@ export async function GET(req: NextRequest) {
           student: { select: { name: true, surname: true } },
           exam: {
             include: {
-              subject: {
-                select: { 
-                  classes: { select: { name: true } },
+                  class: { select: { name: true } },
                   subject: { select: { name: true } } 
-                },
-              },
             },
           },
           assignment: {
             include: {
-              subject: {
-                select: { 
-                  classes: { select: { name: true } },
+                  class: { select: { name: true } },
                   subject: { select: { name: true } } 
-                },
-              },
             },
           },
         },

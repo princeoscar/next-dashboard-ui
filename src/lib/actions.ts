@@ -1138,7 +1138,7 @@ export const registerSchool = async (formData: FormData) => {
         data: {
           name: yearName,
           isCurrent: true,
-          schoolId: newSchool.id,
+          
         },
       });
 
@@ -1147,7 +1147,9 @@ export const registerSchool = async (formData: FormData) => {
         data: {
           id: userId,
           username: "Admin",
-          schoolId: newSchool.id,
+          school: {
+      connect: { id: newSchool.id } // Use the variable for the school ID here
+    },
         },
       });
 
@@ -1179,20 +1181,29 @@ export async function createSchool(formData: FormData, adminId: string) {
 
   try {
     // 1. Create the School and connect the Admin in ONE transaction
-    const school = await prisma.school.create({
-      data: {
-        name: schoolName,
-        admins: {
-          connectOrCreate: {
-            where: { id: adminId },
-            create: {
-              id: adminId,
-              username: "Admin", // You can update this later from Clerk
-            },
-          },
-        },
-      },
-    });
+    // 1. Create the school first (just the name)
+const school = await prisma.school.create({
+  data: {
+    name: schoolName,
+  },
+});
+
+// 2. Link the Admin to the School separately
+await prisma.admin.upsert({
+  where: { id: adminId },
+  update: { 
+    school: {
+      connect: { id: school.id } // 🎯 Use 'school' and 'connect'
+    }
+  },
+  create: {
+    id: adminId,
+    username: "Admin", // Or get the real username if available
+    school: {
+      connect: { id: school.id } // 🎯 Use 'school' and 'connect'
+    },
+  },
+});
 
     // 2. Update Clerk Metadata so the Middleware sees the schoolId
     const client = await clerkClient();

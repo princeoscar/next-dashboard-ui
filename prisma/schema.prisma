@@ -10,6 +10,9 @@ datasource db {
 model Admin {
   id       String @id
   username String @unique
+
+  school   School @relation(fields: [schoolId], references: [id])
+  schoolId String
 }
 
 model School {
@@ -19,6 +22,7 @@ model School {
   teachers    Teacher[]
   attendances Attendance[]
   parents     Parent[]
+  admins Admin[]
 }
 
 model Student {
@@ -210,6 +214,8 @@ model Attendance {
 
   subject   Subject @relation(fields: [subjectId], references: [id])
   subjectId Int
+
+  teacherId String?
 
   school   School @relation(fields: [schoolId], references: [id])
   schoolId String

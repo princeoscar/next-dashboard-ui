@@ -2,6 +2,9 @@
 
 import { UserProfile } from "@clerk/nextjs";
 
+
+
+export const dynamic = "force-dynamic";
 const SettingsPage = () => {
   return (
     <div className="p-2 md:p-10 flex flex-col items-center justify-center min-h-screen bg-slate-50/50">

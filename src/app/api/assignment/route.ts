@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
 
   if (search) {
     query.subject = {
-      subject: { name: { contains: search, mode: "insensitive" } },
+      name: { contains: search, mode: "insensitive" },
     };
   }
 
@@ -28,8 +28,8 @@ export async function GET(req: NextRequest) {
         include: {
           subject: {
             select: {
-              subject: { select: { name: true } },
-              teacher: { select: { name: true, surname: true } },
+              name: true, 
+              teachers: { select: { name: true, surname: true } },
               classes: { select: { name: true } },
             },
           },
