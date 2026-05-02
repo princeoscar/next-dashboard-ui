@@ -86,11 +86,13 @@ const SingleMessagePage = async (props: {
                 {otherPerson?.img ? (
                   <Image src={otherPerson.img}
                    alt={displayName}
+                   fill
                     className="object-cover"
                      />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600 text-white">
                     <User size={32} />
+                    <span className="text-xs text-slate-400">No Img</span>
                   </div>
                 )}
               </div>

@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
   const query: any = {};
 
   if (search) {
-    query.lesson = {
+    query.subject = {
       subject: { name: { contains: search, mode: "insensitive" } },
     };
   }
@@ -28,11 +28,11 @@ export async function GET(req: NextRequest) {
       prisma.exam.findMany({
         where: query,
         include: {
-          lesson: {
+          subject: {
             select: {
               subject: { select: { name: true } },
               teacher: { select: { name: true, surname: true } },
-              class: { select: { name: true } },
+              classes: { select: { name: true } },
             },
           },
         },

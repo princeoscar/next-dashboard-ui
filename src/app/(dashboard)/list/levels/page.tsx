@@ -1,10 +1,10 @@
 import FormModal from "@/components/FormModal";
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
-import Pagination from "@/components/Pagination"; // Assuming you have this
+import Pagination from "@/components/Pagination";
 import { prisma } from "@/lib/prisma";
 import { ITEM_PER_PAGE } from "@/lib/settings";
-import { Grade, Prisma } from "@prisma/client";
+import { Level, Prisma } from "@prisma/client";
 import Image from "next/image";
 
 const GradeListPage = async ({
@@ -12,24 +12,26 @@ const GradeListPage = async ({
 }: {
   searchParams: Promise<{ [key: string]: string | undefined }>;
 }) => {
-  // NEXT.JS 15 FIX: You must await searchParams
+  // NEXT.JS 15 FIX: Await searchParams
   const resolvedParams = await searchParams;
   const { page, ...queryParams } = resolvedParams;
   
   const p = page ? parseInt(page) : 1;
 
   // URL QUERY PARAMS CONDITION
-  const query: Prisma.GradeWhereInput = {};
+  const query: Prisma.LevelWhereInput = {};
 
   if (queryParams) {
     for (const [key, value] of Object.entries(queryParams)) {
       if (value !== undefined) {
         switch (key) {
           case "search":
-            const searchTerm = parseInt(value);
-            if (!isNaN(searchTerm)) {
-              query.level = { equals: searchTerm };
-            }
+            // Filter by name (e.g., "Grade 10") or the numeric level
+            query.OR = [
+                { name: { contains: value, mode: 'insensitive' } },
+                // If it's a number, check the level field too
+                ...(!isNaN(parseInt(value)) ? [{ level: { equals: parseInt(value) } }] : [])
+            ];
             break;
           default:
             break;
@@ -39,12 +41,12 @@ const GradeListPage = async ({
   }
 
   const [data, count] = await prisma.$transaction([
-    prisma.grade.findMany({
+    prisma.level.findMany({
       where: query,
       take: ITEM_PER_PAGE,
       skip: ITEM_PER_PAGE * (p - 1),
     }),
-    prisma.grade.count({ where: query }),
+    prisma.level.count({ where: query }),
   ]);
 
   const columns = [
@@ -63,7 +65,7 @@ const GradeListPage = async ({
     },
   ];
 
-  const renderRow = (item: Grade) => (
+  const renderRow = (item: Level) => (
     <tr
       key={item.id}
       className="border-b border-gray-200 dark:border-slate-800 even:bg-slate-50 dark:even:bg-slate-900/50 text-sm hover:bg-rubixPurpleLight dark:hover:bg-slate-800 transition-colors"
@@ -72,8 +74,9 @@ const GradeListPage = async ({
       <td className="hidden md:table-cell dark:text-slate-400">{item.level}</td>
       <td>
         <div className="flex items-center gap-2">
-          <FormModal table="grade" type="update" data={item} />
-          <FormModal table="grade" type="delete" id={item.id} />
+          {/* 🎯 FIX: Changed table="grade" to table="level" to match your types */}
+          <FormModal table="level" type="update" data={item} />
+          <FormModal table="level" type="delete" id={item.id} />
         </div>
       </td>
     </tr>
@@ -93,7 +96,8 @@ const GradeListPage = async ({
             <button className="w-8 h-8 flex items-center justify-center rounded-full bg-rubixYellow">
               <Image src="/sort.png" alt="" width={14} height={14} />
             </button>
-            <FormModal table="grade" type="create" />
+            {/* 🎯 FIX: Changed table="grade" to table="level" */}
+            <FormModal table="level" type="create" />
           </div>
         </div>
       </div>

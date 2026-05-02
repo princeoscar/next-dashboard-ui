@@ -17,40 +17,40 @@ const ClassSelector = ({
 }) => {
 
   const grouped = classes.reduce((acc, curr) => {
-    const level = curr.grade.level;
-    let gradeName = "";
-    if (level >= 7 && level <= 9) gradeName = `Junior Secondary (JSS ${level - 6})`;
-    else if (level >= 10) gradeName = `Senior Secondary (SS ${level - 9})`;
-    else gradeName = `Primary (Grade ${level})`;
+    const level = curr.level?.name;
+    let levelName = "";
+    if (level >= 7 && level <= 9) levelName = `Junior Secondary (JSS ${level - 6})`;
+    else if (level >= 10) levelName = `Senior Secondary (SS ${level - 9})`;
+    else levelName = `Primary (Level ${level})`;
 
-    if (!acc[gradeName]) acc[gradeName] = [];
-    acc[gradeName].push(curr);
+    if (!acc[levelName]) acc[levelName] = [];
+    acc[levelName].push(curr);
     return acc;
   }, {} as Record<string, any[]>);
 
   return (
     <div className="space-y-6 md:space-y-8 pb-10 px-1 md:px-0">
-      {Object.keys(grouped).map((grade) => (
-        <div key={grade} className="animate-fadeIn">
+      {Object.keys(grouped).map((level) => (
+        <div key={level} className="animate-fadeIn">
           <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-4">
             <div className="p-1.5 md:p-2 bg-rubixPurple/10 text-rubixPurple rounded-lg shrink-0">
               <GraduationCap size={20} className="md:w-5 md:h-5" />
             </div>
             <h3 className="text-[10px] md:text-sm font-black uppercase tracking-[0.15em] md:tracking-[0.2em] text-slate-400 truncate">
-              {grade}
+              {level}
             </h3>
             <div className="flex-1 h-[1px] bg-slate-100 ml-1"></div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {grouped[grade].map((cls: any) => (
+            {grouped[level].map((cls: any) => (
               <div
                 key={cls.id}
                 className="group relative bg-white border border-slate-100 p-4 md:p-5 rounded-[1.5rem] md:rounded-3xl hover:border-rubixPurple hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col justify-between min-h-[120px] md:min-h-[140px]"
               >
                 {/* ADMIN ACTIONS: Only show if admin and NOT in student view (where we want it clean) */}
                 {role === "admin" && target !== "students" && (
-                  <div 
+                  <div
                     className="absolute top-3 right-3 z-30 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
                     onClick={(e) => e.stopPropagation()}
                   >
@@ -74,15 +74,15 @@ const ClassSelector = ({
                     Class {cls.name}
                   </h4>
 
-                  {/* 🚀 FIXED DYNAMIC COUNT LABEL (Removed the duplicate block) */}
+                  {/* 🚀 FIXED DYNAMIC COUNT LABEL */}
                   <p className="text-[10px] text-slate-400 mt-1 font-bold">
                     {target === "exams"
-                      ? `Assessments: ${cls._count?.lessons || 0} Exams`
-                      : target === "lessons"
-                        ? `Schedule: ${cls._count?.lessons || 0} Lessons`
-                        : target === "subjects"
-                          ? `Curriculum: ${cls._count?.lessons || 0} Subjects`
-                          : `Enrolled: ${cls._count?.students || 0} Students`}
+                      ? `Assessments: ${cls._count?.exams || 0} Exams`
+                      : target === "subjects"
+                        ? `Curriculum: ${cls._count?.subjects || 0} Subjects`
+                        : target === "students"
+                          ? `Enrolled: ${cls._count?.students || 0} Students`
+                          : `Schedule: ${cls._count?.subjects || 0} Subjects`}
                   </p>
                 </div>
 

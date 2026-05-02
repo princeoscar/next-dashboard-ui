@@ -112,7 +112,7 @@ CREATE TABLE "Exam" (
     "title" TEXT NOT NULL,
     "startTime" TIMESTAMP(3) NOT NULL,
     "endTime" TIMESTAMP(3) NOT NULL,
-    "lessonId" INTEGER NOT NULL,
+    -- "lessonId" INTEGER NOT NULL,
 
     CONSTRAINT "Exam_pkey" PRIMARY KEY ("id")
 );
@@ -123,7 +123,7 @@ CREATE TABLE "Assignment" (
     "title" TEXT NOT NULL,
     "startDate" TIMESTAMP(3) NOT NULL,
     "dueDate" TIMESTAMP(3) NOT NULL,
-    "lessonId" INTEGER NOT NULL,
+    -- "lessonId" INTEGER NOT NULL,
 
     CONSTRAINT "Assignment_pkey" PRIMARY KEY ("id")
 );
@@ -145,7 +145,7 @@ CREATE TABLE "Attendance" (
     "date" TIMESTAMP(3) NOT NULL,
     "present" BOOLEAN NOT NULL,
     "studentId" TEXT NOT NULL,
-    "lessonId" INTEGER NOT NULL,
+    -- "lessonId" INTEGER NOT NULL,
 
     CONSTRAINT "Attendance_pkey" PRIMARY KEY ("id")
 );

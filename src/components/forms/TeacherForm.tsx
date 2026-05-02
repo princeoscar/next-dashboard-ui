@@ -37,11 +37,23 @@ const TeacherForm = ({ type, data, setOpen, relatedData }: TeacherFormProps) => 
     { success: false, error: false, message: "" }
   );
 
-  const onSubmit = handleSubmit((formData) => {
-    startTransition(() => {
-      formAction({ ...formData, img: img?.secure_url });
-    });
-  });
+  const onSubmit = handleSubmit(
+    (formData) => {
+      console.log("SUCCESS:", formData);
+      startTransition(() => {
+        formAction({
+          ...formData,
+          img: img?.secure_url || data?.img,
+          schoolId: "1",
+          // 🎯 FIX: Only send ID if we are updating
+          ...(type === "update" && { id: data.id }),
+        });
+      });
+    },
+    (validationErrors) => {
+      console.log("VALIDATION FAILED:", validationErrors);
+    }
+  );
 
   useEffect(() => {
     if (state.success) {
@@ -63,15 +75,15 @@ const TeacherForm = ({ type, data, setOpen, relatedData }: TeacherFormProps) => 
     <form className="flex flex-col w-full max-w-2xl mx-auto" onSubmit={onSubmit}>
       {/* 1. STICKY HEADER */}
       <div className="sticky top-0 bg-white z-50 px-6 py-4 border-b">
-  <h1 className="text-xl md:text-2xl font-black text-slate-800 tracking-tight uppercase">
-    {type === "create" ? "Create New" : "Update"}{" "}
-    <span className="text-rubixPurple">Teacher</span>
-  </h1>
-</div>
+        <h1 className="text-xl md:text-2xl font-black text-slate-800 tracking-tight uppercase">
+          {type === "create" ? "Create New" : "Update"}{" "}
+          <span className="text-rubixPurple">Teacher</span>
+        </h1>
+      </div>
 
       {/* 2. SCROLLABLE CONTENT AREA */}
       <div className="px-6 py-6 space-y-8 pb-28">
-        
+
         {/* Authentication Section */}
         <div className="space-y-4">
           <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 bg-slate-50 px-2 py-1 rounded">
@@ -108,7 +120,7 @@ const TeacherForm = ({ type, data, setOpen, relatedData }: TeacherFormProps) => 
 
         {/* Administrative Details Section */}
         <div className="space-y-4">
-           <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 bg-slate-50 px-2 py-1 rounded">
+          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 bg-slate-50 px-2 py-1 rounded">
             Administration
           </span>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
@@ -132,7 +144,7 @@ const TeacherForm = ({ type, data, setOpen, relatedData }: TeacherFormProps) => 
                 defaultValue={data?.subjects?.map((s: { id: number }) => s.id)}
               >
                 {subjects.map((subject) => (
-                  <option value={subject.id} key={subject.id}>{subject.name}</option>
+                  <option value={String(subject.id)} key={subject.id}>{subject.name}</option>
                 ))}
               </select>
               {errors.subjects?.message && <p className="text-xs text-red-400">{errors.subjects.message.toString()}</p>}

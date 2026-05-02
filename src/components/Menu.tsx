@@ -1,11 +1,11 @@
-"use client"; 
+"use client";
 
 import Link from "next/link";
-import { SignOutButton } from "@clerk/nextjs"; 
-import { 
-  Home, Users, UserSquare2, UserCircle, BookOpen, GraduationCap, 
-  Book, FileText, ClipboardList, BarChart3, CheckCircle2, 
-  Calendar, MessageCircle, Megaphone, User, Settings, LogOut, 
+import { SignOutButton } from "@clerk/nextjs";
+import {
+  Home, Users, UserSquare2, UserCircle, BookOpen, GraduationCap,
+  Book, FileText, ClipboardList, BarChart3, CheckCircle2,
+  Calendar, MessageCircle, Megaphone, User, Settings, LogOut,
   CalendarDays
 } from "lucide-react";
 
@@ -19,7 +19,6 @@ const getMenuItems = (role: string) => [
       { icon: <UserCircle size={20} />, label: "Parents", href: "/list/parents", visible: ["admin", "teacher"] },
       { icon: <BookOpen size={20} />, label: "Subjects", href: "/list/subjects", visible: ["admin"] },
       { icon: <GraduationCap size={20} />, label: "Classes", href: "/list/classes", visible: ["admin", "teacher"] },
-      { icon: <Book size={20} />, label: "Lessons", href: "/list/lessons", visible: ["admin", "teacher"] },
       { icon: <FileText size={20} />, label: "Exams", href: "/list/exams", visible: ["admin", "teacher", "student", "parent"] },
       { icon: <ClipboardList size={20} />, label: "Assignments", href: "/list/assignments", visible: ["admin", "teacher", "student", "parent"] },
       { icon: <BarChart3 size={20} />, label: "Results", href: "/list/results", visible: ["admin", "teacher", "student", "parent"] },

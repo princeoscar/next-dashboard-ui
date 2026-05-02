@@ -45,7 +45,6 @@ export const getCachedDashboardData = unstable_cache(
         parentCount,
         adminCount,
         classCount,
-        lessonCount,
         announcementCount,
         msgCount,
         maleCount,
@@ -57,7 +56,6 @@ export const getCachedDashboardData = unstable_cache(
         prisma.parent.count(),
         prisma.admin.count(),
         prisma.class.count(),
-        prisma.lesson.count(),
         prisma.announcement.count(),
         prisma.message.count(),
         prisma.student.count({ where: { sex: "MALE" } }),
@@ -81,7 +79,6 @@ export const getCachedDashboardData = unstable_cache(
           parentCount,
           adminCount,
           classCount,
-          lessonCount,
           announcementCount,
           msgCount,
         },
@@ -96,7 +93,7 @@ export const getCachedDashboardData = unstable_cache(
   ["dashboard-stats-main"], // The Cache Key
   {
     revalidate: 3600,
-    tags: ["dashboard-stats"],
+   tags: ["dashboard-announcements", "dashboard-stats"],
   },
 );
 

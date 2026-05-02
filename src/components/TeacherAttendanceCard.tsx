@@ -6,24 +6,29 @@ const TeacherAttendanceCard = async ({ id }: { id: string }) => {
   const startOfYear = new Date(now.getFullYear(), 0, 1);
 
   // 1. Fetch count of all lessons assigned to this teacher
-  const totalAssignedLessons = await prisma.lesson.count({
-    where: { teacherId: id },
-  });
+ // 1. Total Subjects assigned to this teacher
+const totalAssignedSubjects = await prisma.subject.count({
+  where: { 
+    teachers: { 
+      some: { id: id } 
+    } 
+  },
+});
 
-  // 2. Fetch lessons where at least one attendance record exists (Lessons Conducted)
-  const conductedLessonsCount = await prisma.lesson.count({
-    where: {
-      teacherId: id,
-      attendances: {
-        some: {
-          date: { gte: startOfYear },
-        },
-      },
+// 2. Total Attendance Sessions conducted (Lessons Conducted)
+// We query the Attendance table directly to see how many unique dates/sessions were recorded
+const conductedSessionsCount = await prisma.attendance.count({
+  where: {
+    // 🎯 If your Attendance model now links to Subject or Teacher
+    teacherId: id, 
+    date: { 
+      gte: startOfYear 
     },
-  });
+  },
+});
 
-  const percentage = totalAssignedLessons > 0 
-    ? Math.round((conductedLessonsCount / totalAssignedLessons) * 100) 
+  const percentage = totalAssignedSubjects > 0 
+    ? Math.round((conductedSessionsCount / totalAssignedSubjects) * 100) 
     : 0;
 
   // Visual logic for colors
@@ -44,7 +49,7 @@ const TeacherAttendanceCard = async ({ id }: { id: string }) => {
       <div className="flex items-end justify-between">
         <div>
           <h2 className={`text-3xl font-black tracking-tighter ${statusColor}`}>
-            {totalAssignedLessons > 0 ? `${percentage}%` : "--"}
+            {totalAssignedSubjects > 0 ? `${percentage}%` : "--"}
           </h2>
           <p className="text-xs text-slate-400 font-bold uppercase tracking-tight mt-1">
             Duty Attendance
@@ -80,7 +85,7 @@ const TeacherAttendanceCard = async ({ id }: { id: string }) => {
 
       <div className="mt-6 pt-4 border-t border-slate-50">
         <p className="text-[10px] text-slate-400 font-medium">
-          <span className="font-black text-slate-700">{conductedLessonsCount}</span> of {totalAssignedLessons} sessions recorded
+          <span className="font-black text-slate-700">{conductedSessionsCount}</span> of {totalAssignedSubjects} sessions recorded
         </p>
       </div>
     </div>

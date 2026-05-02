@@ -32,7 +32,7 @@ const AttendanceForm = ({
     resolver: zodResolver(attendanceSchema) as any,
     defaultValues: {
       date: data?.date ? new Date(data.date) : new Date(),
-      lessonId: data?.lessonId || undefined,
+      subjectId: data?.subjectId || undefined,
       students: data?.students || relatedData?.students?.map((s: any) => ({
         studentId: s.id,
         present: true,
@@ -52,7 +52,7 @@ const AttendanceForm = ({
     }
   }, [state, router, setOpen, type]);
 
-  const { lessons, students: studentList } = relatedData || {};
+  const { subjects, students: studentList } = relatedData || {};
 
   const markAllPresent = () => {
     fields.forEach((_, index) => {
@@ -119,14 +119,14 @@ const AttendanceForm = ({
           </label>
           <div className="relative">
             <select
-              {...register("lessonId", { valueAsNumber: true })}
+              {...register("subjectId", { valueAsNumber: true })}
               className="w-full p-4 rounded-2xl bg-white border border-slate-200 text-sm font-semibold focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 outline-none transition-all appearance-none cursor-pointer"
-              defaultValue={data?.lessonId}
+              defaultValue={data?.subjectId}
             >
-              <option value="">-- Select Lesson --</option>
-              {lessons?.map((lesson: any) => (
-                <option value={lesson.id} key={lesson.id}>
-                  {lesson.name} ({lesson.class.name})
+              <option value="">-- Select Subject --</option>
+              {subjects?.map((subject: any) => (
+                <option value={subject.id} key={subject.id}>
+                  {subject.name} ({subject.class.name})
                 </option>
               ))}
             </select>
@@ -134,8 +134,8 @@ const AttendanceForm = ({
                 ▼
             </div>
           </div>
-          {errors.lessonId?.message && (
-            <p className="text-[10px] text-rose-500 font-bold uppercase ml-1">{errors.lessonId.message.toString()}</p>
+          {errors.subjectId?.message && (
+            <p className="text-[10px] text-rose-500 font-bold uppercase ml-1">{errors.subjectId.message.toString()}</p>
           )}
         </div>
       </div>

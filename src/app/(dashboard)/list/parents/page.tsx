@@ -33,7 +33,7 @@ const ParentListPage = async ({
   }
 
   // 3. FETCH DATA (Using Transaction for efficiency)
-  const [data, count] = await prisma.$transaction([
+  const [data, count, students] = await prisma.$transaction([
     prisma.parent.findMany({
       where: query,
       include: { students: true },
@@ -41,7 +41,12 @@ const ParentListPage = async ({
       skip: ITEM_PER_PAGE * (p - 1),
     }),
     prisma.parent.count({ where: query }),
+    prisma.student.findMany({
+    select: { id: true, name: true, surname: true }
+  }),
   ]);
+
+  const relatedData = { students, schoolId: "1" };
 
   // 4. TABLE COLUMNS
   const columns = [
@@ -95,7 +100,7 @@ const ParentListPage = async ({
         <div className="flex items-center gap-4 w-full md:w-auto">
           <TableSearch />
           <div className="flex items-center gap-3 self-end">
-            <FormContainer table="parent" type="create" />
+            <FormContainer table="parent" type="create" relatedData={relatedData} />
           </div>
         </div>
       </div>

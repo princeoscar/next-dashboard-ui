@@ -6,15 +6,20 @@ import { ChevronRight, BookOpen, Users } from "lucide-react";
 const SelectClassPage = async () => {
   const { userId } = await auth();
 
-  const lessons = await prisma.lesson.findMany({
-    where: { teacherId: userId! },
-    include: {
-      class: { select: { name: true } },
-      subject: { select: { name: true } },
-      exams: { select: { id: true, title: true } },
-    },
-  });
-
+ const subjects = await prisma.subject.findMany({
+  // 🎯 Query the Many-to-Many relationship
+  where: { 
+    teachers: { 
+      some: { id: userId! } 
+    } 
+  },
+  include: {
+    // 🎯 Include the classes (since a subject now has many)
+    classes: { select: { name: true } },
+    // 🎯 Assuming exams are now linked to Subjects
+    exams: { select: { id: true, title: true } },
+  },
+});
   return (
     <div className="p-8 bg-slate-50 min-h-screen">
       <div className="mb-8">
@@ -23,22 +28,22 @@ const SelectClassPage = async () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {lessons.map((lesson) => (
-          <div key={lesson.id} className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 hover:shadow-md transition-all">
+        {subjects.map((subject) => (
+          <div key={subject.id} className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 hover:shadow-md transition-all">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-sky-50 text-sky-600 rounded-xl">
                 <Users size={20} />
               </div>
               <div>
-                <h2 className="font-black text-slate-800 leading-none">{lesson.class.name}</h2>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">{lesson.subject.name}</span>
+                <h2 className="font-black text-slate-800 leading-none">{subject.classes[0]?.name || "No Class"}</h2>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">{subject.name}</span>
               </div>
             </div>
 
             <div className="space-y-2">
               <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-2">Available Assessments</p>
               
-              {lesson.exams.map((exam) => (
+              {subject.exams.map((exam) => (
                 <Link
                   key={exam.id}
                   href={`/list/results/bulk?examId=${exam.id}`}
@@ -52,7 +57,7 @@ const SelectClassPage = async () => {
                 </Link>
               ))}
 
-              {lesson.exams.length === 0 && (
+              {subject.exams.length === 0 && (
                 <p className="text-[10px] italic text-slate-400 px-1">No exams scheduled for this class.</p>
               )}
             </div>

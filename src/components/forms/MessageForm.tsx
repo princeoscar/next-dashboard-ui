@@ -31,7 +31,8 @@ const MessageForm = ({
     }
   }, [state, router, setOpen]);
 
-  const { receivers = [] } = relatedData || {};
+  console.log("FORM DEBUG - relatedData:", relatedData);
+const { receivers = [] } = relatedData || {};
 
   return (
     <form 

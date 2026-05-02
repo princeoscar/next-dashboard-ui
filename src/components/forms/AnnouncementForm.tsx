@@ -49,16 +49,29 @@ const AnnouncementForm = ({
 
   const { classes } = relatedData || {};
 
-  const onSubmit = handleSubmit((formData) => {
-    const payload = {
-      ...formData,
-      id: data?.id || undefined,
-      classId: formData.classId ? Number(formData.classId) : null,
-    };
+  const onSubmit = handleSubmit(
+  (formData) => {
+    // 🔍 This log helped us with Results - check it in the F12 console
+    console.log("🚀 SUBMITTING ANNOUNCEMENT:", formData); 
+
     startTransition(() => {
-      formAction(payload as any);
+      formAction({
+        ...formData,
+        // 🎯 Logic used in Results: Ensure numbers are numbers
+        classId: formData.classId ? Number(formData.classId) : null,
+        ...(type === "update" && { id: data.id }),
+      });
     });
-  });
+  },
+  (validationErrors) => {
+    // 🔍 If this triggers, your form UI is blocking the save!
+    console.log("❌ FORM VALIDATION FAILED:", validationErrors);
+  }
+);
+
+  // 🎯 THE CRITICAL PART: Log validation errors
+  // This is the "Method" we used for Results
+  console.log("❌ Current Validation Errors:", errors);
 
   return (
     <form className="flex flex-col gap-6 w-full max-w-2xl mx-auto p-2" onSubmit={onSubmit}>
@@ -119,7 +132,7 @@ const AnnouncementForm = ({
             </div>
           </div>
           <p className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-tight ml-1 italic">
-             Leave blank for a global notice.
+            Leave blank for a global notice.
           </p>
         </div>
       </div>
@@ -144,9 +157,11 @@ const AnnouncementForm = ({
 
       {/* ERROR MESSAGE */}
       {state.error && (
-        <div className="p-4 rounded-2xl bg-rose-50 border border-rose-100 animate-bounce">
-          <p className="text-rose-600 text-[10px] font-black uppercase tracking-widest text-center">
-            Critical Error: Unable to synchronize with database.
+        <div className="p-4 rounded-2xl bg-rose-50 border border-rose-100">
+          <p className="text-rose-600 text-xs font-bold text-center break-words">
+            {typeof state.error === "string"
+              ? state.error
+              : "Something failed. Check console."}
           </p>
         </div>
       )}
@@ -160,13 +175,12 @@ const AnnouncementForm = ({
         >
           Cancel
         </button>
-        
+
         <button
           type="submit"
           disabled={isPending}
-          className={`group flex items-center gap-3 bg-slate-900 hover:bg-blue-600 text-white py-4 px-10 rounded-2xl font-black text-[12px] uppercase tracking-widest transition-all shadow-xl shadow-slate-200 active:scale-95 ${
-            isPending ? "opacity-70 cursor-not-allowed" : ""
-          }`}
+          className={`group flex items-center gap-3 bg-slate-900 hover:bg-blue-600 text-white py-4 px-10 rounded-2xl font-black text-[12px] uppercase tracking-widest transition-all shadow-xl shadow-slate-200 active:scale-95 ${isPending ? "opacity-70 cursor-not-allowed" : ""
+            }`}
         >
           {isPending ? (
             <>

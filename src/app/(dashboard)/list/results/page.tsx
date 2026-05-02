@@ -83,7 +83,17 @@ const ResultListPage = async ({
   if (!classId && !search && role !== "student" && role !== "parent") {
     const classes = await prisma.class.findMany({
       where: { ...(role === "teacher" ? { supervisorId: userId! } : {}) },
-      include: { grade: true, supervisor: true, _count: { select: { lessons: true } } },
+      include: {
+        level: true,
+        supervisor: true,
+        _count: {
+          select: {
+            subjects: true,
+            assignments: true,
+            exams: true,
+          }
+        }
+      },
       orderBy: { name: "asc" },
     });
 
@@ -107,8 +117,8 @@ const ResultListPage = async ({
     case "teacher":
       andConditions.push({
         OR: [
-          { exam: { lesson: { teacherId: userId! } } },
-          { assignment: { lesson: { teacherId: userId! } } },
+          { exam: { teacherId: userId! } },
+          { assignment: { teacherId: userId! } },
           { student: { class: { supervisorId: userId! } } },
         ],
       });
@@ -117,17 +127,28 @@ const ResultListPage = async ({
       andConditions.push({ studentId: userId! });
       break;
     case "parent":
-      // 🔒 Ensure results are for the chosen child AND the parent owns that child
       andConditions.push({
         studentId: selectedStudentId,
         student: { parentId: userId! }
       });
       break;
     default:
-      andConditions.push({ id: -1 });
+      andConditions.push({ id: "0" });
       break;
   }
 
+  // 🎯 SUBJECT FILTER: Move this OUTSIDE the switch so it works for all roles
+  if (params.subjectId) {
+    andConditions.push({
+      OR: [
+        { subjectId: parseInt(params.subjectId) },
+        { exam: { subjectId: parseInt(params.subjectId) } },
+        { assignment: { subjectId: parseInt(params.subjectId) } }
+      ]
+    });
+  }
+
+  // Keep your existing search and classId logic below...
   if (search) {
     andConditions.push({
       OR: [
@@ -144,75 +165,160 @@ const ResultListPage = async ({
 
   if (andConditions.length > 0) query.AND = andConditions;
 
+
+  const cid = classId ? parseInt(classId) : undefined;
+
+
   // --- 4. DATA FETCHING ---
-  const [data, count, exams, assignments] = await prisma.$transaction([
+  const [data, count, exams, assignments, students, academicYears, subjects] = await prisma.$transaction([
     prisma.result.findMany({
       where: query,
       include: {
         student: { select: { name: true, surname: true } },
-        exam: { include: { lesson: { include: { class: true, subject: true } } } },
-        assignment: { include: { lesson: { include: { class: true, subject: true } } } },
+        subject: { select: { name: true } },
+        exam: {
+          include: {
+            class: { select: { name: true } },
+            subject: { select: { name: true } }
+          }
+        },
+        assignment: {
+          include: {
+            class: { select: { name: true } },
+            subject: { select: { name: true } }
+          }
+        },
       },
       take: ITEM_PER_PAGE,
       skip: ITEM_PER_PAGE * (p - 1),
       orderBy: { id: "desc" },
     }),
     prisma.result.count({ where: query }),
-    prisma.exam.findMany({ select: { id: true, title: true } }),
-    prisma.assignment.findMany({ select: { id: true, title: true } }),
+    prisma.exam.findMany({
+      where: { classId: cid },
+      select: {
+        id: true,
+        title: true,
+        subject: { select: { name: true } } // 🎯 Make sure this is here!
+      },
+    }),
+
+    prisma.assignment.findMany({
+      where: { classId: cid },
+      select: { id: true, title: true }
+    }),
+
+    prisma.student.findMany({
+      where: { classId: cid }, // 🎯 Only students in this class
+      select: { id: true, name: true, surname: true },
+      orderBy: { name: "asc" }
+    }),
+
+    prisma.academicYear.findMany({
+      select: { id: true, name: true }
+    }),
+
+    // 🎯 Fetch subjects so the teacher can pick which subject the grade is for
+    prisma.subject.findMany({
+      where: {
+        classes: {
+          some: {
+            id: cid, // Only subjects associated with this class ID
+          },
+        },
+      },
+      select: { id: true, name: true },
+    }),
   ]);
 
-  const relatedData = { exams, assignments };
+
+  const relatedData = { exams, assignments, students, academicYears, subjects };
 
   // --- 5. RENDER TABLE ---
   const columns = [
-    { header: "Subject", accessor: "subject", className: "pl-4" },
-    { header: "Score", accessor: "score", className: "text-center font-black" },
-    { header: "Type", accessor: "type", className: "hidden md:table-cell" },
-    ...(role !== "student" ? [{ header: "Student", accessor: "student", className: "hidden sm:table-cell" }] : []),
-    { header: "Actions", accessor: "action", className: "text-right pr-4" },
-  ];
-
+  { header: "Subject", accessor: "subject", className: "pl-4" },
+  // 🎯 Keep the conditional Student column
+  ...(role !== "student" 
+    ? [{ header: "Student", accessor: "student", className: "hidden md:table-cell" }] 
+    : []),
+  { header: "C.A", accessor: "ca", className: "text-center" },
+  { header: "Exam", accessor: "exam", className: "text-center" },
+  { header: "Total", accessor: "total", className: "text-center" },
+  { header: "Actions", accessor: "action", className: "text-right pr-4" },
+];
   const renderRow = (item: any) => {
-    const assessment = item.exam || item.assignment;
-    const isExam = !!item.exam;
-    const scoreColor = item.score >= 70 ? "text-emerald-500" : item.score >= 50 ? "text-amber-500" : "text-rose-500";
+  const subjectName = item.subject?.name || item.exam?.subject?.name || item.assignment?.subject?.name || "Unknown";
+  const caScore = (item.testScore ?? 0) + (item.assignmentScore ?? 0);
+  const examScore = item.examScore ?? 0;
+  const total = item.totalScore ?? 0;
+  const scoreColor = total >= 70 ? "text-emerald-600" : total >= 50 ? "text-amber-600" : "text-rose-600";
 
-    return (
-      <tr key={item.id} className="border-b border-slate-100 last:border-0 text-sm hover:bg-slate-50 transition-all">
-        <td className="p-4">
-          <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-xl ${isExam ? 'bg-indigo-50 text-indigo-600' : 'bg-emerald-50 text-emerald-600'}`}>
-              {isExam ? <ClipboardCheck size={16} /> : <FileText size={16} />}
+  return (
+    <tr key={item.id} className="border-b border-slate-100 last:border-0 text-sm hover:bg-slate-50 transition-all">
+      {/* SUBJECT */}
+      <td className="p-4">
+        <div className="flex flex-col">
+          <span className="font-black text-slate-700 uppercase text-[11px]">{subjectName}</span>
+          <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">
+            {item.examId ? "Final Exam" : "Assessment"}
+          </span>
+        </div>
+      </td>
+
+      {/* 🎯 STUDENT (Only rendered if role is NOT student) */}
+      {role !== "student" && (
+        <td className="hidden md:table-cell p-4">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500 uppercase">
+              {item.student.name[0]}
             </div>
-            <span className="font-black text-slate-700 uppercase text-[11px]">
-              {assessment?.lesson.subject.name || "Assessment"}
+            <span className="text-xs font-bold text-slate-600">
+              {item.student.name} {item.student.surname}
             </span>
           </div>
         </td>
-        <td className={`p-4 text-center font-black text-lg ${scoreColor}`}>{item.score}%</td>
-        <td className="hidden md:table-cell p-4">
-          <span className="text-[9px] font-black uppercase text-slate-400">{isExam ? "Exam" : "Assignment"}</span>
-        </td>
-        <td className="hidden sm:table-cell p-4">
-          <span className="text-xs font-bold text-slate-500">{item.student.name}</span>
-        </td>
-        <td className="p-4 text-right">
-          <div className="flex items-center gap-2 justify-end">
-            <Link href={`/print/${item.studentId}`}>
-              <button className="p-2 bg-slate-100 rounded-full hover:bg-amber-500 hover:text-white transition-all"><FileText size={14} /></button>
-            </Link>
-            {(role === "admin" || role === "teacher") && (
-              <>
-                <FormContainer table="result" type="update" data={item} relatedData={relatedData} />
-                <FormContainer table="result" type="delete" id={item.id} />
-              </>
-            )}
-          </div>
-        </td>
-      </tr>
-    );
-  };
+      )}
+
+      {/* C.A SCORE */}
+      <td className="p-4 text-center">
+        <span className="text-xs font-black text-slate-400 bg-slate-50 px-2 py-1 rounded-md">
+          {caScore}
+        </span>
+      </td>
+
+      {/* EXAM SCORE */}
+      <td className="p-4 text-center">
+        <span className="text-xs font-black text-slate-400 bg-slate-50 px-2 py-1 rounded-md">
+          {examScore}
+        </span>
+      </td>
+
+      {/* TOTAL */}
+      <td className="p-4 text-center">
+        <span className={`font-black text-lg ${scoreColor}`}>
+          {total}<span className="text-[10px] ml-0.5">%</span>
+        </span>
+      </td>
+
+      {/* ACTIONS */}
+      <td className="p-4 text-right">
+        <div className="flex items-center gap-2 justify-end">
+          <Link href={`/print/${item.studentId}`}>
+            <button className="p-2 bg-slate-100 rounded-full hover:bg-amber-500 hover:text-white transition-all">
+              <FileText size={14} />
+            </button>
+          </Link>
+          {(role === "admin" || role === "teacher") && (
+            <>
+              <FormContainer table="result" type="update" data={item} relatedData={relatedData} />
+              <FormContainer table="result" type="delete" id={item.id} />
+            </>
+          )}
+        </div>
+      </td>
+    </tr>
+  );
+};
 
   return (
     <div className="bg-white p-8 rounded-[2.5rem] flex-1 m-4 mt-0 shadow-sm border border-slate-100">
@@ -223,13 +329,52 @@ const ResultListPage = async ({
           </Link>
           <h1 className="text-2xl font-black text-slate-800 uppercase tracking-tighter">
             {role === "parent" ? "Child Performance" : "Registry"}
+            {params.subjectId && (
+              <span className="text-amber-500"> : {subjects.find(s => s.id.toString() === params.subjectId)?.name}</span>
+            )}
           </h1>
         </div>
         <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end">
           <TableSearch />
+          {(role === "admin" || role === "teacher") && (
+            <FormContainer table="result" type="create" relatedData={relatedData} />
+          )}
         </div>
 
       </div>
+
+      <div className="relative mb-6">
+  {/* Horizontal Scroll Container */}
+  <div className="flex overflow-x-auto no-scrollbar items-center gap-2 pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap">
+    <Link
+      href={`/list/results?classId=${classId}`}
+      className={`whitespace-nowrap px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border shrink-0 ${
+        !params.subjectId 
+          ? 'bg-slate-900 text-white border-slate-900' 
+          : 'bg-white text-slate-400 border-slate-100 hover:border-slate-300'
+      }`}
+    >
+      All Subjects
+    </Link>
+
+    {subjects.map((sub: any) => (
+      <Link
+        key={sub.id}
+        href={`/list/results?classId=${classId}&subjectId=${sub.id}`}
+        className={`whitespace-nowrap px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border shrink-0 ${
+          params.subjectId === sub.id.toString() 
+            ? 'bg-amber-500 text-white border-amber-500 shadow-md' 
+            : 'bg-white text-slate-400 border-slate-100 hover:border-slate-200'
+        }`}
+      >
+        {sub.name}
+      </Link>
+    ))}
+  </div>
+  
+  {/* Gradient fade to indicate more items - Optional but nice */}
+  <div className="absolute right-0 top-0 bottom-2 w-8 bg-gradient-to-l from-slate-50 to-transparent pointer-events-none sm:hidden" />
+</div>
 
       <div className="rounded-3xl border border-slate-50 overflow-hidden bg-white shadow-sm">
         <Table columns={columns} renderRow={renderRow} data={data} />

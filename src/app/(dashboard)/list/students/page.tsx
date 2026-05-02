@@ -25,8 +25,8 @@ const StudentListPage = async ({
 
   // --- PRE-FETCH COMMON DATA FOR FORMS ---
   // This prevents the "relatedData is undefined" error in StudentForm
-  const [grades, classesList, parentsList] = await prisma.$transaction([
-    prisma.grade.findMany({ select: { id: true, level: true } }),
+  const [levels, classesList, parentsList] = await prisma.$transaction([
+    prisma.level.findMany({ select: { id: true, level: true } }),
     prisma.class.findMany({
       select: {
         id: true,
@@ -40,7 +40,7 @@ const StudentListPage = async ({
     prisma.parent.findMany({ select: { id: true, name: true, surname: true } }),
   ]);
 
-  const relatedData = { grades, classes: classesList, parents: parentsList };
+  const relatedData = { levels, classes: classesList, parents: parentsList };
 
   // --- 1. SEGMENT VIEW (CLASS CARDS) ---
   if (!classId && !search && role !== "student" && role !== "parent") {
@@ -49,8 +49,8 @@ const StudentListPage = async ({
         ...(role === "teacher" ? { supervisorId: userId! } : {}),
       },
       include: {
-        grade: true,
-        _count: { select: { students: true, lessons: true } },
+        level: true,
+        _count: { select: { students: true } },
         supervisor: true,
       },
       orderBy: { name: "asc" },
@@ -82,7 +82,7 @@ const StudentListPage = async ({
   const columns = [
     { header: "Info", accessor: "info", className: "pl-2 md:pl-4" },
     { header: "Username", accessor: "username", className: "hidden md:table-cell" },
-    { header: "Grade", accessor: "grade", className: "hidden md:table-cell" },
+    { header: "Level", accessor: "level", className: "hidden md:table-cell" },
     { header: "Phone", accessor: "phone", className: "hidden lg:table-cell" },
     { header: "Address", accessor: "address", className: "hidden lg:table-cell" },
     { header: "Actions", accessor: "action", className: "text-right pr-2 md:pr-4" },

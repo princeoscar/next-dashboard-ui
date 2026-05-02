@@ -24,17 +24,17 @@ export async function GET(req: NextRequest) {
 
   try {
     const [data, count] = await prisma.$transaction([
-      prisma.lesson.findMany({
+      prisma.subject.findMany({
         where: query,
-        include: { subject: true, class: true, teacher: true },
+        include: { subject: true, classes: true, teacher: true },
         take: ITEM_PER_PAGE,
         skip: ITEM_PER_PAGE * (p - 1),
       }),
-      prisma.lesson.count({ where: query }),
+      prisma.subject.count({ where: query }),
     ]);
 
     return NextResponse.json({ data, count, role });
   } catch (err) {
-    return NextResponse.json({ error: "Failed to fetch lessons" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to fetch subjects" }, { status: 500 });
   }
 }

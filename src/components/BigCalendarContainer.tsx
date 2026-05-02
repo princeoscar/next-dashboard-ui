@@ -14,22 +14,30 @@ const BigCalendarContainer = async ({
 }: BigCalendarContainerProps) => {
   
   // 1. Fetch Lessons with related Subject & Class info for better labels
-  const dataRes = await prisma.lesson.findMany({
-    where: {
-      ...(type === "teacherId"
-        ? { teacherId: id as string }
-        : { classId: id as number }),
-    },
-  });
+ const dataRes = await prisma.subject.findMany({
+  where: {
+    ...(type === "teacherId"
+      ? { 
+          teachers: { 
+            some: { id: id as string } 
+          } 
+        }
+      : { 
+          classes: { 
+            some: { id: parseInt(id as string) } 
+          } 
+        }),
+  },
+});
+
 
   // 2. Format data for react-big-calendar with more detail
-  const data = dataRes.map((lesson) => ({
-    title: lesson.name,
-    start: new Date(lesson.startTime), // Ensure these are Date objects
-    end: new Date(lesson.endTime),
-    // Optional: add extra info if you want to show it on hover or in a custom event component
-    resourceId: lesson.id, 
-  }));
+  const data = dataRes.map((item) => ({
+  title: item.name,
+  // We provide a dummy date since Subject doesn't have startTime/endTime
+  start: new Date(new Date().setHours(9, 0, 0)), 
+  end: new Date(new Date().setHours(10, 0, 0)),
+}));
 
   // 3. Normalize the dates to the current viewing week
   const schedule = adjustScheduleToCurrentWeek(data);

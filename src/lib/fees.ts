@@ -12,7 +12,7 @@ export const calculateStudentBalance = async (student: any) => {
   // 3. Fetch the fees
   const fees = await prisma.feeStructure.findFirst({
     where: {
-      gradeId: student.gradeId,
+      levelId: student.levelId,
       academicYearId: activeYear.id,
     }
   });

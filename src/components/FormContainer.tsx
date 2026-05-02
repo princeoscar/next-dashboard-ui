@@ -5,8 +5,8 @@ import FormModal from "./FormModal";
 export type FormContainerProps = {
   table:
     | "teacher" | "student" | "parent" | "subject" | "class"
-    | "lesson" | "exam" | "assignment" | "result" | "attendance"
-    | "event" | "announcement" | "message" | "grade";
+    | "subject" | "exam" | "assignment" | "result" | "attendance"
+    | "event" | "admin" | "announcement" | "message" | "level";
   type: "create" | "update" | "delete";
   data?: any;
   id?: number | string;

@@ -37,11 +37,19 @@ const AssignmentForm = ({
   const router = useRouter();
 
   const onSubmit = handleSubmit((formData) => {
-        console.log("Form Data being submitted:", formData);
-        startTransition(() => {
-          formAction(formData);
-        });
+    startTransition(() => {
+      formAction({
+        ...formData,
+       subjectId: Number(formData.subjectId), 
+      classId: Number(formData.classId),
+        teacherId: formData.teacherId,
+        startDate: new Date(formData.startDate),
+        dueDate: new Date(formData.dueDate),
+        ...(type === "update" && { id: data.id }),
       });
+    });
+  });
+
 
   useEffect(() => {
     if (state.success) {
@@ -51,12 +59,12 @@ const AssignmentForm = ({
     }
   }, [state, router, setOpen, type]);
 
-  const { lessons } = relatedData || {};
+  const { subjects } = relatedData || {};
 
   return (
-    <form 
-      className="flex flex-col gap-8 p-2" 
-      onSubmit={handleSubmit((formData) => formAction(formData))}
+    <form
+      className="flex flex-col gap-8 p-2"
+      onSubmit={onSubmit}
     >
       {/* HEADER */}
       <div className="flex items-center gap-4 mb-2">
@@ -86,23 +94,23 @@ const AssignmentForm = ({
         {/* LESSON SELECTION */}
         <div className="flex flex-col gap-2">
           <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
-            Associated Lesson
+            Associated Subject
           </label>
           <select
             className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 text-sm font-medium focus:ring-4 focus:ring-rubixSky/10 focus:border-rubixSky outline-none transition-all appearance-none"
-            {...register("lessonId")}
-            defaultValue={data?.lessonId}
+            {...register("subjectId")}
+            defaultValue={data?.subjectId}
           >
-            <option value="">Select a specific lesson...</option>
-            {lessons?.map((lesson: { id: number; name: string }) => (
-              <option value={lesson.id} key={lesson.id}>
-                {lesson.name}
+            <option value="">Select a specific subject...</option>
+            {subjects?.map((subject: { id: number; name: string }) => (
+              <option value={subject.id} key={subject.id}>
+                {subject.name}
               </option>
             ))}
           </select>
-          {errors.lessonId?.message && (
+          {errors.subjectId?.message && (
             <p className="text-[10px] text-rose-500 font-bold uppercase tracking-wide ml-1">
-              {errors.lessonId.message.toString()}
+              {errors.subjectId.message.toString()}
             </p>
           )}
         </div>
@@ -115,7 +123,7 @@ const AssignmentForm = ({
           register={register}
           error={errors.startDate}
         />
-        
+
         <InputField
           label="Submission Deadline"
           name="dueDate"
@@ -132,24 +140,58 @@ const AssignmentForm = ({
       {/* ERROR FEEDBACK */}
       {state.error && (
         <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl flex items-center gap-3">
-           <div className="bg-rose-500 text-white p-1 rounded-full">
-             <Info size={12} />
-           </div>
+          <div className="bg-rose-500 text-white p-1 rounded-full">
+            <Info size={12} />
+          </div>
           <p className="text-rose-600 text-[10px] font-black uppercase tracking-widest">
             Critical Error: Assignment could not be synchronized.
           </p>
         </div>
       )}
+      {/* CLASS SELECTION */}
+      <div className="flex flex-col gap-2">
+        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
+          Target Class
+        </label>
+        <select
+          className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 text-sm font-medium"
+          {...register("classId")}
+          defaultValue={data?.classId}
+        >
+          <option value="">Select a class...</option>
+          {relatedData.classes?.map((c: { id: number; name: string }) => (
+            <option value={String(c.id)} key={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+      </div>
+      {/* TEACHER SELECTION */}
+      <div className="flex flex-col gap-2">
+        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
+          Assigning Teacher
+        </label>
+        <select
+          className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 text-sm font-medium"
+          {...register("teacherId")}
+          defaultValue={data?.teacherId}
+        >
+          <option value="">Select a teacher...</option>
+          {relatedData.teachers?.map((t: { id: string; name: string; surname: string }) => (
+            <option value={t.id} key={t.id}>{t.name} {t.surname}</option>
+          ))}
+        </select>
+      </div>
 
       {/* SUBMIT BUTTON */}
       <div className="flex items-center justify-between mt-4">
         <div className="hidden md:flex items-center gap-2 text-slate-400">
-           <CalendarClock size={16} />
-           <span className="text-[10px] font-bold uppercase tracking-tight italic">
-             Students will be notified upon publication.
-           </span>
+          <CalendarClock size={16} />
+          <span className="text-[10px] font-bold uppercase tracking-tight italic">
+            Students will be notified upon publication.
+          </span>
         </div>
-        
+
         <button className="group flex items-center justify-center gap-3 bg-slate-900 hover:bg-rubixSky text-white py-4 px-8 rounded-2xl font-black text-[12px] uppercase tracking-widest shadow-xl shadow-slate-200 transition-all active:scale-95">
           {type === "create" ? "Add Assignment" : "Commit Changes"}
         </button>

@@ -8,18 +8,15 @@ const MessageListPage = async () => {
   const { userId } = await auth();
   
   // 1. FETCH RECIPIENTS (Filtering out current user)
-  const users = await prisma.user.findMany({
-    where: {
-      id: { not: userId! } 
-    },
-    select: { 
-      id: true, 
-      username: true,
-    },
-    orderBy: { username: "asc" }
-  });
+  const users = await prisma.teacher.findMany({
+  select: { 
+    id: true, 
+    username: true,
+  },
+  orderBy: { username: "asc" }
+});
 
-  console.log("DEBUG: Users found in Page:", users.length);
+console.log("USERS FETCHED:", users);
 
   // 2. FETCH MESSAGES
   const realMessages = await prisma.message.findMany({

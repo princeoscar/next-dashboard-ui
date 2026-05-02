@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
     const [data, count] = await prisma.$transaction([
       prisma.class.findMany({
         where: query,
-        include: { supervisor: true, grade: true },
+        include: { supervisor: true, level: true },
         take: ITEM_PER_PAGE,
         skip: ITEM_PER_PAGE * (p - 1),
       }),

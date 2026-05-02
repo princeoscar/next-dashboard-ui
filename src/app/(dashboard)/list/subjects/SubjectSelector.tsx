@@ -10,7 +10,7 @@ const SubjectSelector = ({
 }) => {
   
   const grouped = subjects.reduce((acc, curr) => {
-    const classes = curr.lessons?.map((l: any) => l.class.name) || [];
+    const classes = curr.subjects?.map((l: any) => l.class.name) || [];
     
     if (classes.length === 0) {
       const groupName = "Unassigned Subjects";

@@ -55,7 +55,7 @@ const TeacherPage = async () => {
           <div className="grid grid-cols-2 gap-3">
             <TeacherToolLink href="/list/classes" icon={<Users size={16}/>} label="My Classes" color="bg-sky-50 text-sky-700" />
             <TeacherToolLink href="/list/students" icon={<GraduationCap size={16}/>} label="Student List" color="bg-purple-50 text-purple-700" />
-            <TeacherToolLink href="/list/lessons" icon={<BookOpen size={16}/>} label="Lesson Plan" color="bg-yellow-50 text-yellow-700" />
+            <TeacherToolLink href="/list/subjects" icon={<BookOpen size={16}/>} label="Lesson Plan" color="bg-yellow-50 text-yellow-700" />
             <TeacherToolLink href="/list/assignments" icon={<ClipboardList size={16}/>} label="Assignments" color="bg-rose-50 text-rose-700" />
           </div>
         </div>

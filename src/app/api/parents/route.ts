@@ -26,13 +26,19 @@ export async function GET(req: NextRequest) {
       query.students = {
         some: {
           class: {
-            lessons: {
-              some: { teacherId: userId! },
+            subjects: {
+              some:{
+                 teachers: {
+                some: {
+                id: userId!
+               },
             },
           },
         },
-      };
+      }
     }
+  }
+}
 
     // Search filter
     if (search) {

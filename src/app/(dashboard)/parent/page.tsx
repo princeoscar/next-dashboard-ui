@@ -71,7 +71,7 @@ const ParentPage = async () => {
     // Map through students to calculate balances
     Promise.all(parentData.students.map(async (student: any) => {
       const fees = await prisma.feeStructure.findFirst({
-        where: { gradeId: student.gradeId, academicYearId: activeYear.id }
+        where: { levelId: student.levelId, academicYearId: activeYear.id }
       });
       const totalPaid = await prisma.payment.aggregate({
         where: { studentId: student.id, academicYearId: activeYear.id },

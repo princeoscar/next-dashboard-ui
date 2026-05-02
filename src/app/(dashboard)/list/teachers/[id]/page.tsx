@@ -22,7 +22,7 @@ const SingleTeacherPage = async ({
   const teacher:
     | (Teacher & {
         subjects: { id: number; name: string }[];
-        _count: { subjects: number; lessons: number; classes: number };
+        _count: { subjects: number; classes: number };
       })
     | null = await prisma.teacher.findUnique({
     where: { id },
@@ -31,7 +31,6 @@ const SingleTeacherPage = async ({
       _count: {
         select: {
           subjects: true,
-          lessons: true,
           classes: true,
         },
       },
@@ -124,7 +123,7 @@ const SingleTeacherPage = async ({
               <Image src="/singleLesson.png" alt="" width={24} height={24} />
               <div className="mt-2">
                 <h1 className="text-xl font-black text-slate-800 tracking-tighter">
-                  {teacher._count.lessons}
+                  {teacher._count.subjects}
                 </h1>
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Lessons</p>
               </div>
@@ -160,7 +159,7 @@ const SingleTeacherPage = async ({
           <div className="flex gap-3 flex-wrap text-[10px] font-black uppercase tracking-widest">
             <Link className="px-4 py-3 rounded-xl bg-sky-50 text-sky-600 border border-sky-100 hover:bg-sky-600 hover:text-white transition-all" href={`/list/classes?supervisorId=${teacher.id}`}>Classes</Link>
             <Link className="px-4 py-3 rounded-xl bg-purple-50 text-purple-600 border border-purple-100 hover:bg-purple-600 hover:text-white transition-all" href={`/list/students?teacherId=${teacher.id}`}>Students</Link>
-            <Link className="px-4 py-3 rounded-xl bg-amber-50 text-amber-600 border border-amber-100 hover:bg-amber-600 hover:text-white transition-all" href={`/list/lessons?teacherId=${teacher.id}`}>Lessons</Link>
+            <Link className="px-4 py-3 rounded-xl bg-amber-50 text-amber-600 border border-amber-100 hover:bg-amber-600 hover:text-white transition-all" href={`/list/subjects?teacherId=${teacher.id}`}>Lessons</Link>
             <Link className="px-4 py-3 rounded-xl bg-pink-50 text-pink-600 border border-pink-100 hover:bg-pink-600 hover:text-white transition-all" href={`/list/exams?teacherId=${teacher.id}`}>Exams</Link>
             <Link className="px-4 py-3 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-600 hover:text-white transition-all" href={`/list/assignments?teacherId=${teacher.id}`}>Assignments</Link>
             

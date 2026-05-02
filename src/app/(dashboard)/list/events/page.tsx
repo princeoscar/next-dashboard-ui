@@ -9,7 +9,6 @@ import { auth } from "@clerk/nextjs/server";
 import { Prisma, Class, Event } from "@prisma/client";
 import Link from "next/link";
 import ClassSelector from "@/components/ClassSelector";
-import Image from "next/image";
 
 type EventList = Event & { class: Class | null };
 
@@ -25,9 +24,18 @@ const EventListPage = async ({
   const p = params.page ? parseInt(params.page) : 1;
   const { classId, search } = params;
 
-  // --- 1. BUILD QUERY ---
-  const query: Prisma.EventWhereInput = {};
+  const dateParam = params?.date || new Date().toISOString().split("T")[0];
+const selectedDate = new Date(dateParam);
 
+  // --- 1. BUILD QUERY ---
+  const query: Prisma.EventWhereInput = {
+    startTime: {
+    gte: new Date(selectedDate.setHours(0, 0, 0, 0)),
+    lte: new Date(selectedDate.setHours(23, 59, 59, 999)),
+  },
+  };
+
+  // 🔍 Apply Search Filter
   if (search) {
     query.title = { contains: search, mode: "insensitive" };
   }
@@ -35,28 +43,64 @@ const EventListPage = async ({
   // 🔒 ROLE-BASED VISIBILITY
   if (role !== "admin") {
     const currentUserId = userId || "";
+
     const roleConditions = {
       teacher: {
         OR: [
-          { supervisorId: currentUserId },
-          { lessons: { some: { teacherId: currentUserId } } },
+          { classId: null },
+          {
+            class: {
+              OR: [
+                { supervisorId: currentUserId },
+                { subjects: { some: { teachers: { some: { id: currentUserId } } } } },
+              ],
+            },
+          },
         ],
       },
-      student: { students: { some: { id: currentUserId } } },
-      parent: { students: { some: { parentId: currentUserId } } },
+      student: {
+        OR: [
+          { classId: null },
+          { class: { students: { some: { id: currentUserId } } } },
+        ],
+      },
+      parent: {
+        OR: [
+          { classId: null },
+          { class: { students: { some: { parentId: currentUserId } } } },
+        ],
+      },
     };
 
+    const conditions = roleConditions[role as keyof typeof roleConditions];
+
     if (classId) {
-      query.classId = parseInt(classId);
-      query.class = roleConditions[role as keyof typeof roleConditions] || { id: -1 };
+      // 🎯 Logic: (User has permission for this class) AND (Event is Global OR Event is for this Class)
+      query.AND = [
+        conditions,
+        {
+          OR: [
+            { classId: null },
+            { classId: parseInt(classId) }
+          ]
+        }
+      ];
     } else {
+      // Standard role-based visibility
+      if (conditions) {
+        query.AND = [conditions];
+      }
+    }
+  } else {
+    // 🛡️ ADMIN VIEW
+    if (classId) {
+      // Admin sees Global events + specific class events
       query.OR = [
         { classId: null },
-        { class: roleConditions[role as keyof typeof roleConditions] || { id: -1 } },
+        { classId: parseInt(classId) }
       ];
     }
-  } else if (classId) {
-    query.classId = parseInt(classId);
+    // If no classId, Admin query remains {} (sees all)
   }
 
   // --- 2. FOLDER VIEW (CLASS CARDS) ---
@@ -64,7 +108,7 @@ const EventListPage = async ({
     const classes = await prisma.class.findMany({
       where: role === "teacher" ? { supervisorId: userId! } : {},
       include: {
-        grade: true,
+        level: true,
         _count: { select: { events: true } },
       },
       orderBy: { name: "asc" },
@@ -88,14 +132,14 @@ const EventListPage = async ({
     );
   }
 
-  // --- 3. FETCH DATA (After query is built) ---
+  // --- 3. FETCH DATA ---
   const [data, count, classes] = await prisma.$transaction([
     prisma.event.findMany({
       where: query,
       include: { class: { select: { name: true } } },
       take: ITEM_PER_PAGE,
       skip: ITEM_PER_PAGE * (p - 1),
-      orderBy: { startTime: "asc" }, // Show soonest events first
+      orderBy: { startTime: "asc" },
     }),
     prisma.event.count({ where: query }),
     prisma.class.findMany({ select: { id: true, name: true } }),
@@ -185,15 +229,15 @@ const EventListPage = async ({
           <TableSearch />
           {role === "admin" && (
             <div className="flex items-center gap-3 w-full md:w-auto justify-end">
-              {role === "admin" && <FormContainer table="class" type="create" relatedData={classes} />}
+              <FormContainer table="event" type="create" relatedData={{ classes }} />
             </div>
           )}
         </div>
       </div>
 
-     <div className="rounded-3xl border border-slate-50 overflow-x-auto bg-white shadow-sm w-full">
-  <Table columns={columns} renderRow={renderRow} data={data} />
-</div>
+      <div className="rounded-3xl border border-slate-50 overflow-x-auto bg-white shadow-sm w-full">
+        <Table columns={columns} renderRow={renderRow} data={data} />
+      </div>
 
       {!data.length && (
         <div className="py-20 text-center border-2 border-dashed border-slate-50 rounded-[2rem] mt-4">

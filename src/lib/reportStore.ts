@@ -7,19 +7,20 @@ export const getStudentReportData = async (studentId: string) => {
     include: { class: true },
   });
 
-  // If student doesn't exist, stop here
   if (!student) {
     console.error("❌ DATABASE ERROR: No student found with ID:", studentId);
     return null;
   }
 
   // 2. Get ALL students in that same class to calculate ranking
-  // Note: We use student.classId which we just fetched above
   const allClassStudents = await prisma.student.findMany({
-    where: { classId: student.classId },
+    where: { 
+      classId: student.classId 
+    },
     include: {
       results: {
-        select: { score: true },
+        // 🎯 FIX: Changed 'score' to 'totalScore'
+        select: { totalScore: true },
       },
     },
   });
@@ -28,7 +29,8 @@ export const getStudentReportData = async (studentId: string) => {
   const rankings = allClassStudents
     .map((s) => ({
       id: s.id,
-      total: s.results.reduce((sum, r) => sum + r.score, 0),
+      // 🎯 FIX: Changed 'r.score' to 'r.totalScore'
+      total: s.results.reduce((sum, r) => sum + (r.totalScore || 0), 0),
     }))
     .sort((a, b) => b.total - a.total);
 
@@ -38,24 +40,21 @@ export const getStudentReportData = async (studentId: string) => {
   const studentRankEntry = rankings.find((r) => r.id === studentId);
   const totalScore = studentRankEntry ? studentRankEntry.total : 0;
 
-  // 5. Get the actual detailed results for the report card table
+  // 5. Get detailed results (Removing the 'lesson' middleman)
   const results = await prisma.result.findMany({
     where: { studentId },
     include: {
       exam: { 
-        include: { 
-          lesson: { include: { subject: true } } 
-        } 
+        // 🎯 FIX: Direct link to subject
+        include: { subject: true } 
       },
       assignment: { 
-        include: { 
-          lesson: { include: { subject: true } } 
-        } 
+        // 🎯 FIX: Direct link to subject
+        include: { subject: true } 
       },
     },
   });
 
-  // 6. Return everything in one object
   return {
     student,
     results,

@@ -28,7 +28,7 @@ const SingleStudentPage = async ({
     where: { id: decodedId },
     include: {
       class: {
-        include: { _count: { select: { lessons: true } } },
+        include: { _count: { select: { subjects: true, } } },
       },
       parent: true,
     },
@@ -127,10 +127,10 @@ const SingleStudentPage = async ({
               <Image src="/singleLesson.png" alt="" width={24} height={24} />
               <div className="mt-2">
                 <h1 className="text-xl font-black text-slate-800 tracking-tighter">
-                  {student.class?._count.lessons || 0}
+                  {student.class?._count.subjects || 0}
                 </h1>
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">
-                  Lessons
+                  Subject
                 </p>
               </div>
             </div>
@@ -174,9 +174,9 @@ const SingleStudentPage = async ({
           <div className="flex gap-3 flex-wrap text-[10px] font-black uppercase tracking-widest">
             <Link
               className="px-4 py-3 rounded-xl bg-sky-50 text-sky-600 border border-sky-100 hover:bg-sky-600 hover:text-white transition-all"
-              href={`/list/lessons?classId=${student.classId}`}
+              href={`/list/subjects?classId=${student.classId}`}
             >
-              Lessons
+              Subject
             </Link>
             <Link
               className="px-4 py-3 rounded-xl bg-purple-50 text-purple-600 border border-purple-100 hover:bg-purple-600 hover:text-white transition-all"

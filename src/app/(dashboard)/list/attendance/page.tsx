@@ -5,14 +5,17 @@ import TableSearch from "@/components/TableSearch";
 import { prisma } from "@/lib/prisma";
 import { ITEM_PER_PAGE } from "@/lib/settings";
 import { auth } from "@clerk/nextjs/server";
-import { Attendance, Lesson, Class, Prisma } from "@prisma/client";
+import { Attendance, Prisma, Subject } from "@prisma/client";
 import { UserCheck, Calendar, ArrowLeft, ArrowRight, User } from "lucide-react";
 import ClassSelector from "@/components/ClassSelector";
 import Link from "next/link";
 
-type AttendanceList = Attendance & {
+export type AttendanceList = Attendance & {
   student: { name: string; surname: string };
-  lesson: Lesson & { class: Class };
+  subject: Subject & {
+    classes: { name: string }[];
+    teachers: { id: string }[];
+  };
 };
 
 const AttendanceListPage = async ({
@@ -26,6 +29,9 @@ const AttendanceListPage = async ({
   const params = await searchParams;
   const p = params.page ? parseInt(params.page) : 1;
   const { classId, search, studentId: selectedStudentId } = params;
+
+  // 🎯 Note: Fetch this from your app settings or DB in a real scenario
+  const currentAcademicYearId = 1; 
 
   // --- 1. PARENT GALLERY VIEW ---
   if (role === "parent" && !selectedStudentId) {
@@ -63,7 +69,6 @@ const AttendanceListPage = async ({
                 <span className="px-4 py-1 bg-white border border-slate-100 rounded-full text-[10px] font-black text-slate-400 uppercase mt-3 tracking-widest">
                   Class {child.class?.name || "Unassigned"}
                 </span>
-
                 <div className="mt-8 w-full pt-6 border-t border-slate-100 flex justify-end items-center">
                   <div className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all">
                     <ArrowRight size={20} />
@@ -81,7 +86,7 @@ const AttendanceListPage = async ({
   if (!classId && !search && role !== "student" && role !== "parent") {
     const classes = await prisma.class.findMany({
       where: { ...(role === "teacher" ? { supervisorId: userId! } : {}) },
-      include: { grade: true, supervisor: true, _count: { select: { lessons: true } } },
+      include: { level: true, supervisor: true, _count: { select: { subjects: true } } },
       orderBy: { name: "asc" },
     });
 
@@ -96,17 +101,38 @@ const AttendanceListPage = async ({
     );
   }
 
-  // --- 3. CONSOLIDATED QUERY BUILDING ---
+  // --- 3. ATTENDANCE AGGREGATION (ONLY IF STUDENT SELECTED) ---
+  let attendanceSummary = { present: 0, total: 0 };
+  
+  if (selectedStudentId) {
+    const studentData = await prisma.student.findUnique({
+      where: { id: selectedStudentId },
+      include: {
+        attendances: {
+          where: { academicYearId: currentAcademicYearId },
+        },
+      },
+    });
+
+    const records = studentData?.attendances || [];
+    const uniqueDaysOpened = Array.from(new Set(records.map((a) => a.date.toISOString().split("T")[0])));
+    const daysPresent = uniqueDaysOpened.filter((date) => 
+      records.some((a) => a.date.toISOString().split("T")[0] === date && a.present === true)
+    ).length;
+
+    attendanceSummary = { present: daysPresent, total: uniqueDaysOpened.length };
+  }
+
+  // --- 4. CONSOLIDATED QUERY BUILDING ---
   const query: Prisma.AttendanceWhereInput = {};
   const andConditions: Prisma.AttendanceWhereInput[] = [];
 
   switch (role) {
-    case "admin":
-      break;
+    case "admin": break;
     case "teacher":
       andConditions.push({
         OR: [
-          { lesson: { teacherId: userId! } },
+          { subject: { teachers: { some: { id: userId! } } } },
           { student: { class: { supervisorId: userId! } } }
         ]
       });
@@ -142,41 +168,47 @@ const AttendanceListPage = async ({
 
   if (andConditions.length > 0) query.AND = andConditions;
 
-  // --- 4. DATA FETCHING ---
-  const [data, count, lessons, students] = await prisma.$transaction([
+  // --- 5. DATA FETCHING ---
+  const [data, count, subjects, students] = await prisma.$transaction([
     prisma.attendance.findMany({
       where: query,
       include: {
         student: { select: { name: true, surname: true } },
-        lesson: { include: { class: { select: { name: true } } } },
+        subject: { include: { classes: { select: { name: true } } } },
       },
       take: ITEM_PER_PAGE,
       skip: ITEM_PER_PAGE * (p - 1),
       orderBy: { date: "desc" },
     }),
     prisma.attendance.count({ where: query }),
-    prisma.lesson.findMany({
-      where: role === "teacher" ? { teacherId: userId! } : {},
-      select: { id: true, name: true, class: { select: { name: true } } }
-    }),
+   prisma.subject.findMany({
+  where: (role === "teacher" 
+    ? { teachers: { some: { id: userId! } } } 
+    : {}) as any, // 🎯 The 'as any' bypasses the 'never' check
+  select: { 
+    id: true, 
+    name: true, 
+    classes: { select: { id: true, name: true } } 
+  }
+}),
     prisma.student.findMany({
-    where: {
-      ...(role === "parent" ? { parentId: userId! } : {}),
-      ...(classId ? { classId: parseInt(classId) } : {}), // Link students to the specific class
-    },
-    select: { id: true, name: true, surname: true, classId: true }
-  })
-]);
+      where: {
+        ...(role === "parent" ? { parentId: userId! } : {}),
+        ...(classId ? { classId: parseInt(classId) } : {}),
+      },
+      select: { id: true, name: true, surname: true, classId: true }
+    })
+  ]);
 
-  const relatedData = { lessons, students };
+  const relatedData = { subjects, students };
 
-  // --- 5. TABLE CONFIGURATION ---
+  // --- 6. TABLE CONFIGURATION ---
   const columns = [
     { header: "Student", accessor: "student", className: "pl-4" },
     { header: "Date", accessor: "date", className: "hidden sm:table-cell" },
     { header: "Status", accessor: "present" },
-    { header: "Class / Lesson", accessor: "lesson", className: "hidden lg:table-cell" },
-    ...(role === "admin" || role === "teacher" ? [{ header: "Actions", accessor: "action", className: "w-[100px] text-right", }] : []),
+    { header: "Class / Lesson", accessor: "subject", className: "hidden lg:table-cell" },
+    ...(role === "admin" || role === "teacher" ? [{ header: "Actions", accessor: "action", className: "w-[100px] text-right" }] : []),
   ];
 
   const renderRow = (item: AttendanceList) => (
@@ -192,26 +224,23 @@ const AttendanceListPage = async ({
       <td className="hidden sm:table-cell p-4 text-slate-500 font-medium">
         <div className="flex items-center gap-2">
           <Calendar size={14} className="text-slate-300" />
-          <span className="tabular-nums">
-            {new Intl.DateTimeFormat("en-GB").format(new Date(item.date))}
-          </span>
+          <span className="tabular-nums">{new Intl.DateTimeFormat("en-GB").format(new Date(item.date))}</span>
         </div>
       </td>
       <td className="p-4">
-        <div className={`flex items-center gap-2 w-fit px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border ${item.present ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-rose-50 text-rose-600 border-rose-100"
-          }`}>
+        <div className={`flex items-center gap-2 w-fit px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border ${item.present ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-rose-50 text-rose-600 border-rose-100"}`}>
           <div className={`w-1.5 h-1.5 rounded-full ${item.present ? "bg-emerald-500" : "bg-rose-500"}`} />
           {item.present ? "Present" : "Absent"}
         </div>
       </td>
       <td className="hidden lg:table-cell p-4">
         <div className="flex flex-col">
-          <span className="text-slate-700 font-bold text-xs">{item.lesson.class.name}</span>
-          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{item.lesson.name}</span>
+          <span className="text-slate-700 font-bold text-xs">{item.subject.classes[0]?.name || "No Class"}</span>
+          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{item.subject.name}</span>
         </div>
       </td>
       {(role === "admin" || role === "teacher") && (
-        <td className="p-4 text-right gap-2">
+        <td className="p-4 text-right">
           <div className="flex items-center gap-2 justify-end">
             <FormContainer table="attendance" type="update" data={item} relatedData={relatedData} />
             <FormContainer table="attendance" type="delete" id={item.id} />
@@ -223,6 +252,23 @@ const AttendanceListPage = async ({
 
   return (
     <div className="bg-white p-4 md:p-8 rounded-[2rem] md:rounded-[2.5rem] flex-1 m-2 md:m-4 mt-0 shadow-sm border border-slate-100">
+      
+      {/* 🎯 Added Attendance Summary UI for Parents/Students */}
+      {selectedStudentId && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100">
+            <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Attendance Rate</p>
+            <p className="text-2xl font-black text-blue-600">
+              {attendanceSummary.total > 0 ? Math.round((attendanceSummary.present / attendanceSummary.total) * 100) : 0}%
+            </p>
+          </div>
+          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Days Present</p>
+            <p className="text-2xl font-black text-slate-700">{attendanceSummary.present} / {attendanceSummary.total}</p>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col md:flex-row items-center justify-between mb-8 gap-6">
         <div className="flex items-center gap-4">
           <Link href="/list/attendance" className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400">
@@ -232,19 +278,12 @@ const AttendanceListPage = async ({
             {selectedStudentId ? `Daily Status` : "Log Registry"}
           </h1>
         </div>
-        <TableSearch />
-      </div>
-      <div className="flex items-center gap-3 w-full md:w-auto justify-end">
-        {role === "teacher" && classId && (
-          <FormContainer
-            table="attendance"
-            type="create"
-            relatedData={{
-              lessons: lessons, // The lessons fetched in your transaction
-              students: students // The students fetched in your transaction
-            }}
-          />
-        )}
+        <div className="flex items-center gap-4 w-full md:w-auto">
+          <TableSearch />
+          {role === "teacher" && classId && (
+            <FormContainer table="attendance" type="create" relatedData={relatedData} />
+          )}
+        </div>
       </div>
 
       <div className="rounded-3xl border border-slate-50 overflow-hidden shadow-sm bg-white">

@@ -30,9 +30,9 @@ export async function GET(req: NextRequest) {
           student: { select: { name: true, surname: true } },
           exam: {
             include: {
-              lesson: {
+              subject: {
                 select: { 
-                  class: { select: { name: true } },
+                  classes: { select: { name: true } },
                   subject: { select: { name: true } } 
                 },
               },
@@ -40,9 +40,9 @@ export async function GET(req: NextRequest) {
           },
           assignment: {
             include: {
-              lesson: {
+              subject: {
                 select: { 
-                  class: { select: { name: true } },
+                  classes: { select: { name: true } },
                   subject: { select: { name: true } } 
                 },
               },

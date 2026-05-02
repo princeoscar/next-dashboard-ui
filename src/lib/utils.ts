@@ -11,26 +11,26 @@ export const getRole = async () => {
 };
 
 export const adjustScheduleToCurrentWeek = (
-  lessons: { title: string; start: Date; end: Date }[]
+  subjects: { title: string; start: Date; end: Date }[]
 ) => {
   const startOfWeek = new Date();
   const day = startOfWeek.getDay();
   const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1); // Adjust to Monday
   startOfWeek.setDate(diff);
 
-  return lessons.map((lesson) => {
-    const lessonDay = lesson.start.getDay();
-    const daysFromMonday = lessonDay === 0 ? 6 : lessonDay - 1;
+  return subjects.map((subject) => {
+    const subjectDay = subject.start.getDay();
+    const daysFromMonday = subjectDay === 0 ? 6 : subjectDay - 1;
 
     const adjustedStartDate = new Date(startOfWeek);
     adjustedStartDate.setDate(startOfWeek.getDate() + daysFromMonday);
-    adjustedStartDate.setHours(lesson.start.getHours(), lesson.start.getMinutes(), 0);
+    adjustedStartDate.setHours(subject.start.getHours(), subject.start.getMinutes(), 0);
 
     const adjustedEndDate = new Date(adjustedStartDate);
-    adjustedEndDate.setHours(lesson.end.getHours(), lesson.end.getMinutes(), 0);
+    adjustedEndDate.setHours(subject.end.getHours(), subject.end.getMinutes(), 0);
 
     return {
-      title: lesson.title,
+      title: subject.title,
       start: adjustedStartDate,
       end: adjustedEndDate,
     };

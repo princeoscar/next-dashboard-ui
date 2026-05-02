@@ -22,17 +22,25 @@ const ResultEntryPage = async ({
 
   if (!examId) redirect("/list/exams");
 
-  const exam = await prisma.exam.findUnique({
-    where: { id: parseInt(examId) },
-    include: {
-      lesson: {
-        include: {
-          class: { include: { students: { orderBy: { name: "asc" } } } },
-          subject: true,
+ const exam = await prisma.exam.findUnique({
+  where: { id: parseInt(examId) },
+  include: {
+    // 🎯 Directly include the subject instead of through a 'lesson'
+    subject: {
+      include: {
+        // 🎯 A subject now has 'classes' (plural)
+        classes: {
+          include: {
+            // 🎯 Get the students for each of those classes
+            students: {
+              orderBy: { name: "asc" },
+            },
+          },
         },
       },
     },
-  });
+  },
+});
 
   if (!exam) return notFound();
 
@@ -59,10 +67,10 @@ const ResultEntryPage = async ({
             </div>
             <div className="flex items-center gap-2 mt-1">
                <span className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-[9px] font-black uppercase">
-                 {exam.lesson.subject.name}
+                 {exam.subject.name}
                </span>
                <span className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded text-[9px] font-black uppercase">
-                 Class {exam.lesson.class.name}
+                 Class {exam.subject.classes[0]?.name || "N/A"}
                </span>
                <span className="text-[10px] text-slate-400 font-bold italic ml-1">
                  — {exam.title}
@@ -79,7 +87,7 @@ const ResultEntryPage = async ({
       {/* THE FORM COMPONENT */}
       <div className="mt-4">
         <BulkResultForm 
-          students={exam.lesson.class.students} 
+          students={exam.subject.classes.flatMap((c) => c.students)}
           action={updateActionWithId} 
         />
       </div>

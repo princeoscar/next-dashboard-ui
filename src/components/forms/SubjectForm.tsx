@@ -28,8 +28,6 @@ const SubjectForm = ({
     resolver: zodResolver(subjectSchema) as any,
   });
 
-  // AFTER REACT 19 IT'LL BE USEACTIONSTATE
-
   const [state, formAction] = useActionState(
     type === "create" ? createSubject : updateSubject,
     {
@@ -39,16 +37,18 @@ const SubjectForm = ({
   );
 
   const onSubmit = handleSubmit((data) => {
-    startTransition(() => {
-      formAction(data);
-    });
+  console.log("Submitting:", data); 
+  startTransition(() => {
+    // We provide a fallback value for schoolId if your schema still wants a string
+    formAction({ ...data, schoolId: data.schoolId || "default_school" });
   });
+});
 
   const router = useRouter();
 
   useEffect(() => {
     if (state.success) {
-      toast(`Subject has been ${type === "create" ? "created" : "updated"}!`);
+      toast.success(`Subject has been ${type === "create" ? "created" : "updated"}!`);
       setOpen(false);
       router.refresh();
     }
@@ -57,16 +57,16 @@ const SubjectForm = ({
   const { teachers } = relatedData;
 
   return (
-    <form className="flex flex-col w-full max-w-2xl mx-auto" onSubmit={onSubmit}>
-      <div className="sticky top-0 text-center bg-white z-50 px-6 py-4 border-b">
-        <h1 className="text-xl md:text-2xl font-black text-slate-800 tracking-tight uppercase">
-          {type === "create" ? "Create New" : "Update"}{" "}
-          <span className="text-rubixPurple">Subject</span>
+    <form className="flex flex-col w-full" onSubmit={onSubmit}>
+      {/* HEADER - Reduced padding */}
+      <div className="text-center bg-white px-6 py-2">
+        <h1 className="text-lg font-black text-slate-800 tracking-tight uppercase">
+          {type === "create" ? "Create" : "Update"} <span className="text-rubixPurple">Subject</span>
         </h1>
       </div>
 
- <div className="px-6 py-6 space-y-8 pb-28">
-      <div className="flex justify-between flex-wrap gap-4 mt-6">
+      {/* CONTENT - Removed pb-24 and large spacing */}
+      <div className="p-6 space-y-4">
         <InputField
           label="Subject name"
           name="name"
@@ -74,50 +74,40 @@ const SubjectForm = ({
           register={register}
           error={errors?.name}
         />
-        {data && (
-          <InputField
-            label="Id"
-            name="id"
-            defaultValue={data?.id}
-            register={register}
-            error={errors?.id}
-            hidden
-          />
-        )}
-        <div className="flex flex-col gap-2 w-full md:w-1/4">
-          <label className="text-xs text-gray-500">Teachers</label>
+
+        {data && <input type="hidden" {...register("id")} defaultValue={data?.id} />}
+
+        <div className="flex flex-col gap-2">
+          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
+            Assign Teachers
+          </label>
           <select
             multiple
-            className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
+            size={1} // 🎯 This keeps it compact
+            className="ring-[1.5px] ring-gray-200 p-3 rounded-2xl text-sm w-full outline-none focus:ring-rubixPurple transition-all bg-slate-50"
             {...register("teachers")}
-            defaultValue={data?.teachers}
+            defaultValue={data?.teachers?.map((t: any) => t.id) || []}
           >
-            {teachers.map(
-              (teacher: { id: string; name: string; surname: string }) => (
-                <option value={teacher.id} key={teacher.id}>
-                  {teacher.name + " " + teacher.surname}
-                </option>
-              )
-            )}
+            {teachers.map((teacher: { id: string; name: string; surname: string }) => (
+              <option value={teacher.id} key={teacher.id} className="p-2">
+                {teacher.name} {teacher.surname}
+              </option>
+            ))}
           </select>
           {errors.teachers?.message && (
-            <p className="text-xs text-red-400">
-              {errors.teachers.message.toString()}
-            </p>
+            <p className="text-[10px] text-red-400 font-medium">{errors.teachers.message.toString()}</p>
           )}
+          <p className="text-[9px] text-slate-400 italic ml-1">Ctrl + Click to select multiple</p>
         </div>
       </div>
-      </div>
 
-      <div className="sticky bottom-0 bg-white px-6 py-4 border-t z-50">
-        {state.error && (
-          <span className="text-red-500">Something went wrong!</span>
-        )}
-        <button className="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold hover:bg-rubixPurple transition-all shadow-lg active:scale-[0.98]">
-          {type === "create" ? "Create" : "Update"}
+      {/* FOOTER - Removed sticky and reduced margin */}
+      <div className="px-6 pb-6">
+        {state.error && <span className="text-red-500 text-[10px] block mb-2 text-center font-bold">Error saving subject.</span>}
+        <button className="w-full bg-slate-900 text-white py-3 rounded-2xl font-bold hover:bg-rubixPurple transition-all shadow-md">
+          {type === "create" ? "Confirm & Create" : "Save Changes"}
         </button>
       </div>
-
     </form>
   );
 };

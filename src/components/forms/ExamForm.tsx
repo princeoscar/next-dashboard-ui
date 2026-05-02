@@ -9,6 +9,10 @@ import { toast } from "react-toastify"; // Switched to toast for better UX
 import { useRouter } from "next/navigation";
 import { examSchema, ExamSchema } from "@/lib/formValidationSchema";
 
+
+
+
+
 const ExamForm = ({
   type,
   data,
@@ -28,6 +32,8 @@ const ExamForm = ({
     resolver: zodResolver(examSchema) as any,
   });
 
+
+
   const [state, formAction] = useActionState(
     type === "create" ? createExam : updateExam,
     { success: false, error: false }
@@ -43,14 +49,30 @@ const ExamForm = ({
     }
   }, [state.success, setOpen, router, type]);
 
-  const onSubmit = handleSubmit((formData) => {
-    console.log("Form Data being submitted:", formData);
-    startTransition(() => {
-      formAction(formData);
-    });
-  });
+  const onSubmit = handleSubmit(
+    (formData) => {
+      console.log("SUCCESS:", formData);
+      startTransition(() => {
+        formAction({
+          ...formData,
+          schoolId: "1", // You already have this
+          // ✅ Add these two lines to satisfy Zod:
+          classId: formData.classId || relatedData.classId,
+          teacherId: formData.teacherId || relatedData.teacherId,
+          ...(type === "update" && { id: data.id }),
+        });
+      });
+    },
+    (validationErrors) => {
+      console.log("VALIDATION FAILED:", validationErrors);
+    }
+  );
 
-  const { lessons } = relatedData;
+  const {
+    classes = [],
+    subjects = [],
+    teachers = []
+  } = relatedData || {};
 
   // FIX: Format dates for datetime-local input
   const formatDate = (date: Date | string) => {
@@ -103,30 +125,60 @@ const ExamForm = ({
             />
           )}
 
+          {type === "update" && (
+            <input type="hidden" value={data?.id} {...register("id")} />
+          )}
+
+
+
           <div className="flex flex-col gap-2 w-full md:w-1/4">
-            <label className="text-xs text-gray-500">Lesson</label>
+            <label className="text-xs text-gray-500">Subject</label>
             <select
               className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
-              {...register("lessonId")}
-              defaultValue={data?.lessonId} // FIX: Corrected key
+              {...register("subjectId")}
+              defaultValue={data?.subjectId}
             >
-              <option value="">Select a Lesson</option>
-              {lessons.map((lesson: {
-                id: number;
-                name: string;
-                class: { name: string };
-                subject: { name: string }
-              }) => (
-                <option value={lesson.id} key={lesson.id}>
-                  {lesson.subject.name} - {lesson.name} ({lesson.class.name})
+              <option value="">Select a Subject</option>
+              {/* 2. Simplified map logic to match your flattened Subject model */}
+              {subjects.map((subject: { id: number; name: string }) => (
+                <option value={subject.id} key={subject.id}>
+                  {subject.name}
                 </option>
               ))}
             </select>
-            {errors.lessonId?.message && (
+            {errors.subjectId?.message && (
               <p className="text-[10px] text-red-500">
-                {errors.lessonId.message.toString()}
+                {errors.subjectId.message.toString()}
               </p>
             )}
+          </div>
+          <div className="flex flex-col gap-2 w-full md:w-1/3">
+            <label className="text-xs text-gray-500">Class</label>
+            <select
+              className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
+              {...register("classId")}
+              defaultValue={data?.classId}
+            >
+              {relatedData.classes?.map((c: { id: string | number; name: string }) => (
+                <option value={c.id} key={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex flex-col gap-2 w-full md:w-1/3">
+            <label className="text-xs text-gray-500">Teacher</label>
+            <select
+              className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
+              {...register("teacherId")}
+              defaultValue={data?.teacherId} // 👈 This selects the assigned teacher
+            >
+              {relatedData.teachers?.map((t: { id: string | number; name: string; surname: string }) => (
+                <option value={t.id} key={t.id}>
+                  {t.name} {t.surname}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       </div>

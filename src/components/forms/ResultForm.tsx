@@ -45,13 +45,69 @@ const ResultForm = ({
     }
   }, [state, router, setOpen, type]);
 
-  const { students, exams, assignments } = relatedData || {};
+  const { students, exams, assignments, academicYears, subjects } = relatedData || {};
 
-  const onSubmit = handleSubmit((formData) => {
+
+const handleRawSubmit = (e: React.FormEvent) => {
+  console.log("Button actually clicked - Form is attempting to submit");
+};
+
+// Then update your form tag temporarily:
+<form className="flex flex-col gap-8 p-2" onSubmit={(e) => {
+  handleRawSubmit(e);
+  onSubmit(e);
+}}></form>
+
+  const onSubmit = handleSubmit(
+  (formData) => {
+    // 1. Calculate Scores manually to ensure they are valid numbers
+    const test = Number(formData.testScore) || 0;
+    const assignment = Number(formData.assignmentScore) || 0;
+    const exam = Number(formData.examScore) || 0;
+    const total = test + assignment + exam;
+
+    // 2. Automated Grade Logic (Adjust thresholds to match your school)
+    let autoGrade = "F9";
+if (total >= 80) autoGrade = "A1";
+else if (total >= 75) autoGrade = "B2";
+else if (total >= 70) autoGrade = "B3";
+else if (total >= 66) autoGrade = "C4";
+else if (total >= 60) autoGrade = "C5";
+else if (total >= 55) autoGrade = "C6";
+else if (total >= 50) autoGrade = "D7";
+else if (total >= 45) autoGrade = "E8";
+
+    console.log("✅ FORM VALIDATED. SENDING PAYLOAD...");
+
     startTransition(() => {
-      formAction(formData);
+      formAction({
+        ...formData,
+        // Ensure ID is passed as a string for the UUID update
+        id: type === "update" ? data?.id : undefined,
+        
+        // Clean Number conversions for Prisma
+        testScore: test,
+        assignmentScore: assignment,
+        examScore: exam,
+        totalScore: total,
+        grade: autoGrade,
+        subjectId: Number(formData.subjectId),
+        academicYearId: Number(formData.academicYearId),
+        term: Number(formData.term),
+        
+        // Handle optional relations
+        examId: formData.examId ? Number(formData.examId) : null,
+        assignmentId: formData.assignmentId ? Number(formData.assignmentId) : null,
+      });
     });
-  });
+  },
+  (validationErrors) => {
+    // 🎯 THIS IS THE IMPORTANT PART: 
+    // If the button does nothing, this will tell us EXACTLY why.
+    console.log("VALIDATION ERRORS:", validationErrors);
+    alert("Form Error: Check the browser console (F12) to see which field is invalid.");
+  }
+);
 
   return (
     <form className="flex flex-col gap-8 p-2" onSubmit={onSubmit}>
@@ -62,7 +118,7 @@ const ResultForm = ({
         </div>
         <div>
           <h1 className="text-2xl font-black text-slate-800 tracking-tighter uppercase leading-none">
-            {type === "create" ? "New Result" : "Edit Score"}
+            {type === "create" ? "New Result" : "Edit Total Score"}
           </h1>
           <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-1">
             Academic Performance Recording
@@ -70,18 +126,18 @@ const ResultForm = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50/50 p-6 rounded-[2rem] border border-slate-100">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 ...">
         {/* SCORE INPUT */}
         <InputField
-          label="Numerical Score"
-          name="score"
+          label="Total Score"
+          name="totalScore"
           type="number"
           register={register}
-          defaultValue={data?.score}
-          error={errors.score}
+          defaultValue={data?.totalScore}
+          error={errors.totalScore}
         />
 
-        {/* STUDENT SELECT */}
+        {/* STUDENT SELECTOR */}
         <div className="flex flex-col gap-2">
           <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
             Student
@@ -92,7 +148,7 @@ const ResultForm = ({
               className="w-full p-4 rounded-2xl bg-white border border-slate-200 text-sm font-medium focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500 outline-none transition-all appearance-none"
               defaultValue={data?.studentId}
             >
-              <option value="">Select Student</option>
+              <option value="">Select Student...</option>
               {students?.map((s: any) => (
                 <option value={s.id} key={s.id}>
                   {s.name} {s.surname}
@@ -108,10 +164,80 @@ const ResultForm = ({
           )}
         </div>
 
-        {/* EXAM SELECT */}
+        {/* Subject Select */}
+        <select
+          {...register("subjectId")}
+          defaultValue={data?.subjectId} // 🎯 This ensures the value is set on load
+          className="..."
+        >
+          <option value="">Select Subject...</option>
+          {subjects?.map((s: any) => (
+            <option key={s.id} value={s.id}>{s.name}</option>
+          ))}
+        </select>
+
+        {/* Academic Year Select */}
+        <select
+          {...register("academicYearId")}
+          defaultValue={data?.academicYearId} // 🎯 This ensures the value is set on load
+          className="..."
+        >
+          <option value="">Select Year...</option>
+          {academicYears?.map((y: any) => (
+            <option key={y.id} value={y.id}>{y.name}</option>
+          ))}
+        </select>
+
+        {/* TERM SELECTOR - 🎯 ADDED defaultValue */}
         <div className="flex flex-col gap-2">
+          <label className="text-xs font-bold text-gray-500">Term</label>
+          <select
+            {...register("term")}
+            className="p-4 rounded-2xl bg-slate-50 border"
+            defaultValue={data?.term}
+          >
+            <option value="1">First Term</option>
+            <option value="2">Second Term</option>
+            <option value="3">Third Term</option>
+          </select>
+        </div>
+
+        {/* TEST SCORE */}
+        <InputField
+          label="Test Score (e.g., 20%)"
+          name="testScore"
+          type="number"
+          register={register}
+          defaultValue={data?.testScore}
+          error={errors.testScore}
+        />
+
+        {/* ASSIGNMENT SCORE */}
+        <InputField
+          label="Assignment Score (e.g., 20%)"
+          name="assignmentScore"
+          type="number"
+          register={register}
+          defaultValue={data?.assignmentScore}
+          error={errors.assignmentScore}
+        />
+
+        {/* EXAM SCORE */}
+        <InputField
+          label="Exam Score (e.g., 60%)"
+          name="examScore"
+          type="number"
+          register={register}
+          defaultValue={data?.examScore}
+          error={errors.examScore}
+        />
+
+
+
+
+        {/* <div className="flex flex-col gap-2">
           <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
-            Exam (if applicable)
+            Linked Exam
           </label>
           <div className="relative group">
             <select
@@ -124,16 +250,16 @@ const ResultForm = ({
               <option value="">None</option>
               {exams?.map((e: any) => (
                 <option value={e.id} key={e.id}>
-                  {e.title} {e.lesson?.subject?.name ? `(${e.lesson.subject.name})` : ""}
+                  {e.title} {e.subject?.name ? `(${e.subject.name})` : ""}
                 </option>
               ))}
             </select>
             <FileText className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none group-focus-within:text-amber-500 transition-colors" size={18} />
           </div>
-        </div>
+        </div> */}
 
-        {/* ASSIGNMENT SELECT */}
-        <div className="flex flex-col gap-2">
+
+        {/* <div className="flex flex-col gap-2">
           <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
             Assignment (if applicable)
           </label>
@@ -148,13 +274,13 @@ const ResultForm = ({
               <option value="">None</option>
               {assignments?.map((a: any) => (
                 <option value={a.id} key={a.id}>
-                  {a.title} {a.lesson?.subject?.name ? `(${a.lesson.subject.name})` : ""}
+                  {a.title} {a.subject?.name ? `(${a.subject.name})` : ""}
                 </option>
               ))}
             </select>
             <ClipboardCheck className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none group-focus-within:text-amber-500 transition-colors" size={18} />
           </div>
-        </div>
+        </div> */}
 
         {data && (
           <input type="hidden" {...register("id")} defaultValue={data.id} />
@@ -177,7 +303,8 @@ const ResultForm = ({
           </div>
         )}
 
-        <button className="bg-slate-900 hover:bg-amber-500 text-white py-4 px-10 rounded-2xl font-black text-[12px] uppercase tracking-widest shadow-xl shadow-slate-200 transition-all active:scale-95 self-end">
+        <button type="submit"
+          className="bg-slate-900 hover:bg-amber-500 text-white py-4 px-10 rounded-2xl font-black text-[12px] uppercase tracking-widest shadow-xl shadow-slate-200 transition-all active:scale-95 self-end">
           {type === "create" ? "Post Result" : "Update Result"}
         </button>
       </div>

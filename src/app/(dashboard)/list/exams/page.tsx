@@ -5,13 +5,13 @@ import TableSearch from "@/components/TableSearch";
 import { prisma } from "@/lib/prisma";
 import { ITEM_PER_PAGE } from "@/lib/settings";
 import { auth } from "@clerk/nextjs/server";
-import { Exam, Lesson, Subject, Class, Teacher, Prisma } from "@prisma/client";
+import { Exam, Subject, Class, Teacher, Prisma } from "@prisma/client";
 import { GraduationCap, Calendar, User, ArrowLeft, ArrowRight, ClipboardCheck } from "lucide-react";
 import ClassSelector from "@/components/ClassSelector";
 import Link from "next/link";
 
 type ExamList = Exam & {
-  lesson: Lesson & { subject: Subject; class: Class; teacher: Teacher };
+  subject: Subject; class: Class; teacher: Teacher 
 };
 
 const ExamListPage = async ({
@@ -84,7 +84,7 @@ const ExamListPage = async ({
   if (!classId && !search && role !== "student" && role !== "parent") {
     const classes = await prisma.class.findMany({
       where: { ...(role === "teacher" ? { supervisorId: userId! } : {}) },
-      include: { grade: true, supervisor: true, _count: { select: { lessons: true } } },
+      include: { level: true, supervisor: true, _count: { select: { students: true } } },
       orderBy: { name: "asc" },
     });
 
@@ -103,70 +103,89 @@ const ExamListPage = async ({
   const query: Prisma.ExamWhereInput = {};
   const andConditions: Prisma.ExamWhereInput[] = [];
 
-  if (role === "student") {
-    const student = await prisma.student.findUnique({ where: { id: userId! }, select: { classId: true } });
-    andConditions.push({ lesson: { classId: student?.classId || -1 } });
+  const subjects = await prisma.subject.findMany({
+  select: { id: true, name: true },
+});
+
+ if (role === "student") {
+    const student = await prisma.student.findUnique({ 
+      where: { id: userId! }, 
+      select: { classId: true } 
+    });
+    // 🎯 Direct classId check
+    andConditions.push({ classId: student?.classId || -1 });
+
   } else if (role === "parent") {
     const child = await prisma.student.findFirst({
       where: { id: selectedStudentId, parentId: userId! },
       select: { classId: true }
     });
-    andConditions.push({ lesson: { classId: child?.classId || -1 } });
-  } else if (role === "teacher") {
-    andConditions.push({
-      lesson: {
-        OR: [{ teacherId: userId! }, { class: { supervisorId: userId! } }]
-      }
-    });
-  }
+    // 🎯 Direct classId check for the child
+    andConditions.push({ classId: child?.classId || -1 });
 
-  if (search) {
+  } else if (role === "teacher") {
+    // 🎯 Check teacherId on the Exam OR if they supervise the Class
     andConditions.push({
       OR: [
-        { title: { contains: search, mode: "insensitive" } },
-        { lesson: { subject: { name: { contains: search, mode: "insensitive" } } } }
+        { teacherId: userId! }, 
+        { class: { supervisorId: userId! } }
       ]
     });
   }
 
-  if (classId) {
-    const cid = parseInt(classId);
-    if (!isNaN(cid)) andConditions.push({ lesson: { classId: cid } });
-  }
+  if (search) {
+  andConditions.push({
+    OR: [
+      { title: { contains: search, mode: "insensitive" } },
+      // 🎯 Directly check the subject name connected to the exam
+      { subject: { name: { contains: search, mode: "insensitive" } } }
+    ]
+  });
+}
 
-  if (andConditions.length > 0) query.AND = andConditions;
+if (classId) {
+  const cid = parseInt(classId);
+  // 🎯 Directly check the classId on the exam
+  if (!isNaN(cid)) andConditions.push({ classId: cid });
+}
+
+if (andConditions.length > 0) query.AND = andConditions;
+
 
   // --- 4. DATA FETCHING ---
-  const [data, count, lessons] = await prisma.$transaction([
-    prisma.exam.findMany({
-      where: query,
-      include: {
-        lesson: {
-          include: { subject: true, class: true, teacher: true }
-        }
-      },
-      take: ITEM_PER_PAGE,
-      skip: ITEM_PER_PAGE * (p - 1),
-      orderBy: { startTime: "asc" },
-    }),
-    prisma.exam.count({ where: query }),
-    prisma.lesson.findMany({
-      where: role === "teacher" ? { teacherId: userId! } : {},
-      select: {
-        id: true,
-        name: true,
-        subject: { select: { name: true } },
-        class: { select: { name: true } }
-      },
-    }),
-  ]);
+ // --- 4. DATA FETCHING ---
+const [data, count, classes, teachers] = await prisma.$transaction([
+  prisma.exam.findMany({
+    where: query,
+    include: {
+      subject: { select: { name: true } },
+      class: { select: { name: true } },
+      teacher: { select: { name: true, surname: true } }
+    },
+    take: ITEM_PER_PAGE,
+    skip: ITEM_PER_PAGE * (p - 1),
+    orderBy: { startTime: "asc" },
+  }),
+  
+  prisma.exam.count({ where: query }),
 
-  const relatedData = { lessons };
+  prisma.class.findMany({
+    where: role === "teacher" ? { supervisorId: userId! } : {},
+    select: { id: true, name: true },
+  }),
+
+  prisma.teacher.findMany({
+    select: { id: true, name: true, surname: true },
+  }),
+]); // 🎯 This is the ONLY place this should close.
+
+const relatedData = { classes, subjects, teachers };
 
   // --- 5. RENDER ---
   const columns = [
     { header: "Subject", accessor: "name", className: "pl-4" },
-    { header: "Class", accessor: "class", className: "hidden md:table-cell text-center" },
+    { header: "Class", accessor: "teacher", className: "hidden md:table-cell text-center" },
+    { header: "Teacher", accessor: "class", className: "hidden md:table-cell text-center" },
     { header: "Date", accessor: "date", className: "hidden lg:table-cell" },
     ...(role === "admin" || role === "teacher" ? [{ header: "Actions", accessor: "action", className: "text-right pr-4" }] : []),
   ];
@@ -181,17 +200,20 @@ const ExamListPage = async ({
               <GraduationCap size={16} />
             </div>
             <div className="flex flex-col">
-              <span className="font-black text-slate-700 uppercase text-[11px]">{item.lesson.subject.name}</span>
+              <span className="font-black text-slate-700 uppercase text-[11px]">{item.subject.name}</span>
               <span className="text-xs text-slate-400 font-bold">{item.title || "Term Assessment"}</span>
             </div>
           </div>
         </td>
         <td className="hidden md:table-cell p-4 text-center">
           <span className="px-2 py-0.5 bg-slate-50 rounded border border-slate-100 text-[10px] font-black uppercase text-slate-400">
-            {item.lesson.class.name}
+            {item.class.name}
           </span>
         </td>
-        <td className="hidden lg:table-cell p-4">
+        <td className="hidden md:table-cell p-4 text-center">
+      {item.teacher.name + " " + item.teacher.surname}
+    </td>
+        <td className="hidden lg:table-cell p-4 text-center">
           <div className={`flex items-center gap-2 font-black ${isToday ? 'text-amber-500' : 'text-slate-500'}`}>
             <Calendar size={14} className={isToday ? 'animate-pulse' : 'text-slate-300'} />
             <span className="text-[11px] uppercase tabular-nums">

@@ -8,12 +8,12 @@ import { redirect } from "next/navigation";
 const MarkAttendancePage = async ({
   searchParams,
 }: {
-  searchParams: Promise<{ classId?: string; lessonId?: string }>;
+  searchParams: Promise<{ classId?: string; subjectId?: string }>;
 }) => {
   const { userId } = await auth();
-  const { classId, lessonId } = await searchParams;
+  const { classId, subjectId } = await searchParams;
 
-  if (!classId || !lessonId) {
+  if (!classId || !subjectId) {
     redirect("/list/classes?target=attendance");
   }
 
@@ -24,10 +24,15 @@ const MarkAttendancePage = async ({
   });
 
   // 2. Fetch the Lesson
-  const lesson = await prisma.lesson.findUnique({
-    where: { id: parseInt(lessonId) },
-    include: { subject: true, class: true },
-  });
+  const subject = await prisma.subject.findUnique({
+  where: { id: parseInt(subjectId) },
+  // 🎯 Change 'class' to 'classes' and remove the redundant 'subject' include
+  include: { 
+    classes: {
+      select: { id: true, name: true }
+    } 
+  },
+});
 
   return (
     <div className="bg-white p-8 rounded-[2.5rem] m-4 mt-0 shadow-sm border border-slate-100">
@@ -35,9 +40,10 @@ const MarkAttendancePage = async ({
         <h1 className="text-2xl font-black text-slate-800 uppercase tracking-tighter">
           Take Attendance
         </h1>
-        <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">
-          {lesson?.subject.name} — {lesson?.class.name}
-        </p>
+       <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">
+        {/* 🎯 Updated mapping to handle the classes array */}
+        {subject?.name} — {subject?.classes[0]?.name || "No Class Assigned"}
+      </p>
       </div>
 
       <AttendanceForm 
@@ -47,7 +53,7 @@ const MarkAttendancePage = async ({
         setOpen={() => {}} 
         relatedData={{ 
           students: students, 
-          lessons: [lesson], 
+          subjects: [subject], 
         }}
       />
     </div>

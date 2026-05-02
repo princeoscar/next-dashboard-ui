@@ -23,8 +23,8 @@ const SubjectListPage = async ({
   if (!classId && !search) {
     const classes = await prisma.class.findMany({
       include: { 
-        grade: true,
-        _count: { select: { lessons: true } } // Counts subjects/lessons in this class
+        level: true,
+        _count: { select: { students: true } } // Counts subjects/lessons in this class
       },
       orderBy: { name: "asc" },
     });
@@ -46,7 +46,7 @@ const SubjectListPage = async ({
   const [subjects, teachers] = await prisma.$transaction([
     prisma.subject.findMany({
       where: {
-        ...(classId ? { lessons: { some: { classId: parseInt(classId) } } } : {}),
+        ...(classId ? { classes: { some: { id: parseInt(classId) } } } : {}),
         ...(search ? { name: { contains: search, mode: "insensitive" } } : {}),
       },
       include: { teachers: true },

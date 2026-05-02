@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import InputField from "../InputField";
-import { Dispatch, SetStateAction, useActionState, useEffect } from "react";
+import { Dispatch, SetStateAction, useActionState, useEffect, startTransition } from "react"; // Added startTransition
 import { eventSchema, EventSchema } from "@/lib/formValidationSchema";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
@@ -23,11 +23,9 @@ const EventForm = ({
 }) => {
   const router = useRouter();
 
-  // 1. IMPROVED DATE FORMATTING
   const formatDate = (date: Date | string) => {
     if (!date) return "";
     const d = new Date(date);
-    // Ensure we handle invalid dates to prevent app crash
     if (isNaN(d.getTime())) return ""; 
     d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
     return d.toISOString().slice(0, 16);
@@ -46,31 +44,41 @@ const EventForm = ({
     },
   });
 
-  // 2. FORM STATE ACTION
   const [state, formAction] = useActionState(
-    type === "create" ? createEvent : updateEvent,
-    { success: false, error: false }
-  );
+  type === "create" ? createEvent : updateEvent,
+  { success: false, error: false }
+);
 
+  // Handle server response
   useEffect(() => {
     if (state.success) {
       toast.success(`Event has been ${type === "create" ? "created" : "updated"}!`);
       setOpen(false);
-      router.refresh(); // Triggers Server Component re-fetch
+      router.refresh();
     }
   }, [state, router, type, setOpen]);
+
+  // Handle Form Submission
+  const onSubmit = handleSubmit((data) => {
+    // 🎯 FIX 1: Server Actions expect FormData, not a plain JS Object
+    // We convert the react-hook-form data to FormData
+    const formData = new FormData();
+    Object.entries(data).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        formData.append(key, value.toString());
+      }
+    });
+
+    // 🎯 FIX 2: Wrap in startTransition to resolve the Console Error
+    startTransition(() => {
+      formAction(data as any);
+    });
+  });
 
   const { classes } = relatedData || {};
 
   return (
-    <form 
-      className="flex flex-col gap-8 p-2" 
-      onSubmit={handleSubmit((formData) => {
-        // 3. CLEAN ACTION TRIGGER
-        // We pass the validated formData directly to the server action
-        formAction(formData);
-      })}
-    >
+    <form className="flex flex-col gap-8 p-2" onSubmit={onSubmit}>
       {/* HEADER SECTION */}
       <div className="flex items-center gap-4 mb-2">
         <div className="p-3 bg-purple-50 text-purple-600 rounded-2xl shadow-sm">
@@ -94,14 +102,13 @@ const EventForm = ({
           error={errors.title}
         />
         
-        {/* SELECT FIELD WITH ICON */}
         <div className="flex flex-col gap-2">
           <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
             Target Audience
           </label>
           <div className="relative group">
             <select
-              className="w-full p-4 rounded-2xl bg-white border border-slate-200 text-sm font-medium focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 outline-none transition-all appearance-none"
+              className="w-full p-4 rounded-2xl bg-white border border-slate-200 text-sm font-medium focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 outline-none appearance-none"
               {...register("classId")}
               defaultValue={data?.classId || ""}
             >
@@ -137,13 +144,11 @@ const EventForm = ({
           error={errors.endTime}
         />
 
-        {/* HIDDEN ID FOR UPDATES */}
         {data?.id && (
           <input type="hidden" {...register("id")} defaultValue={data.id} />
         )}
       </div>
 
-      {/* TEXTAREA SECTION */}
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-2 px-1">
           <AlignLeft size={14} className="text-slate-400" />
@@ -153,7 +158,7 @@ const EventForm = ({
         </div>
         <textarea
           {...register("description")}
-          className="w-full p-4 rounded-[2rem] bg-slate-50 border border-slate-100 text-sm font-medium focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 outline-none transition-all h-32 resize-none custom-scrollbar shadow-inner"
+          className="w-full p-4 rounded-[2rem] bg-slate-50 border border-slate-100 text-sm font-medium focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 outline-none h-32 resize-none shadow-inner"
           placeholder="What's happening?..."
         />
         {errors.description?.message && (
@@ -163,7 +168,6 @@ const EventForm = ({
         )}
       </div>
 
-      {/* FOOTER & BUTTONS */}
       <div className="flex flex-col gap-4 mt-2">
         {state.error && (
           <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl text-center">
@@ -173,7 +177,10 @@ const EventForm = ({
           </div>
         )}
         
-        <button className="bg-slate-900 hover:bg-purple-600 text-white py-4 px-10 rounded-2xl font-black text-[12px] uppercase tracking-widest shadow-xl shadow-slate-200 transition-all active:scale-95 self-end">
+        <button 
+          type="submit"
+          className="bg-slate-900 hover:bg-purple-600 text-white py-4 px-10 rounded-2xl font-black text-[12px] uppercase tracking-widest shadow-xl transition-all active:scale-95 self-end"
+        >
           {type === "create" ? "Publish Event" : "Save Changes"}
         </button>
       </div>

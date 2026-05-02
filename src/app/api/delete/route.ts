@@ -34,8 +34,8 @@ export async function POST(req: Request) {
         await prisma.parent.delete({ where: { id: numericId } });
         break;
 
-      case "lesson":
-        await prisma.lesson.delete({ where: { id: numericId } });
+      case "subject":
+        await prisma.subject.delete({ where: { id: numericId } });
         break;
 
       case "assignment":

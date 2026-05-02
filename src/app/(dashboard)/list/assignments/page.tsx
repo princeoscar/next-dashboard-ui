@@ -5,13 +5,13 @@ import TableSearch from "@/components/TableSearch";
 import { prisma } from "@/lib/prisma";
 import { ITEM_PER_PAGE } from "@/lib/settings";
 import { auth } from "@clerk/nextjs/server";
-import { Assignment, Class, Lesson, Prisma, Subject, Teacher } from "@prisma/client";
+import { Assignment, Class, Prisma, Subject, Teacher } from "@prisma/client";
 import { FileText, User, Clock, ArrowLeft, ArrowRight } from "lucide-react";
 import ClassSelector from "@/components/ClassSelector";
 import Link from "next/link";
 
 type AssignmentList = Assignment & {
-  lesson: Lesson & { subject: Subject; class: Class; teacher: Teacher };
+   subject: Subject; class: Class; teacher: Teacher
 };
 
 const AssignmentListPage = async ({
@@ -82,7 +82,16 @@ const AssignmentListPage = async ({
   if (!classId && !search && role !== "student" && role !== "parent") {
     const classes = await prisma.class.findMany({
       where: { ...(role === "teacher" ? { supervisorId: userId! } : {}) },
-      include: { grade: true, supervisor: true, _count: { select: { lessons: true } } },
+      include: {
+        level: true,
+        supervisor: true,
+        _count: {
+          select: {
+            subjects: true,
+            exams: true,
+          }
+        }
+      },
       orderBy: { name: "asc" },
     });
 
@@ -105,26 +114,33 @@ const AssignmentListPage = async ({
     case "admin": break;
     case "teacher":
       andConditions.push({
-        lesson: {
-          OR: [{ teacherId: userId! }, { class: { supervisorId: userId! } }]
-        }
+          OR: [
+            { teacherId: userId! }, 
+            { class: { supervisorId: userId! } }
+          ]
       });
       break;
+
     case "student":
-      andConditions.push({ lesson: { class: { students: { some: { id: userId! } } } } });
+      andConditions.push({  
+         class: { 
+          students: { some: { id: userId! } }
+         } });
       break;
+
     case "parent":
       // 🔒 Lockdown: Parent sees assignments for the class their selected child belongs to
       andConditions.push({
-        lesson: {
           class: {
             students: {
               some: { id: selectedStudentId, parentId: userId! }
             }
           }
-        }
       });
       break;
+
+      
+
     default:
       andConditions.push({ id: -1 });
       break;
@@ -134,34 +150,42 @@ const AssignmentListPage = async ({
     andConditions.push({
       OR: [
         { title: { contains: search, mode: "insensitive" } },
-        { lesson: { subject: { name: { contains: search, mode: "insensitive" } } } }
+        { subject: { name: { contains: search, mode: "insensitive" } } } 
       ]
     });
   }
 
   if (classId) {
-    andConditions.push({ lesson: { classId: parseInt(classId) } });
-  }
+  const cid = parseInt(classId);
+  // 🎯 Direct classId check on the Assignment
+  if (!isNaN(cid)) andConditions.push({ classId: cid });
+}
 
-  if (andConditions.length > 0) query.AND = andConditions;
+if (andConditions.length > 0) query.AND = andConditions;
 
   // --- 4. DATA FETCHING ---
-  const [data, count, lessons] = await prisma.$transaction([
-    prisma.assignment.findMany({
-      where: query,
-      include: { lesson: { include: { subject: true, class: true, teacher: true } } },
-      take: ITEM_PER_PAGE,
-      skip: ITEM_PER_PAGE * (p - 1),
-      orderBy: { dueDate: "asc" },
-    }),
-    prisma.assignment.count({ where: query }),
-    prisma.lesson.findMany({
-      where: role === "teacher" ? { teacherId: userId! } : {},
-      select: { id: true, subject: { select: { name: true } }, class: { select: { name: true } } },
-    }),
-  ]);
+  const [data, count, subjects, classes, teachers] = await prisma.$transaction([
+  prisma.assignment.findMany({
+    where: query,
+    include: {
+      subject: { select: { name: true } },
+      class: { select: { name: true } },
+      teacher: { select: { name: true, surname: true } },
+    },
+    take: ITEM_PER_PAGE,
+    skip: ITEM_PER_PAGE * (p - 1),
+    orderBy: { dueDate: "asc" },
+  }),
+  prisma.assignment.count({ where: query }),
+  // 🎯 1. Fetch Subjects
+  prisma.subject.findMany({ select: { id: true, name: true } }),
+  // 🎯 2. Fetch Classes (This fixes your error!)
+  prisma.class.findMany({ select: { id: true, name: true } }),
+  // 🎯 3. Fetch Teachers
+  prisma.teacher.findMany({ select: { id: true, name: true, surname: true } }),
+]);
 
-  const relatedData = { lessons };
+  const relatedData = { subjects, classes, teachers };
 
   // --- 5. RENDER TABLE ---
   const columns = [
@@ -186,14 +210,14 @@ const AssignmentListPage = async ({
                 {item.title || "Coursework"}
               </span>
               <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">
-                {item.lesson.subject.name}
+                {item.subject.name}
               </span>
             </div>
           </div>
         </td>
         <td className="hidden md:table-cell p-4 text-center">
           <span className="px-2 py-0.5 bg-slate-50 rounded border border-slate-100 text-[10px] font-black uppercase text-slate-400">
-            {item.lesson.class.name}
+            {item.class.name}
           </span>
         </td>
         <td className="hidden lg:table-cell p-4">
@@ -229,6 +253,9 @@ const AssignmentListPage = async ({
         </div>
         <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end">
           <TableSearch />
+          {(role === "admin" || role === "teacher") && (
+                      <FormContainer table="assignment" type="create" relatedData={relatedData} />
+                    )}
         </div>
       </div>
 

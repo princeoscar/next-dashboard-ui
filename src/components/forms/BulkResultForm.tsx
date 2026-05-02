@@ -48,7 +48,7 @@ export default function BulkResultForm({ students, action }: { students: any[], 
           <tbody>
             {students.map((student) => {
               const currentScore = scores[student.id] || "";
-              const grade = currentScore !== "" ? getGrade(parseInt(currentScore)) : null;
+              const level = currentScore !== "" ? getGrade(parseInt(currentScore)) : null;
 
               return (
                 <tr key={student.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-colors">
@@ -70,9 +70,9 @@ export default function BulkResultForm({ students, action }: { students: any[], 
                     />
                   </td>
                   <td className="p-4">
-                    {grade && (
-                      <span className={`${grade.color} text-white text-[9px] font-black px-2.5 py-1 rounded-lg uppercase shadow-sm transition-all`}>
-                        {grade.label}
+                    {level && (
+                      <span className={`${level.color} text-white text-[9px] font-black px-2.5 py-1 rounded-lg uppercase shadow-sm transition-all`}>
+                        {level.label}
                       </span>
                     )}
                   </td>

@@ -6,11 +6,11 @@ import TableSearch from "@/components/TableSearch";
 import { prisma } from "@/lib/prisma";
 import { ITEM_PER_PAGE } from "@/lib/settings";
 import { auth } from "@clerk/nextjs/server";
-import { Class, Grade, Teacher, Prisma } from "@prisma/client";
+import { Class, Level, Teacher, Prisma } from "@prisma/client";
 import { GraduationCap, UserCog, Layout } from "lucide-react";
 import Image from "next/image";
 
-type ClassList = Class & { supervisor: Teacher | null } & { grade: Grade };
+type ClassList = Class & { supervisor: Teacher | null } & { level: Level };
 
 const ClassListPage = async ({
   searchParams,
@@ -32,9 +32,9 @@ const ClassListPage = async ({
         ...(role === "teacher" ? { supervisorId: userId! } : {}),
       },
       include: { 
-        grade: true,
+        level: true,
         supervisor: true,
-        _count: { select: { students: true, lessons: true } } 
+        _count: { select: { students: true, } } 
       },
       orderBy: { name: "asc" },
     });
@@ -71,25 +71,25 @@ const ClassListPage = async ({
     query.id = parseInt(classId);
   }
 
-  const [data, count, teachers, grades] = await prisma.$transaction([
+  const [data, count, teachers, levels] = await prisma.$transaction([
     prisma.class.findMany({
       where: query,
-      include: { grade: true, supervisor: true, _count: { select: { students: true } } },
+      include: { level: true, supervisor: true, _count: { select: { students: true } } },
       take: ITEM_PER_PAGE,
       skip: ITEM_PER_PAGE * (p - 1),
       orderBy: { name: "asc" },
     }),
     prisma.class.count({ where: query }),
     prisma.teacher.findMany({ select: { id: true, name: true, surname: true } }),
-    prisma.grade.findMany({ select: { id: true, level: true } }),
+    prisma.level.findMany({ select: { id: true, level: true } }),
   ]);
 
-  const relatedData = { teachers, grades };
+  const relatedData = { teachers, levels };
 
   const columns = [
     { header: "Class Name", accessor: "name", className: "pl-4" },
     { header: "Enrolled", accessor: "students", className: "hidden md:table-cell" },
-    { header: "Grade", accessor: "grade", className: "hidden md:table-cell" },
+    { header: "Level", accessor: "level", className: "hidden md:table-cell" },
     { header: "Supervisor", accessor: "supervisor", className: "hidden lg:table-cell" },
     ...(role === "admin" ? [{ header: "Actions", accessor: "action", className: "text-right pr-4" }] : []),
   ];
@@ -110,7 +110,7 @@ const ClassListPage = async ({
       <td className="hidden md:table-cell p-4">
         <div className="flex items-center gap-2 w-fit px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-[10px] font-black uppercase tracking-widest border border-slate-200">
           <GraduationCap size={12} />
-          Level {item.grade?.level || "-"}
+          Level {item.level?.name || "-"}
         </div>
       </td>
       <td className="hidden lg:table-cell p-4 text-slate-500">

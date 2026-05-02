@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { Dispatch, SetStateAction } from "react";
 
-const GradeForm = ({ 
+const LevelForm = ({ 
   type, 
   data, 
   setOpen 
@@ -50,4 +50,4 @@ const GradeForm = ({
   );
 };
 
-export default GradeForm;
+export default LevelForm;

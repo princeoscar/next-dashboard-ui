@@ -50,14 +50,19 @@ const ClassForm = ({
   const router = useRouter();
 
   useEffect(() => {
-    if (state.success) {
-      toast(`Class has been ${type === "create" ? "created" : "updated"}!`);
+  if (state.success) {
+    toast.success(`Class has been ${type === "create" ? "created" : "updated"}!`);
+    
+    // Wrap in a check to ensure we don't fire before the router is ready
+    if (typeof window !== "undefined") {
       setOpen(false);
-      router.refresh();
+      // Use window.location.reload() as a fallback if the router is being stubborn
+      router.refresh(); 
     }
-  }, [state, router, type, setOpen]);
+  }
+}, [state, router, type, setOpen]);
 
-  const { teachers = [], grades = [] } = relatedData || {};
+  const { teachers = [], levels = [] } = relatedData || {};
 
   return (
     <form className="flex flex-col w-full max-w-2xl mx-auto" onSubmit={onSubmit}>
@@ -122,31 +127,29 @@ const ClassForm = ({
           )}
         </div>
 
-        {/* GRADE SELECT */}
+        {/* Level SELECT */}
         <div className="flex flex-col gap-2 w-full md:w-1/4">
-          <label className="text-xs text-gray-500">Grade</label>
-          <select
-            className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
-            {...register("gradeId")}
-            defaultValue={data?.gradeId}
-          >
-            <option value="">Select a grade</option>
-            {grades.map((grade: { id: number; level: number }) => (
-              <option
-                value={grade.id}
-                key={grade.id}
-                // Removed 'selected' attribute
-              >
-                {grade.level}
-              </option>
-            ))}
-          </select>
-          {errors.gradeId?.message && (
-            <p className="text-xs text-red-400">
-              {errors.gradeId.message.toString()}
-            </p>
-          )}
-        </div>
+  <label className="text-xs text-gray-500">Level</label>
+  <select
+    className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
+    {...register("levelId")}
+    defaultValue={data?.levelId}
+  >
+    <option value="">Select a level</option>
+    {/* 🎯 Updated the type to match your model: { id: number; level: number } */}
+    {levels.map((level: { id: number; level: number }) => (
+      <option value={level.id} key={level.id}>
+        {/* 🎯 Use level.level to show the number (e.g., 1, 2, 3) */}
+        Level {level.level}
+      </option>
+    ))}
+  </select>
+  {errors.levelId?.message && (
+    <p className="text-xs text-red-400">
+      {errors.levelId.message.toString()}
+    </p>
+  )}
+</div>
       </div>
       </div>
 

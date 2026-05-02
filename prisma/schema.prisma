@@ -12,30 +12,42 @@ model Admin {
   username String @unique
 }
 
+model School {
+  id          String       @id @default(uuid())
+  name        String       @unique
+  students    Student[]
+  teachers    Teacher[]
+  attendances Attendance[]
+  parents     Parent[]
+}
+
 model Student {
-  id        String   @id
-  username  String   @unique
-  clerkId   String   @unique
+  id       String @id
+  username String @unique
+  clerkId  String @unique
+
   name      String
   surname   String
   email     String?  @unique
   phone     String?  @unique
   address   String
   img       String?
-  bloodType String
+  bloodType String?
   sex       UserSex
   createdAt DateTime @default(now())
   parentId  String?
   classId   Int?
-  gradeId   Int
+  levelId   Int // Changed from gradeId
   birthday  DateTime
 
   payments    Payment[]
   attendances Attendance[]
   results     Result[]
   class       Class?       @relation(fields: [classId], references: [id])
-  grade       Grade        @relation(fields: [gradeId], references: [id])
+  level       Level        @relation(fields: [levelId], references: [id]) // Relation updated
   parent      Parent?      @relation(fields: [parentId], references: [id])
+  schoolId    String?
+  school      School?      @relation(fields: [schoolId], references: [id])
   promotions  Promotion[]
 
   @@index([name])
@@ -43,22 +55,27 @@ model Student {
 }
 
 model Teacher {
-  id        String    @id
-  username  String    @unique
-  clerkId   String    @unique
-  name      String
-  surname   String
-  email     String?   @unique
-  phone     String?   @unique
-  address   String
-  img       String?
-  bloodType String
-  sex       UserSex
-  createdAt DateTime  @default(now())
-  birthday  DateTime
-  classes   Class[]
-  lessons   Lesson[]
-  subjects  Subject[] @relation("SubjectToTeacher")
+  id          String       @id
+  username    String       @unique
+  clerkId     String       @unique
+  schoolId    String? // 🎯 Make this optional with a "?"
+  school      School?      @relation(fields: [schoolId], references: [id])
+  name        String
+  surname     String
+  email       String?      @unique
+  phone       String?      @unique
+  address     String
+  img         String?
+  bloodType   String
+  sex         UserSex
+  createdAt   DateTime     @default(now())
+  birthday    DateTime
+  exams       Exam[]
+  classes     Class[]
+  subjects    Subject[]    @relation("SubjectToTeacher")
+  assignments Assignment[]
+
+  receivedMessages Message[] @relation("ReceivedMessages")
 
   @@index([name])
   @@index([username])
@@ -66,7 +83,7 @@ model Teacher {
 
 model Parent {
   id        String    @id
-  clerkId   String   @unique
+  clerkId   String    @unique
   username  String    @unique
   name      String
   surname   String
@@ -75,17 +92,19 @@ model Parent {
   address   String
   createdAt DateTime  @default(now())
   students  Student[]
+  schoolId  String?
+  school    School?   @relation(fields: [schoolId], references: [id])
 }
 
-model Grade {
-  id    Int    @id @default(autoincrement())
-  level Int    @unique
-  name  String @unique
+model Level {
+  id       Int    @id @default(autoincrement())
+  level    Int    @unique
+  name     String @unique
+  schoolId String @default("school1")
 
   feeStructures FeeStructure[]
-
-  classes  Class[]
-  students Student[]
+  classes       Class[]
+  students      Student[]
 }
 
 model Class {
@@ -93,37 +112,28 @@ model Class {
   name          String         @unique
   capacity      Int
   supervisorId  String?
-  gradeId       Int
+  levelId       Int
+  schoolId      String         @default("school1")
   announcements Announcement[]
-  grade         Grade          @relation(fields: [gradeId], references: [id])
+  level         Level          @relation(fields: [levelId], references: [id])
   supervisor    Teacher?       @relation(fields: [supervisorId], references: [id])
   events        Event[]
-  lessons       Lesson[]
   students      Student[]
+  subjects      Subject[]
+  exams         Exam[]
+  assignments   Assignment[]
 }
 
 model Subject {
-  id       Int       @id @default(autoincrement())
-  name     String    @unique
-  lessons  Lesson[]
-  teachers Teacher[] @relation("SubjectToTeacher")
-}
-
-model Lesson {
   id          Int          @id @default(autoincrement())
-  name        String
-  day         Day
-  startTime   DateTime
-  endTime     DateTime
-  subjectId   Int
-  classId     Int
-  teacherId   String
+  name        String       @unique
+  teachers    Teacher[]    @relation("SubjectToTeacher")
+  classes     Class[]
+  results     Result[]
+  exams       Exam[]
   assignments Assignment[]
   attendances Attendance[]
-  exams       Exam[]
-  class       Class        @relation(fields: [classId], references: [id])
-  subject     Subject      @relation(fields: [subjectId], references: [id])
-  teacher     Teacher      @relation(fields: [teacherId], references: [id])
+  schoolId    String       @default("default_school")
 }
 
 model Exam {
@@ -131,8 +141,14 @@ model Exam {
   title     String
   startTime DateTime
   endTime   DateTime
-  lessonId  Int
-  lesson    Lesson   @relation(fields: [lessonId], references: [id])
+
+  // 🎯 Direct links instead of 'lessonId'
+  subjectId Int
+  subject   Subject  @relation(fields: [subjectId], references: [id])
+  classId   Int
+  class     Class    @relation(fields: [classId], references: [id])
+  teacherId String
+  teacher   Teacher  @relation(fields: [teacherId], references: [id])
   results   Result[]
 }
 
@@ -141,27 +157,47 @@ model Assignment {
   title     String
   startDate DateTime
   dueDate   DateTime
-  lessonId  Int
-  lesson    Lesson   @relation(fields: [lessonId], references: [id])
   results   Result[]
+
+  teacherId String
+  teacher   Teacher @relation(fields: [teacherId], references: [id])
+
+  classId Int
+  class   Class @relation(fields: [classId], references: [id])
+
+  subjectId Int
+  subject   Subject @relation(fields: [subjectId], references: [id])
 }
 
 model Result {
-  id           Int         @id @default(autoincrement())
-  score        Int
-  examId       Int?
-  assignmentId Int?
-  studentId    String
-  assignment   Assignment? @relation(fields: [assignmentId], references: [id])
-  exam         Exam?       @relation(fields: [examId], references: [id])
-  student      Student     @relation(fields: [studentId], references: [id])
+  id String @id @default(uuid())
 
-  academicYearId Int? // The ID of the year
-  academicYear   AcademicYear? @relation(fields: [academicYearId], references: [id])
+  // 1. Declare the actual fields first! 🎯
+  studentId      String
+  subjectId      Int // Ensure this is Int if Subject ID is an Int
+  academicYearId Int
+  term           Int
 
-  type String // "TEST", "ASSIGNMENT", "EXAM"
+  examId Int?
+  exam   Exam? @relation(fields: [examId], references: [id])
 
-  @@unique([studentId, examId])
+  // 2. Then define the relations
+  student      Student      @relation(fields: [studentId], references: [id])
+  subject      Subject      @relation(fields: [subjectId], references: [id])
+  academicYear AcademicYear @relation(fields: [academicYearId], references: [id])
+
+  assignmentScore Int?
+  testScore       Int?
+  examScore       Int?
+  totalScore      Int?
+  grade           String?
+  remark          String?
+  assignment      Assignment? @relation(fields: [assignmentId], references: [id])
+  assignmentId    Int?
+  testId          Int?
+
+  // 3. Now the unique constraint will work because the fields exist above
+  @@unique([studentId, subjectId, academicYearId, term])
 }
 
 model Attendance {
@@ -169,11 +205,19 @@ model Attendance {
   date      DateTime
   present   Boolean
   studentId String
-  lessonId  Int
-  lesson    Lesson   @relation(fields: [lessonId], references: [id])
-  student   Student  @relation(fields: [studentId], references: [id])
 
-  @@unique([date, studentId, lessonId])
+  student Student @relation(fields: [studentId], references: [id])
+
+  subject   Subject @relation(fields: [subjectId], references: [id])
+  subjectId Int
+
+  school   School @relation(fields: [schoolId], references: [id])
+  schoolId String
+
+  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id])
+  academicYearId Int
+
+  @@unique([date, studentId])
 }
 
 model Event {
@@ -203,17 +247,17 @@ model Message {
   receiverId String
   isRead     Boolean   @default(false)
   readAt     DateTime?
-  receiver   User      @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  receiver   Teacher   @relation("ReceivedMessages", fields: [receiverId], references: [id])
   sender     User      @relation("SentMessages", fields: [senderId], references: [id])
 }
 
 model User {
-  id               String    @id
-  username         String    @unique
-  role             String
-  img              String?
-  receivedMessages Message[] @relation("ReceivedMessages")
-  sentMessages     Message[] @relation("SentMessages")
+  id       String  @id
+  username String  @unique
+  role     String
+  img      String?
+
+  sentMessages Message[] @relation("SentMessages")
 }
 
 model Income {
@@ -241,13 +285,13 @@ model SchoolSettings {
 
 model AcademicYear {
   id            Int            @id @default(autoincrement())
-  name          String         @unique // e.g., "2025/2026"
+  name          String         @unique
   isCurrent     Boolean        @default(false)
   results       Result[]
   promotions    Promotion[]
-  // ADD THESE LINES:
   feeStructures FeeStructure[]
   payments      Payment[]
+  attendances   Attendance[]
 }
 
 model Promotion {
@@ -266,10 +310,10 @@ model FeeStructure {
   id             Int          @id @default(autoincrement())
   academicYearId Int
   academicYear   AcademicYear @relation(fields: [academicYearId], references: [id])
-  gradeId        Int
-  grade          Grade        @relation(fields: [gradeId], references: [id])
-  amount         Decimal // Total amount for this grade this year
-  description    String? // e.g., "Tuition + Library + Uniform"
+  levelId        Int // Changed from gradeId
+  level          Level        @relation(fields: [levelId], references: [id])
+  amount         Decimal
+  description    String?
 }
 
 model Payment {
@@ -278,7 +322,7 @@ model Payment {
   student        Student      @relation(fields: [studentId], references: [id])
   amountPaid     Decimal
   date           DateTime     @default(now())
-  method         String // "BANK_TRANSFER", "CASH", "ONLINE"
+  method         String
   academicYearId Int
   academicYear   AcademicYear @relation(fields: [academicYearId], references: [id])
 }

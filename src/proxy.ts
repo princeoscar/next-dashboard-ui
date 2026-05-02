@@ -6,10 +6,10 @@ const isPublicRoute = createRouteMatcher([
   '/sign-in(.*)',
   '/sign-up(.*)',
   '/', 
-  '/api/webhooks(.*)'
+  '/api/webhooks(.*)',
+  '/onboarding(.*)' // 🎯 CRITICAL: Onboarding must be public so you can see it!
 ]);
 
-// Cache matchers outside the handler
 const matchers = Object.entries(routeAccessMap).map(([route, allowedRoles]) => ({
   matcher: createRouteMatcher([route]),
   allowedRoles: allowedRoles.map(r => r.toLowerCase()),
@@ -19,34 +19,39 @@ export default clerkMiddleware(async (auth, req) => {
   const { userId, sessionClaims, redirectToSignIn } = await auth();
   const currentPath = req.nextUrl.pathname;
 
-  // 1. PUBLIC ROUTES
+  // 1. ALLOW PUBLIC ROUTES
   if (isPublicRoute(req)) {
     return NextResponse.next();
   }
 
-  // 2. AUTHENTICATION CHECK
+  // 2. FORCE AUTHENTICATION
   if (!userId) {
     return redirectToSignIn();
   }
 
-  // 3. ROLE EXTRACTION
-  const role = (sessionClaims?.metadata as { role?: string })?.role?.toLowerCase() || "";
+  // 3. EXTRACT METADATA (Role and SchoolID)
+  const metadata = (sessionClaims?.metadata as { role?: string; schoolId?: string }) || {};
+  const role = metadata.role?.toLowerCase() || "";
+  const schoolId = metadata.schoolId;
 
-  // 4. RBAC CHECK
+  // 4. ONBOARDING REDIRECT (The "Guard")
+  // If they are an admin but have no school attached yet, send them to onboarding
+  if (role === "admin" && !schoolId && currentPath !== "/onboarding") {
+    return NextResponse.redirect(new URL("/onboarding", req.url));
+  }
+
+  // 5. PREVENT RE-ONBOARDING
+  // If they already have a school, don't let them go back to the onboarding page
+  if (schoolId && currentPath === "/onboarding") {
+    return NextResponse.redirect(new URL("/admin", req.url));
+  }
+
+  // 6. RBAC (Access Control)
   for (const { matcher, allowedRoles } of matchers) {
     if (matcher(req)) {
-      // If the user's role isn't in the allowed list for this path
       if (!allowedRoles.includes(role)) {
-        
-        // Define destination based on role
-        const fallbackPath = role ? `/${role}` : '/list/subjects';
-
-        // CRITICAL: Prevent Infinite Redirect Loop
-        // If the current path is already the destination, let them in
-        if (currentPath.startsWith(fallbackPath)) {
-          return NextResponse.next();
-        }
-
+        const fallbackPath = role ? `/${role}` : '/';
+        if (currentPath.startsWith(fallbackPath)) return NextResponse.next();
         return NextResponse.redirect(new URL(fallbackPath, req.url));
       }
     }
