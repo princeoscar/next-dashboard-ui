@@ -14,22 +14,12 @@ const BigCalendarContainer = async ({
 }: BigCalendarContainerProps) => {
   
   // 1. Fetch Lessons with related Subject & Class info for better labels
- const dataRes = await prisma.subject.findMany({
+ const dataRes = await prisma.lesson.findMany({
   where: {
-    ...(type === "teacherId"
-      ? { 
-          teachers: { 
-            some: { id: id as string } 
-          } 
-        }
-      : { 
-          classes: { 
-            some: { id: parseInt(id as string) } 
-          } 
-        }),
+    ...(type === "teacherId" ? { teacherId: id as string } : { classId: parseInt(id as string) }),
   },
+  include: { subject: true },
 });
-
 
   // 2. Format data for react-big-calendar with more detail
   const data = dataRes.map((item) => ({

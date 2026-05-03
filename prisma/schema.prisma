@@ -22,7 +22,7 @@ model School {
   teachers    Teacher[]
   attendances Attendance[]
   parents     Parent[]
-  admins Admin[]
+  admins      Admin[]
 }
 
 model Student {
@@ -58,6 +58,23 @@ model Student {
   @@index([username])
 }
 
+model Lesson {
+  id        Int      @id @default(autoincrement())
+  name      String
+  day       Day // This is the Enum: MONDAY, TUESDAY, etc.
+  startTime DateTime
+  endTime   DateTime
+
+  subjectId Int
+  subject   Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  classId Int
+  class   Class @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  teacherId String
+  teacher   Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+}
+
 model Teacher {
   id          String       @id
   username    String       @unique
@@ -78,6 +95,7 @@ model Teacher {
   classes     Class[]
   subjects    Subject[]    @relation("SubjectToTeacher")
   assignments Assignment[]
+  lessons     Lesson[]
 
   receivedMessages Message[] @relation("ReceivedMessages")
 
@@ -126,6 +144,7 @@ model Class {
   subjects      Subject[]
   exams         Exam[]
   assignments   Assignment[]
+  lessons       Lesson[]
 }
 
 model Subject {
@@ -136,6 +155,7 @@ model Subject {
   results     Result[]
   exams       Exam[]
   assignments Assignment[]
+  lessons     Lesson[]
   attendances Attendance[]
   schoolId    String       @default("default_school")
 }
