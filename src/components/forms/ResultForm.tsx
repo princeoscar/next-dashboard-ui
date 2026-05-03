@@ -117,7 +117,7 @@ else if (total >= 45) autoGrade = "E8";
           <Trophy size={24} />
         </div>
         <div>
-          <h1 className="text-2xl font-black text-slate-800 tracking-tighter uppercase leading-none">
+          <h1 className="text-2xl font-black text-center text-slate-800 tracking-tighter uppercase leading-none">
             {type === "create" ? "New Result" : "Edit Total Score"}
           </h1>
           <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-1">

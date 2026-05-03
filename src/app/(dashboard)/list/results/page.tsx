@@ -236,18 +236,17 @@ const ResultListPage = async ({
 
   // --- 5. RENDER TABLE ---
   const columns = [
-  { header: "Subject", accessor: "subject", className: "pl-4" },
-  // 🎯 Keep the conditional Student column
+  { header: "Subject & Student", accessor: "subject", className: "pl-2" }, // Updated label
+  // Keep this hidden on mobile, it will show as a separate column on desktop
   ...(role !== "student" 
     ? [{ header: "Student", accessor: "student", className: "hidden md:table-cell" }] 
     : []),
-  { header: "C.A", accessor: "ca", className: "text-center" },
-  { header: "Exam", accessor: "exam", className: "text-center" },
-  { header: "Total", accessor: "total", className: "text-center" },
+  { header: "Total", accessor: "total", className: "text-center w-[60px]" },
   { header: "Actions", accessor: "action", className: "text-right pr-4" },
 ];
   const renderRow = (item: any) => {
   const subjectName = item.subject?.name || item.exam?.subject?.name || item.assignment?.subject?.name || "Unknown";
+  const studentFullname = `${item.student.name} ${item.student.surname}`;
   const caScore = (item.testScore ?? 0) + (item.assignmentScore ?? 0);
   const examScore = item.examScore ?? 0;
   const total = item.totalScore ?? 0;
@@ -256,9 +255,12 @@ const ResultListPage = async ({
   return (
     <tr key={item.id} className="border-b border-slate-100 last:border-0 text-sm hover:bg-slate-50 transition-all">
       {/* SUBJECT */}
-      <td className="p-4">
-        <div className="flex flex-col">
+      <td className="p-2 pl-2 max-w-[150px] sm:max-w-none">
+        <div className="flex flex-col gap-0.5">
           <span className="font-black text-slate-700 uppercase text-[11px]">{subjectName}</span>
+          <span className="md:hidden text-[10px] font-bold text-amber-600 uppercase tracking-tight">
+            {studentFullname}
+          </span>
           <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">
             {item.examId ? "Final Exam" : "Assessment"}
           </span>
@@ -280,14 +282,14 @@ const ResultListPage = async ({
       )}
 
       {/* C.A SCORE */}
-      <td className="p-4 text-center">
+      <td className="p-4 text-center hidden sm:table-cell">
         <span className="text-xs font-black text-slate-400 bg-slate-50 px-2 py-1 rounded-md">
           {caScore}
         </span>
       </td>
 
       {/* EXAM SCORE */}
-      <td className="p-4 text-center">
+      <td className="p-4 text-center hidden sm:table-cell">
         <span className="text-xs font-black text-slate-400 bg-slate-50 px-2 py-1 rounded-md">
           {examScore}
         </span>
