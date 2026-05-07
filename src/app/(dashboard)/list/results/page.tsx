@@ -13,12 +13,15 @@ import Link from "next/link";
 const ResultListPage = async ({
   searchParams,
 }: {
-  searchParams: Promise<{ [key: string]: string | undefined }>;
+  searchParams: Promise<{ [key: string]: string | undefined }>; // ✅ Added Promise
 }) => {
+  // Now this line works correctly with the new type:
+  const params = await searchParams;
+  
   const { userId, sessionClaims } = await auth();
   const role = (sessionClaims?.metadata as { role?: string })?.role?.toLowerCase();
 
-  const params = await searchParams;
+  
   const { classId, search, studentId: selectedStudentId, subjectId } = params; // Add subjectId here
   const p = params.page ? parseInt(params.page) : 1;
 
