@@ -39,9 +39,16 @@ const ClassListPage = async ({
       orderBy: { name: "asc" },
     });
 
+    const [teachers, levels] = await prisma.$transaction([
+    prisma.teacher.findMany({ select: { id: true, name: true, surname: true } }),
+    prisma.level.findMany({ select: { id: true, name: true } }), // changed 'level' to 'name' based on common schema
+  ]);
+  const relatedData = { teachers, levels };
+
     return (
       <div className="bg-white p-8 rounded-[2.5rem] flex-1 m-4 mt-0 shadow-sm border border-slate-100">
-        <div className="mb-10 text-center md:text-left">
+      <div className="flex flex-col md:flex-row items-center justify-between mb-10 gap-6">
+        <div className="text-center md:text-left">
           <h1 className="text-3xl font-black text-slate-800 tracking-tighter uppercase">
             Academic <span className="text-rubixPurple">Classes</span>
           </h1>
@@ -49,11 +56,19 @@ const ClassListPage = async ({
             Manage student groups and class structures
           </p>
         </div>
-        {/* target="classes" so clicking a card reloads this page with ?classId=X */}
-        <ClassSelector classes={classes} role={role!} target="classes" relatedData={{}} />
+
+        {/* 🎯 ADD THIS: The Create Button now appears on the Dashboard */}
+        <div className="flex items-center gap-3">
+           {role === "admin" && (
+             <FormContainer table="class" type="create" relatedData={relatedData} />
+           )}
+        </div>
       </div>
-    );
-  }
+
+      <ClassSelector classes={classes} role={role!} target="classes" relatedData={relatedData} />
+    </div>
+  );
+}
 
   // --- 2. TABLE VIEW LOGIC ---
   const query: Prisma.ClassWhereInput = {};

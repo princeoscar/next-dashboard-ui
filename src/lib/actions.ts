@@ -17,6 +17,7 @@ import {
   TeacherSchema,
   eventSchema,
   announcementSchema,
+  LessonSchema,
 } from "./formValidationSchema";
 import { prisma } from "./prisma";
 import { auth, clerkClient } from "@clerk/nextjs/server";
@@ -73,6 +74,10 @@ export const createSubject = async (
           connect:
             data.teachers?.map((teacherId: string) => ({ id: teacherId })) || [],
         },
+        classes: {
+      // 🎯 You must connect the classes here!
+      connect: data.classes?.map((id: string) => ({ id: parseInt(id) })),
+    },
       },
     });
 
@@ -90,7 +95,6 @@ export const updateSubject = async (
 ) => {
   if (!data.id) return { success: false, error: true };
   try {
-    // Check if another subject already has the new name (if name is being changed)
     const duplicate = await prisma.subject.findFirst({
       where: {
         name: data.name,
@@ -99,7 +103,7 @@ export const updateSubject = async (
     });
 
     if (duplicate) {
-      return { success: false, error: true, message: "Name already taken by another subject." };
+      return { success: false, error: true, message: "Name already taken." };
     }
 
     await prisma.subject.update({
@@ -108,6 +112,10 @@ export const updateSubject = async (
         name: data.name,
         teachers: {
           set: data.teachers?.map((id) => ({ id })) || [],
+        },
+        // 🎯 ADD THIS: This is why editing didn't fix the "invisible" subjects
+        classes: {
+          set: data.classes?.map((id) => ({ id: parseInt(id) })) || [],
         },
       },
     });
@@ -1431,6 +1439,104 @@ export const deleteExam = async (
   } catch (err) {
     console.log(err);
     return { success: false, error: true };
+  }
+};
+
+
+const dayToDate: { [key: string]: number } = {
+  MONDAY: 4,
+  TUESDAY: 5,
+  WEDNESDAY: 6,
+  THURSDAY: 7,
+  FRIDAY: 8,
+};
+
+
+export const createLesson = async (
+  currentState: { success: boolean; error: boolean },
+  data: LessonSchema 
+) => {
+  try {
+    // Look at the line below: we put 'singleClassId' inside the ( ) 
+    // so we can use it inside the loop.
+    await Promise.all(
+      data.classes.map(async (singleClassId) => { 
+        return prisma.lesson.create({
+          data: {
+            name: data.name,
+            day: data.day,
+            startTime: new Date(2026, 4, dayToDate[data.day], parseInt(data.startTime.split(":")[0]), parseInt(data.startTime.split(":")[1])),
+  endTime: new Date(2026, 4, dayToDate[data.day], parseInt(data.endTime.split(":")[0]), parseInt(data.endTime.split(":")[1])),
+            subjectId: Number(data.subjectId),
+            teacherId: data.teacherId,
+            // Now 'singleClassId' is defined!
+            classId: Number(singleClassId), 
+          },
+        });
+      })
+    );
+
+    return { success: true, error: false };
+  } catch (err) {
+    console.log("ERROR_CREATING_LESSON:", err);
+    return { success: false, error: true };
+  }
+};
+
+// UPDATE ACTION
+export const updateLesson = async (
+  currentState: { success: boolean; error: boolean },
+  data: LessonSchema
+) => {
+  if (!data.id) return { success: false, error: true, message: "ID is required" };
+
+  try {
+    await prisma.lesson.update({
+      where: {
+        id: Number(data.id),
+      },
+      data: {
+        name: data.name,
+        day: data.day,
+        startTime: new Date(`1970-01-01T${data.startTime}:00`),
+endTime: new Date(`1970-01-01T${data.endTime}:00`),
+        subjectId: Number(data.subjectId), 
+       classId: data.classes.length > 0 ? Number(data.classes[0]) : undefined,
+        teacherId: data.teacherId,
+      },
+    });
+
+    // revalidatePath("/list/lessons");
+    return { success: true, error: false, message: "Updated successfully" };
+  } catch (err) {
+    console.log(err);
+    return { success: false, error: true, message: "Failed to update lesson" };
+  }
+};
+
+// DELETE ACTION
+// src/lib/actions.ts
+
+export const deleteLesson = async (
+  currentState: { success: boolean; error: boolean; message: string },
+  formData: FormData // 🎯 Change this from an object to FormData
+) => {
+  const id = formData.get("id"); // 🎯 Extract the ID from the hidden input
+
+  try {
+    await prisma.lesson.delete({
+      where: {
+        id: Number(id),
+      },
+    });
+
+    // Revalidate so the UI updates immediately
+    // revalidatePath("/list/lessons");
+    
+    return { success: true, error: false, message: "Lesson deleted successfully" };
+  } catch (err) {
+    console.log(err);
+    return { success: false, error: true, message: "Failed to delete lesson" };
   }
 };
 

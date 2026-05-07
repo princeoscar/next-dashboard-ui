@@ -11,7 +11,7 @@ import ClassSelector from "@/components/ClassSelector";
 import Link from "next/link";
 
 type ExamList = Exam & {
-  subject: Subject; class: Class; teacher: Teacher 
+  subject: Subject; class: Class; teacher: Teacher
 };
 
 const ExamListPage = async ({
@@ -104,13 +104,13 @@ const ExamListPage = async ({
   const andConditions: Prisma.ExamWhereInput[] = [];
 
   const subjects = await prisma.subject.findMany({
-  select: { id: true, name: true },
-});
+    select: { id: true, name: true },
+  });
 
- if (role === "student") {
-    const student = await prisma.student.findUnique({ 
-      where: { id: userId! }, 
-      select: { classId: true } 
+  if (role === "student") {
+    const student = await prisma.student.findUnique({
+      where: { id: userId! },
+      select: { classId: true }
     });
     // 🎯 Direct classId check
     andConditions.push({ classId: student?.classId || -1 });
@@ -127,59 +127,59 @@ const ExamListPage = async ({
     // 🎯 Check teacherId on the Exam OR if they supervise the Class
     andConditions.push({
       OR: [
-        { teacherId: userId! }, 
+        { teacherId: userId! },
         { class: { supervisorId: userId! } }
       ]
     });
   }
 
   if (search) {
-  andConditions.push({
-    OR: [
-      { title: { contains: search, mode: "insensitive" } },
-      // 🎯 Directly check the subject name connected to the exam
-      { subject: { name: { contains: search, mode: "insensitive" } } }
-    ]
-  });
-}
+    andConditions.push({
+      OR: [
+        { title: { contains: search, mode: "insensitive" } },
+        // 🎯 Directly check the subject name connected to the exam
+        { subject: { name: { contains: search, mode: "insensitive" } } }
+      ]
+    });
+  }
 
-if (classId) {
-  const cid = parseInt(classId);
-  // 🎯 Directly check the classId on the exam
-  if (!isNaN(cid)) andConditions.push({ classId: cid });
-}
+  if (classId) {
+    const cid = parseInt(classId);
+    // 🎯 Directly check the classId on the exam
+    if (!isNaN(cid)) andConditions.push({ classId: cid });
+  }
 
-if (andConditions.length > 0) query.AND = andConditions;
+  if (andConditions.length > 0) query.AND = andConditions;
 
 
   // --- 4. DATA FETCHING ---
- // --- 4. DATA FETCHING ---
-const [data, count, classes, teachers] = await prisma.$transaction([
-  prisma.exam.findMany({
-    where: query,
-    include: {
-      subject: { select: { name: true } },
-      class: { select: { name: true } },
-      teacher: { select: { name: true, surname: true } }
-    },
-    take: ITEM_PER_PAGE,
-    skip: ITEM_PER_PAGE * (p - 1),
-    orderBy: { startTime: "asc" },
-  }),
-  
-  prisma.exam.count({ where: query }),
+  // --- 4. DATA FETCHING ---
+  const [data, count, classes, teachers] = await prisma.$transaction([
+    prisma.exam.findMany({
+      where: query,
+      include: {
+        subject: { select: { name: true } },
+        class: { select: { name: true } },
+        teacher: { select: { name: true, surname: true } }
+      },
+      take: ITEM_PER_PAGE,
+      skip: ITEM_PER_PAGE * (p - 1),
+      orderBy: { startTime: "asc" },
+    }),
 
-  prisma.class.findMany({
-    where: role === "teacher" ? { supervisorId: userId! } : {},
-    select: { id: true, name: true },
-  }),
+    prisma.exam.count({ where: query }),
 
-  prisma.teacher.findMany({
-    select: { id: true, name: true, surname: true },
-  }),
-]); // 🎯 This is the ONLY place this should close.
+    prisma.class.findMany({
+      where: role === "teacher" ? { supervisorId: userId! } : {},
+      select: { id: true, name: true },
+    }),
 
-const relatedData = { classes, subjects, teachers };
+    prisma.teacher.findMany({
+      select: { id: true, name: true, surname: true },
+    }),
+  ]); // 🎯 This is the ONLY place this should close.
+
+  const relatedData = { classes, subjects, teachers };
 
   // --- 5. RENDER ---
   const columns = [
@@ -187,6 +187,7 @@ const relatedData = { classes, subjects, teachers };
     { header: "Class", accessor: "teacher", className: "hidden md:table-cell text-center" },
     { header: "Teacher", accessor: "class", className: "hidden md:table-cell text-center" },
     { header: "Date", accessor: "date", className: "hidden lg:table-cell" },
+    { header: "Time", accessor: "time", className: "hidden md:table-cell" },
     ...(role === "admin" || role === "teacher" ? [{ header: "Actions", accessor: "action", className: "text-right pr-4" }] : []),
   ];
 
@@ -211,8 +212,8 @@ const relatedData = { classes, subjects, teachers };
           </span>
         </td>
         <td className="hidden md:table-cell p-4 text-center">
-      {item.teacher.name + " " + item.teacher.surname}
-    </td>
+          {item.teacher.name + " " + item.teacher.surname}
+        </td>
         <td className="hidden lg:table-cell p-4 text-center">
           <div className={`flex items-center gap-2 font-black ${isToday ? 'text-amber-500' : 'text-slate-500'}`}>
             <Calendar size={14} className={isToday ? 'animate-pulse' : 'text-slate-300'} />
@@ -221,6 +222,16 @@ const relatedData = { classes, subjects, teachers };
             </span>
           </div>
         </td>
+
+        {/* 🎯 New Time Cell */}
+        <td className="hidden md:table-cell">
+          <div className="flex items-center gap-1 text-slate-500 font-medium">
+            <span>{item.startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+            <span>-</span>
+            <span>{item.endTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+          </div>
+        </td>
+
         {(role === "admin" || role === "teacher") && (
           <td className="p-4 text-right">
             <div className="flex items-center gap-2 justify-end">

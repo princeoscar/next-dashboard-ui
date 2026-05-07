@@ -30,19 +30,14 @@ const SubjectForm = ({
 
   const [state, formAction] = useActionState(
     type === "create" ? createSubject : updateSubject,
-    {
-      success: false,
-      error: false,
-    }
+    { success: false, error: false }
   );
 
   const onSubmit = handleSubmit((data) => {
-  console.log("Submitting:", data); 
-  startTransition(() => {
-    // We provide a fallback value for schoolId if your schema still wants a string
-    formAction({ ...data, schoolId: data.schoolId || "default_school" });
+    startTransition(() => {
+      formAction({ ...data });
+    });
   });
-});
 
   const router = useRouter();
 
@@ -54,19 +49,18 @@ const SubjectForm = ({
     }
   }, [state, router, type, setOpen]);
 
-  const { teachers } = relatedData;
+  const { teachers, classes } = relatedData;
 
   return (
     <form className="flex flex-col w-full" onSubmit={onSubmit}>
-      {/* HEADER - Reduced padding */}
       <div className="text-center bg-white px-6 py-2">
         <h1 className="text-lg font-black text-slate-800 tracking-tight uppercase">
           {type === "create" ? "Create" : "Update"} <span className="text-rubixPurple">Subject</span>
         </h1>
       </div>
 
-      {/* CONTENT - Removed pb-24 and large spacing */}
-      <div className="p-6 space-y-4">
+      <div className="p-6 space-y-6">
+        {/* SUBJECT NAME */}
         <InputField
           label="Subject name"
           name="name"
@@ -77,34 +71,61 @@ const SubjectForm = ({
 
         {data && <input type="hidden" {...register("id")} defaultValue={data?.id} />}
 
+        {/* 1. ASSIGN TO CLASSES (Checkbox Grid) */}
+        <div className="flex flex-col gap-2">
+          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
+            Target Classes
+          </label>
+          <div className="grid grid-cols-2 gap-2 bg-slate-50 p-4 rounded-2xl ring-[1.5px] ring-gray-200 max-h-40 overflow-y-auto custom-scrollbar">
+            {classes?.map((cls: any) => (
+              <label key={cls.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-white p-2 rounded-xl transition-all border border-transparent hover:border-gray-200">
+                <input
+                  type="checkbox"
+                  value={cls.id}
+                  className="w-4 h-4 rounded accent-rubixPurple"
+                  {...register("classes")}
+                  defaultChecked={data?.classes?.some((c: any) => c.id === cls.id)}
+                />
+                <span className="text-slate-600 font-medium">Class {cls.name}</span>
+              </label>
+            ))}
+          </div>
+          {errors.classes?.message && (
+            <p className="text-[10px] text-red-400 font-medium">{errors.classes.message.toString()}</p>
+          )}
+        </div>
+
+        {/* 2. ASSIGN TEACHERS (Checkbox Grid) */}
         <div className="flex flex-col gap-2">
           <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
             Assign Teachers
           </label>
-          <select
-            multiple
-            size={1} // 🎯 This keeps it compact
-            className="ring-[1.5px] ring-gray-200 p-3 rounded-2xl text-sm w-full outline-none focus:ring-rubixPurple transition-all bg-slate-50"
-            {...register("teachers")}
-            defaultValue={data?.teachers?.map((t: any) => t.id) || []}
-          >
-            {teachers.map((teacher: { id: string; name: string; surname: string }) => (
-              <option value={teacher.id} key={teacher.id} className="p-2">
-                {teacher.name} {teacher.surname}
-              </option>
+          <div className="grid grid-cols-1 gap-2 bg-slate-50 p-4 rounded-2xl ring-[1.5px] ring-gray-200 max-h-40 overflow-y-auto custom-scrollbar">
+            {teachers?.map((teacher: any) => (
+              <label key={teacher.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-white p-2 rounded-xl transition-all border border-transparent hover:border-gray-200">
+                <input
+                  type="checkbox"
+                  value={teacher.id}
+                  className="w-4 h-4 rounded accent-rubixPurple"
+                  {...register("teachers")}
+                  defaultChecked={data?.teachers?.some((t: any) => t.id === teacher.id)}
+                />
+                <div className="flex flex-col">
+                    <span className="text-slate-700 font-bold">{teacher.name} {teacher.surname}</span>
+                    <span className="text-[10px] text-slate-400">ID: {teacher.id}</span>
+                </div>
+              </label>
             ))}
-          </select>
+          </div>
           {errors.teachers?.message && (
             <p className="text-[10px] text-red-400 font-medium">{errors.teachers.message.toString()}</p>
           )}
-          <p className="text-[9px] text-slate-400 italic ml-1">Ctrl + Click to select multiple</p>
         </div>
       </div>
 
-      {/* FOOTER - Removed sticky and reduced margin */}
       <div className="px-6 pb-6">
         {state.error && <span className="text-red-500 text-[10px] block mb-2 text-center font-bold">Error saving subject.</span>}
-        <button className="w-full bg-slate-900 text-white py-3 rounded-2xl font-bold hover:bg-rubixPurple transition-all shadow-md">
+        <button className="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold hover:bg-rubixPurple transition-all shadow-lg active:scale-[0.98]">
           {type === "create" ? "Confirm & Create" : "Save Changes"}
         </button>
       </div>

@@ -21,13 +21,32 @@ const BigCalendarContainer = async ({
   include: { subject: true },
 });
 
+const dayToDate: { [key: string]: number } = {
+  MONDAY: 4,
+  TUESDAY: 5,
+  WEDNESDAY: 6,
+  THURSDAY: 7,
+  FRIDAY: 8,
+};
+
   // 2. Format data for react-big-calendar with more detail
-  const data = dataRes.map((item) => ({
-  title: item.name,
-  // We provide a dummy date since Subject doesn't have startTime/endTime
-  start: new Date(new Date().setHours(9, 0, 0)), 
-  end: new Date(new Date().setHours(10, 0, 0)),
-}));
+  const data = dataRes.map((item) => {
+  const dayNum = dayToDate[item.day as keyof typeof dayToDate] || 4;
+  
+  // We extract the hours and minutes from the database Date object
+  const startHours = item.startTime.getHours();
+  const startMinutes = item.startTime.getMinutes();
+  const endHours = item.endTime.getHours();
+  const endMinutes = item.endTime.getMinutes();
+
+  return {
+    title: item.name,
+    // We force the Year (2026), Month (4 = May), and Day (4-8)
+    // IMPORTANT: No "Z" at the end, so it stays local time
+    start: new Date(2026, 4, dayNum, startHours, startMinutes),
+    end: new Date(2026, 4, dayNum, endHours, endMinutes),
+  };
+});
 
   // 3. Normalize the dates to the current viewing week
   const schedule = adjustScheduleToCurrentWeek(data);

@@ -1,19 +1,72 @@
 import { prisma } from "../src/lib/prisma";
-import { UserSex, Class, Subject, Teacher, AcademicYear, Parent } from "@prisma/client";
+import {
+  UserSex,
+  Class,
+  Subject,
+  Teacher,
+  AcademicYear,
+  Parent,
+} from "@prisma/client";
 
 const levelNames = ["JSS 1", "JSS 2", "JSS 3", "SSS 1", "SSS 2", "SSS 3"];
-const jssCore = ["Mathematics", "English Studies", "Basic Science", "Digital Technologies", "Citizenship Studies", "History", "CRS"];
-const sssElectives = ["Biology", "Physics", "Chemistry", "Economics", "Financial Accounting", "Government", "Literature", "Geography", "Commerce"];
+const jssCore = [
+  "Mathematics",
+  "English Studies",
+  "Basic Science",
+  "Digital Technologies",
+  "Citizenship Studies",
+  "History",
+  "CRS",
+];
+const sssElectives = [
+  "Biology",
+  "Physics",
+  "Chemistry",
+  "Economics",
+  "Financial Accounting",
+  "Government",
+  "Literature",
+  "Geography",
+  "Commerce",
+];
 const allSubjectNames = [...new Set([...jssCore, ...sssElectives])];
 
 const teacherNames = [
-  "Olawale Adeoga", "Ifeanyi Okafor", "Bisi Akande", "Musa Yar'Adua",
-  "Chioma Ajoke", "Funke Oshodi", "Zubairu Dikko", "Ngozi Ezekwesili",
-  "Segun Arinze", "Yinka Ayefele"
+  "Olawale Adeoga",
+  "Ifeanyi Okafor",
+  "Bisi Akande",
+  "Musa Yar'Adua",
+  "Chioma Ajoke",
+  "Funke Oshodi",
+  "Zubairu Dikko",
+  "Ngozi Ezekwesili",
+  "Segun Arinze",
+  "Yinka Ayefele",
 ];
 
-const parentNames = ["Okonkwo", "Abubakar", "Adeyemi", "Eze", "Bello", "Fashola", "Tinubu", "Soyinka", "Balogun"];
-const studentFirstNames = ["Chidi", "Aminu", "Olumide", "Blessing", "Zainab", "Ngozi", "Tunde", "Aisha", "Kelechi", "Femi"];
+const parentNames = [
+  "Okonkwo",
+  "Abubakar",
+  "Adeyemi",
+  "Eze",
+  "Bello",
+  "Fashola",
+  "Tinubu",
+  "Soyinka",
+  "Balogun",
+];
+const studentFirstNames = [
+  "Chidi",
+  "Aminu",
+  "Olumide",
+  "Blessing",
+  "Zainab",
+  "Ngozi",
+  "Tunde",
+  "Aisha",
+  "Kelechi",
+  "Femi",
+];
 
 async function main() {
   console.log("Cleaning database...");
@@ -62,7 +115,8 @@ async function main() {
         id: `teacher${i}`,
         username: `t_${name.toLowerCase()}${i}`,
         clerkId: `clerk_t_${i}`,
-        name, surname,
+        name,
+        surname,
         email: `teacher${i}@rubix.com`,
         phone: `080${1000000 + i}`,
         address: "Staff Quarters",
@@ -70,7 +124,10 @@ async function main() {
         sex: i % 2 === 0 ? UserSex.MALE : UserSex.FEMALE,
         birthday: new Date(1980, 1, 1),
         schoolId: "1",
-      }
+        subjects: {
+          connect: subjectPool.map((s) => ({ id: s.id })),
+        },
+      },
     });
     teacherPool.push(t);
   }
@@ -81,12 +138,14 @@ async function main() {
   for (let i = 0; i < levelNames.length; i++) {
     const levelName = levelNames[i];
     const level = await prisma.level.create({
-      data: { level: i + 7, name: levelName, schoolId: "1" }
+      data: { level: i + 7, name: levelName, schoolId: "1" },
     });
 
     const isJSS = levelName.startsWith("JSS");
     const targetSubjectNames = isJSS ? jssCore : sssElectives;
-    const levelSubjects = subjectPool.filter(s => targetSubjectNames.includes(s.name));
+    const levelSubjects = subjectPool.filter((s) =>
+      targetSubjectNames.includes(s.name),
+    );
 
     for (const arm of ["A", "B"]) {
       const supervisor = teacherPool[i % teacherPool.length];
@@ -98,9 +157,9 @@ async function main() {
           schoolId: "1",
           supervisorId: supervisor.id,
           subjects: {
-            connect: levelSubjects.map(s => ({ id: s.id }))
-          }
-        }
+            connect: levelSubjects.map((s) => ({ id: s.id })),
+          },
+        },
       });
       classPool.push(cls);
 
@@ -109,9 +168,9 @@ async function main() {
         where: { id: supervisor.id },
         data: {
           subjects: {
-            connect: levelSubjects.map(s => ({ id: s.id }))
-          }
-        }
+            connect: levelSubjects.map((s) => ({ id: s.id })),
+          },
+        },
       });
     }
   }
@@ -170,8 +229,8 @@ async function main() {
           studentId: student.id,
           subjectId: subjectPool[0].id,
           academicYearId: academicYear.id,
-          schoolId: "1"
-        }
+          schoolId: "1",
+        },
       });
     }
   }
@@ -193,8 +252,13 @@ async function main() {
       },
     });
 
-    const studentsInClass = await prisma.student.findMany({ where: { classId: cls.id } });
+    const studentsInClass = await prisma.student.findMany({
+      where: { classId: cls.id },
+    });
     for (const student of studentsInClass) {
+      const eScore = Math.floor(Math.random() * 40) + 30;
+      const tScore = Math.floor(Math.random() * 20) + 10;
+      const aScore = Math.floor(Math.random() * 10) + 5;
       await prisma.result.create({
         data: {
           studentId: student.id,
@@ -205,55 +269,77 @@ async function main() {
           examScore: Math.floor(Math.random() * 40) + 30,
           testScore: Math.floor(Math.random() * 20) + 10,
           assignmentScore: Math.floor(Math.random() * 10) + 5,
-        }
-      });
-    }
-  }
-
- console.log("Seeding Weekly Timetable...");
-
-const days = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"];
-
-for (const cls of classPool) {
-  const classSubjects = subjectPool.filter(s => 
-    (cls.name.startsWith("JSS") && jssCore.includes(s.name)) || 
-    (cls.name.startsWith("SSS") && sssElectives.includes(s.name))
-  );
-
-  // We are using 'day' here as the variable
-  for (const day of days) {
-    for (let i = 0; i < 4; i++) {
-      const subject = classSubjects[i % classSubjects.length];
-      
-      await prisma.lesson.create({
-        data: {
-          name: `${subject.name}`,
-          day: day as any, // This now correctly matches the 'day' variable above
-          startTime: new Date(2026, 4, 4, 8 + i, 0),
-          endTime: new Date(2026, 4, 4, 9 + i, 0),
-          subjectId: subject.id,
-          classId: cls.id,
-          teacherId: (cls.supervisorId ?? teacherPool[0].id) as string, 
+          totalScore: eScore + tScore + aScore,
         },
       });
     }
   }
-}
+
+  console.log("Seeding Weekly Timetable...");
+
+  const days = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"];
+
+  for (const cls of classPool) {
+    const classSubjects = subjectPool.filter(
+      (s) =>
+        (cls.name.startsWith("JSS") && jssCore.includes(s.name)) ||
+        (cls.name.startsWith("SSS") && sssElectives.includes(s.name)),
+    );
+
+    // We are using 'day' here as the variable
+    for (const day of days) {
+      for (let i = 0; i < 6; i++) {
+        const subject = classSubjects[i % classSubjects.length];
+
+        await prisma.lesson.create({
+          data: {
+            name: `${subject.name}`,
+            day: day as any, // This now correctly matches the 'day' variable above
+            startTime: new Date(2026, 4, 4, 8 + i, 0),
+            endTime: new Date(2026, 4, 4, 9 + i, 0),
+            subjectId: subject.id,
+            classId: cls.id,
+            teacherId: teacherPool[i % teacherPool.length].id,
+          },
+        });
+      }
+    }
+  }
 
   // 8. Events & Announcements
   console.log("Seeding Communication...");
   await prisma.event.createMany({
     data: [
-      { title: "General PTA Meeting", description: "All parents must attend", startTime: new Date(), endTime: new Date() },
-      { title: "Inter-house Sports", description: "Class competitions", startTime: new Date(), endTime: new Date(), classId: classPool[0].id },
+      {
+        title: "General PTA Meeting",
+        description: "All parents must attend",
+        startTime: new Date(),
+        endTime: new Date(),
+      },
+      {
+        title: "Inter-house Sports",
+        description: "Class competitions",
+        startTime: new Date(),
+        endTime: new Date(),
+        classId: classPool[0].id,
+      },
     ],
   });
 
   await prisma.announcement.createMany({
     data: [
-      { title: "School Fees Deadline", description: "Please pay before mid-term", date: new Date() },
-      { title: "Mid-term Break", description: "School resumes on Monday", date: new Date(), classId: classPool[1].id }
-    ]
+      {
+        title: "School Fees Deadline",
+        description: "Please pay before mid-term",
+        date: new Date(),
+      },
+      {
+        title: "Mid-term Break",
+        description: "School resumes on Monday",
+        date: new Date(),
+        classId: classPool[1].id,
+      },
+    ],
   });
 
   console.log("✅ Seed completed successfully!");
@@ -262,7 +348,7 @@ for (const cls of classPool) {
 main()
   .catch((e) => {
     console.error(e);
-     // @ts-ignore
+    // @ts-ignore
     process.exit(1);
   })
   .finally(async () => {

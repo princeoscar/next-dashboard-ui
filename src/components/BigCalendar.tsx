@@ -25,9 +25,13 @@ const BigCalendar = ({
         view={view}
         onView={(v) => setView(v)}
         style={{ height: "100%" }}
-        // Fix: Changed year to 2026 to match your current seed data
-        min={new Date(2026, 3, 1, 8, 0, 0)}
-        max={new Date(2026, 3, 1, 16, 0, 0)}
+
+        // 1. Set the default date to the Monday of our fixed week (May 4, 2026)
+        defaultDate={new Date(2026, 4, 4)}
+
+        // 2. Adjust Min/Max to show 8am to 4pm
+        min={new Date(2026, 4, 4, 7, 0, 0)}
+        max={new Date(2026, 4, 4, 18, 0, 0)}
         messages={{ work_week: "School Week", day: "Daily" }}
         formats={{ timeGutterFormat: "HH:mm" }}
         components={{
@@ -40,39 +44,36 @@ const BigCalendar = ({
             </div>
           ),
         }}
+
         eventPropGetter={(event) => {
-          const t = event.title.toLowerCase();
+          const title = event.title.toLowerCase();
 
-          // Default Colors (Sky Blue)
-          let backgroundColor = "#EDF9FD";
-          let barColor = "#C3EBFA";
+          // Define your color themes
+          const themes = {
+            blue: { bg: "#EDF9FD", bar: "#C3EBFA" },
+            yellow: { bg: "#FEFCE8", bar: "#FAE27C" },
+            purple: { bg: "#F1F0FF", bar: "#CFCEFF" },
+            pink: { bg: "#FFF0F3", bar: "#FFD6E0" },
+          };
 
-          // 1. MATH & PHYSICS (Blue)
-          if (t.includes("math") || t.includes("physics")) {
-            backgroundColor = "#EDF9FD";
-            barColor = "#C3EBFA";
-          }
-          // 2. ENGLISH, ECONOMICS, COMMERCE (Yellow)
-          else if (t.includes("english") || t.includes("economics") || t.includes("commerce")) {
-            backgroundColor = "#FEFCE8";
-            barColor = "#FAE27C";
-          }
-          // 3. SCIENCES (Purple)
-          else if (t.includes("science") || t.includes("chemistry") || t.includes("biology") || t.includes("digital")) {
-            backgroundColor = "#F1F0FF";
-            barColor = "#CFCEFF";
-          }
-          // 4. ARTS & HUMANITIES (The Pink Color!)
-          else if (t.includes("history") || t.includes("government") || t.includes("literature") || t.includes("crs") || t.includes("citizen")) {
-            backgroundColor = "#FFF0F3"; // Light Pink background
-            barColor = "#FFD6E0";        // Darker Pink accent bar
+          // Assign keywords to themes
+          let theme = themes.blue; // Default
+
+          if (["english", "economics", "commerce"].some(k => title.includes(k))) {
+            theme = themes.yellow;
+          } else if (["science", "chemistry", "biology", "digital"].some(k => title.includes(k))) {
+            theme = themes.purple;
+          } else if (["history", "government", "literature", "crs", "citizen"].some(k => title.includes(k))) {
+            theme = themes.pink;
+          } else if (["math", "physics"].some(k => title.includes(k))) {
+            theme = themes.blue;
           }
 
           return {
             className: "!rounded-xl shadow-sm border-none",
             style: {
-              backgroundColor: backgroundColor,
-              borderLeft: `5px solid ${barColor}`,
+              backgroundColor: theme.bg,
+              borderLeft: `5px solid ${theme.bar}`,
               color: "#1e293b",
             }
           };

@@ -127,16 +127,6 @@ else if (total >= 45) autoGrade = "E8";
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 ...">
-        {/* SCORE INPUT */}
-        <InputField
-          label="Total Score"
-          name="totalScore"
-          type="number"
-          register={register}
-          defaultValue={data?.totalScore}
-          error={errors.totalScore}
-        />
-
         {/* STUDENT SELECTOR */}
         <div className="flex flex-col gap-2">
           <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
@@ -230,6 +220,15 @@ else if (total >= 45) autoGrade = "E8";
           register={register}
           defaultValue={data?.examScore}
           error={errors.examScore}
+        />
+          {/* SCORE INPUT */}
+        <InputField
+          label="Total Score"
+          name="totalScore"
+          type="number"
+          register={register}
+          defaultValue={data?.totalScore}
+          error={errors.totalScore}
         />
 
 

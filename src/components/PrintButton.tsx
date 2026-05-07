@@ -5,7 +5,8 @@ export default function PrintButton() {
     <div className="fixed top-8 right-8 print:hidden z-50">
       <button 
         onClick={() => window.print()} 
-        className="bg-slate-900 text-white px-6 py-3 rounded-xl font-bold hover:bg-slate-800 transition-all flex items-center gap-2 shadow-lg shadow-slate-200"
+        className="bg-slate-900 text-white px-6 py-3 rounded-xl font-bold hover:bg-slate-800
+         transition-all flex items-center gap-2 shadow-lg shadow-slate-200"
       >
         <span>Print Report</span>
         <svg 

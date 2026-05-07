@@ -5,6 +5,7 @@ export const subjectSchema = z.object({
   name: z.string().min(1, { message: "Subject name is required!" }),
   teachers: z.array(z.string()).optional(), // 🎯 Changed to optional so empty lists don't crash
   schoolId: z.string().optional(), // 🎯 Changed to optional so it doesn't block submission
+  classes: z.array(z.string()),
 });
 
 export type SubjectSchema = z.infer<typeof subjectSchema>;
@@ -16,6 +17,8 @@ export const classSchema = z.object({
   levelId: z.coerce.number().min(1, { message: "Level is required!" }),
   supervisorId: z.string().optional().nullable(),
   schoolId: z.string().optional(), // 🎯 Changed to optional
+  levels: z.array(z.string()).optional(),
+  classes: z.array(z.string()).optional(),
 });
 
 export type ClassSchema = z.infer<typeof classSchema>;
@@ -104,18 +107,19 @@ export const announcementSchema = z.object({
 });
 export type AnnouncementSchema = z.infer<typeof announcementSchema>;
 
-// Ensure it looks like this:
-// export const lessonSchema = z.object({
-//   id: z.coerce.number().optional(), // Add this line
-//   name: z.string().min(1, { message: "Lesson name is required!" }),
-//   day: z.enum(["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]),
-//   startTime: z.string().min(1, { message: "Start time is required!" }),
-//   endTime: z.string().min(1, { message: "End time is required!" }),
-//   subjectId: z.coerce.number(),
-//   classId: z.coerce.number(),
-//   teacherId: z.string(),
-// });
-// export type LessonSchema = z.infer<typeof lessonSchema>;
+// Your existing schema
+export const lessonSchema = z.object({
+  id: z.coerce.number().optional(),
+  name: z.string().min(1, { message: "Subject name is required!" }),
+  day: z.enum(["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]),
+  startTime: z.string(),
+  endTime: z.string(),
+  subjectId: z.coerce.string(),
+  classes: z.array(z.string()).min(1, { message: "Select at least one class!" }),
+  teacherId: z.coerce.string(),
+});
+
+export type LessonSchema = z.infer<typeof lessonSchema>;
 
 // --- ASSIGNMENT ---
 export const assignmentSchema = z.object({
@@ -124,7 +128,7 @@ export const assignmentSchema = z.object({
   startDate: z.coerce.date(),
   dueDate: z.coerce.date(),
   subjectId: z.coerce.number(), // 🎯 Crucial: coerce
-  classId: z.coerce.number(),   // 🎯 Crucial: coerce
+  classId: z.coerce.number(), // 🎯 Crucial: coerce
   teacherId: z.string(),
 });
 export type AssignmentSchema = z.infer<typeof assignmentSchema>;
@@ -197,10 +201,10 @@ export type LevelSchema = z.infer<typeof levelSchema>;
 export const resultSchema = z.object({
   // Allow ID to be optional (for create) or string (for update)
   id: z.string().optional().nullable(),
-  
+
   // Ensure these are treated as strings
   studentId: z.string().min(1, "Student is required"),
-  
+
   // Use coerce to handle strings from <select> being turned into numbers
   subjectId: z.coerce.number().min(1, "Subject is required"),
   academicYearId: z.coerce.number().min(1, "Year is required"),

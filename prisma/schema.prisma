@@ -10,49 +10,46 @@ datasource db {
 model Admin {
   id       String @id
   username String @unique
-
-  school   School @relation(fields: [schoolId], references: [id])
   schoolId String
+  school   School @relation(fields: [schoolId], references: [id])
 }
 
 model School {
   id          String       @id @default(uuid())
   name        String       @unique
-  students    Student[]
-  teachers    Teacher[]
+  admins      Admin[]
   attendances Attendance[]
   parents     Parent[]
-  admins      Admin[]
+  students    Student[]
+  teachers    Teacher[]
 }
 
 model Student {
-  id       String @id
-  username String @unique
-  clerkId  String @unique
-
-  name      String
-  surname   String
-  email     String?  @unique
-  phone     String?  @unique
-  address   String
-  img       String?
-  bloodType String?
-  sex       UserSex
-  createdAt DateTime @default(now())
-  parentId  String?
-  classId   Int?
-  levelId   Int // Changed from gradeId
-  birthday  DateTime
-
-  payments    Payment[]
+  id          String       @id
+  username    String       @unique
+  clerkId     String       @unique
+  name        String
+  surname     String
+  email       String?      @unique
+  phone       String?      @unique
+  address     String
+  img         String?
+  bloodType   String?
+  sex         UserSex
+  createdAt   DateTime     @default(now())
+  parentId    String?
+  classId     Int?
+  levelId     Int
+  birthday    DateTime
+  schoolId    String?
   attendances Attendance[]
+  payments    Payment[]
+  promotions  Promotion[]
   results     Result[]
   class       Class?       @relation(fields: [classId], references: [id])
-  level       Level        @relation(fields: [levelId], references: [id]) // Relation updated
+  level       Level        @relation(fields: [levelId], references: [id])
   parent      Parent?      @relation(fields: [parentId], references: [id])
-  schoolId    String?
   school      School?      @relation(fields: [schoolId], references: [id])
-  promotions  Promotion[]
 
   @@index([name])
   @@index([username])
@@ -61,43 +58,39 @@ model Student {
 model Lesson {
   id        Int      @id @default(autoincrement())
   name      String
-  day       Day // This is the Enum: MONDAY, TUESDAY, etc.
+  day       Day
   startTime DateTime
   endTime   DateTime
-
   subjectId Int
-  subject   Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-
-  classId Int
-  class   Class @relation(fields: [classId], references: [id], onDelete: Cascade)
-
+  classId   Int
   teacherId String
-  teacher   Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  class     Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  subject   Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  teacher   Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
 }
 
 model Teacher {
-  id          String       @id
-  username    String       @unique
-  clerkId     String       @unique
-  schoolId    String? // 🎯 Make this optional with a "?"
-  school      School?      @relation(fields: [schoolId], references: [id])
-  name        String
-  surname     String
-  email       String?      @unique
-  phone       String?      @unique
-  address     String
-  img         String?
-  bloodType   String
-  sex         UserSex
-  createdAt   DateTime     @default(now())
-  birthday    DateTime
-  exams       Exam[]
-  classes     Class[]
-  subjects    Subject[]    @relation("SubjectToTeacher")
-  assignments Assignment[]
-  lessons     Lesson[]
-
-  receivedMessages Message[] @relation("ReceivedMessages")
+  id               String       @id
+  username         String       @unique
+  clerkId          String       @unique
+  schoolId         String?
+  name             String
+  surname          String
+  email            String?      @unique
+  phone            String?      @unique
+  address          String
+  img              String?
+  bloodType        String
+  sex              UserSex
+  createdAt        DateTime     @default(now())
+  birthday         DateTime
+  assignments      Assignment[]
+  classes          Class[]
+  exams            Exam[]
+  lessons          Lesson[]
+  receivedMessages Message[]    @relation("ReceivedMessages")
+  school           School?      @relation(fields: [schoolId], references: [id])
+  subjects         Subject[]    @relation("SubjectToTeacher")
 
   @@index([name])
   @@index([username])
@@ -113,19 +106,18 @@ model Parent {
   phone     String    @unique
   address   String
   createdAt DateTime  @default(now())
-  students  Student[]
   schoolId  String?
   school    School?   @relation(fields: [schoolId], references: [id])
+  students  Student[]
 }
 
 model Level {
-  id       Int    @id @default(autoincrement())
-  level    Int    @unique
-  name     String @unique
-  schoolId String @default("school1")
-
-  feeStructures FeeStructure[]
+  id            Int            @id @default(autoincrement())
+  level         Int            @unique
+  name          String         @unique
+  schoolId      String         @default("school1")
   classes       Class[]
+  feeStructures FeeStructure[]
   students      Student[]
 }
 
@@ -137,27 +129,27 @@ model Class {
   levelId       Int
   schoolId      String         @default("school1")
   announcements Announcement[]
+  assignments   Assignment[]
   level         Level          @relation(fields: [levelId], references: [id])
   supervisor    Teacher?       @relation(fields: [supervisorId], references: [id])
   events        Event[]
-  students      Student[]
-  subjects      Subject[]
   exams         Exam[]
-  assignments   Assignment[]
   lessons       Lesson[]
+  students      Student[]
+  subjects      Subject[]      @relation("ClassToSubject")
 }
 
 model Subject {
   id          Int          @id @default(autoincrement())
   name        String       @unique
-  teachers    Teacher[]    @relation("SubjectToTeacher")
-  classes     Class[]
-  results     Result[]
-  exams       Exam[]
-  assignments Assignment[]
-  lessons     Lesson[]
-  attendances Attendance[]
   schoolId    String       @default("default_school")
+  assignments Assignment[]
+  attendances Attendance[]
+  exams       Exam[]
+  lessons     Lesson[]
+  results     Result[]
+  classes     Class[]      @relation("ClassToSubject")
+  teachers    Teacher[]    @relation("SubjectToTeacher")
 }
 
 model Exam {
@@ -165,13 +157,11 @@ model Exam {
   title     String
   startTime DateTime
   endTime   DateTime
-
-  // 🎯 Direct links instead of 'lessonId'
   subjectId Int
-  subject   Subject  @relation(fields: [subjectId], references: [id])
   classId   Int
-  class     Class    @relation(fields: [classId], references: [id])
   teacherId String
+  class     Class    @relation(fields: [classId], references: [id])
+  subject   Subject  @relation(fields: [subjectId], references: [id])
   teacher   Teacher  @relation(fields: [teacherId], references: [id])
   results   Result[]
 }
@@ -181,67 +171,52 @@ model Assignment {
   title     String
   startDate DateTime
   dueDate   DateTime
-  results   Result[]
-
   teacherId String
-  teacher   Teacher @relation(fields: [teacherId], references: [id])
-
-  classId Int
-  class   Class @relation(fields: [classId], references: [id])
-
+  classId   Int
   subjectId Int
-  subject   Subject @relation(fields: [subjectId], references: [id])
+  class     Class    @relation(fields: [classId], references: [id])
+  subject   Subject  @relation(fields: [subjectId], references: [id])
+  teacher   Teacher  @relation(fields: [teacherId], references: [id])
+  results   Result[]
 }
 
 model Result {
-  id String @id @default(uuid())
-
-  // 1. Declare the actual fields first! 🎯
-  studentId      String
-  subjectId      Int // Ensure this is Int if Subject ID is an Int
-  academicYearId Int
-  term           Int
-
-  examId Int?
-  exam   Exam? @relation(fields: [examId], references: [id])
-
-  // 2. Then define the relations
-  student      Student      @relation(fields: [studentId], references: [id])
-  subject      Subject      @relation(fields: [subjectId], references: [id])
-  academicYear AcademicYear @relation(fields: [academicYearId], references: [id])
-
+  id              String       @id @default(uuid())
+  studentId       String
+  subjectId       Int
+  academicYearId  Int
+  term            Int
+  examId          Int?
   assignmentScore Int?
   testScore       Int?
   examScore       Int?
   totalScore      Int?
   grade           String?
   remark          String?
-  assignment      Assignment? @relation(fields: [assignmentId], references: [id])
   assignmentId    Int?
   testId          Int?
+  academicYear    AcademicYear @relation(fields: [academicYearId], references: [id])
+  assignment      Assignment?  @relation(fields: [assignmentId], references: [id])
+  exam            Exam?        @relation(fields: [examId], references: [id])
+  student         Student      @relation(fields: [studentId], references: [id])
+  subject         Subject      @relation(fields: [subjectId], references: [id])
 
-  // 3. Now the unique constraint will work because the fields exist above
   @@unique([studentId, subjectId, academicYearId, term])
 }
 
 model Attendance {
-  id        Int      @id @default(autoincrement())
-  date      DateTime
-  present   Boolean
-  studentId String
-
-  student Student @relation(fields: [studentId], references: [id])
-
-  subject   Subject @relation(fields: [subjectId], references: [id])
-  subjectId Int
-
-  teacherId String?
-
-  school   School @relation(fields: [schoolId], references: [id])
-  schoolId String
-
-  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id])
+  id             Int          @id @default(autoincrement())
+  date           DateTime
+  present        Boolean
+  studentId      String
+  subjectId      Int
+  teacherId      String?
+  schoolId       String
   academicYearId Int
+  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id])
+  school         School       @relation(fields: [schoolId], references: [id])
+  student        Student      @relation(fields: [studentId], references: [id])
+  subject        Subject      @relation(fields: [subjectId], references: [id])
 
   @@unique([date, studentId])
 }
@@ -278,11 +253,10 @@ model Message {
 }
 
 model User {
-  id       String  @id
-  username String  @unique
-  role     String
-  img      String?
-
+  id           String    @id
+  username     String    @unique
+  role         String
+  img          String?
   sentMessages Message[] @relation("SentMessages")
 }
 
@@ -313,44 +287,44 @@ model AcademicYear {
   id            Int            @id @default(autoincrement())
   name          String         @unique
   isCurrent     Boolean        @default(false)
-  results       Result[]
-  promotions    Promotion[]
+  attendances   Attendance[]
   feeStructures FeeStructure[]
   payments      Payment[]
-  attendances   Attendance[]
+  promotions    Promotion[]
+  results       Result[]
 }
 
 model Promotion {
   id             Int          @id @default(autoincrement())
   studentId      String
-  student        Student      @relation(fields: [studentId], references: [id])
   academicYearId Int
-  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id])
   oldClassId     Int
   newClassId     Int
-  status         String // "PROMOTED", "REPEATED", "GRADUATED"
+  status         String
   createdAt      DateTime     @default(now())
+  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id])
+  student        Student      @relation(fields: [studentId], references: [id])
 }
 
 model FeeStructure {
   id             Int          @id @default(autoincrement())
   academicYearId Int
-  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id])
-  levelId        Int // Changed from gradeId
-  level          Level        @relation(fields: [levelId], references: [id])
+  levelId        Int
   amount         Decimal
   description    String?
+  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id])
+  level          Level        @relation(fields: [levelId], references: [id])
 }
 
 model Payment {
   id             Int          @id @default(autoincrement())
   studentId      String
-  student        Student      @relation(fields: [studentId], references: [id])
   amountPaid     Decimal
   date           DateTime     @default(now())
   method         String
   academicYearId Int
   academicYear   AcademicYear @relation(fields: [academicYearId], references: [id])
+  student        Student      @relation(fields: [studentId], references: [id])
 }
 
 enum UserSex {

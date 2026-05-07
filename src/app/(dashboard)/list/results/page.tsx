@@ -19,8 +19,8 @@ const ResultListPage = async ({
   const role = (sessionClaims?.metadata as { role?: string })?.role?.toLowerCase();
 
   const params = await searchParams;
+  const { classId, search, studentId: selectedStudentId, subjectId } = params; // Add subjectId here
   const p = params.page ? parseInt(params.page) : 1;
-  const { classId, search, studentId: selectedStudentId } = params;
 
   // --- 1. THE GALLERY VIEW (FOR PARENTS ONLY) ---
   if (role === "parent" && !selectedStudentId) {
@@ -138,12 +138,16 @@ const ResultListPage = async ({
   }
 
   // 🎯 SUBJECT FILTER: Move this OUTSIDE the switch so it works for all roles
-  if (params.subjectId) {
+  if (subjectId) {
     andConditions.push({
-      OR: [
-        { subjectId: parseInt(params.subjectId) },
-        { exam: { subjectId: parseInt(params.subjectId) } },
-        { assignment: { subjectId: parseInt(params.subjectId) } }
+      AND: [
+        {
+          OR: [
+            { subjectId: parseInt(subjectId) },
+            { exam: { subjectId: parseInt(subjectId) } },
+            { assignment: { subjectId: parseInt(subjectId) } }
+          ]
+        }
       ]
     });
   }
@@ -236,91 +240,90 @@ const ResultListPage = async ({
 
   // --- 5. RENDER TABLE ---
   const columns = [
-  { header: "Subject & Student", accessor: "subject", className: "pl-2" }, // Updated label
-  // Keep this hidden on mobile, it will show as a separate column on desktop
-  ...(role !== "student" 
-    ? [{ header: "Student", accessor: "student", className: "hidden md:table-cell" }] 
-    : []),
-  { header: "Total", accessor: "total", className: "text-center w-[60px]" },
-  { header: "Actions", accessor: "action", className: "text-right pr-4" },
-];
+    { header: "Subject & Student", accessor: "subject", className: "pl-2" },
+    ...(role !== "student" ? [{ header: "Student", accessor: "student", className: "hidden md:table-cell" }] : []),
+    { header: "C.A", accessor: "ca", className: "hidden sm:table-cell text-center" }, // Add this
+    { header: "Exam", accessor: "exam", className: "hidden sm:table-cell text-center" }, // Add this
+    { header: "Total", accessor: "total", className: "text-center w-[60px]" },
+    { header: "Actions", accessor: "action", className: "text-right pr-4" },
+  ];
   const renderRow = (item: any) => {
-  const subjectName = item.subject?.name || item.exam?.subject?.name || item.assignment?.subject?.name || "Unknown";
-  const studentFullname = `${item.student.name} ${item.student.surname}`;
-  const caScore = (item.testScore ?? 0) + (item.assignmentScore ?? 0);
-  const examScore = item.examScore ?? 0;
-  const total = item.totalScore ?? 0;
-  const scoreColor = total >= 70 ? "text-emerald-600" : total >= 50 ? "text-amber-600" : "text-rose-600";
+    const subjectName = item.subject?.name || item.exam?.subject?.name || item.assignment?.subject?.name || "Unknown";
+    const studentFullname = `${item.student.name} ${item.student.surname}`;
+    const caScore = (item.testScore ?? 0) + (item.assignmentScore ?? 0);
+    const examScore = item.examScore ?? 0;
+    const total = item.totalScore ?? 0;
+    const scoreColor = total >= 70 ? "text-emerald-600" : total >= 50 ? "text-amber-600" : "text-rose-600";
 
-  return (
-    <tr key={item.id} className="border-b border-slate-100 last:border-0 text-sm hover:bg-slate-50 transition-all">
-      {/* SUBJECT */}
-      <td className="p-2 pl-2 max-w-[150px] sm:max-w-none">
-        <div className="flex flex-col gap-0.5">
-          <span className="font-black text-slate-700 uppercase text-[11px]">{subjectName}</span>
-          <span className="md:hidden text-[10px] font-bold text-amber-600 uppercase tracking-tight">
-            {studentFullname}
-          </span>
-          <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">
-            {item.examId ? "Final Exam" : "Assessment"}
-          </span>
-        </div>
-      </td>
-
-      {/* 🎯 STUDENT (Only rendered if role is NOT student) */}
-      {role !== "student" && (
-        <td className="hidden md:table-cell p-4">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500 uppercase">
-              {item.student.name[0]}
-            </div>
-            <span className="text-xs font-bold text-slate-600">
-              {item.student.name} {item.student.surname}
+    return (
+      <tr key={item.id} className="border-b border-slate-100 last:border-0 text-sm hover:bg-slate-50 transition-all">
+        {/* SUBJECT */}
+        <td className="p-2 pl-2 max-w-[150px] sm:max-w-none">
+          <div className="flex flex-col gap-0.5">
+            <span className="font-black text-slate-700 uppercase text-[11px]">{subjectName}</span>
+            <span className="md:hidden text-[10px] font-bold text-amber-600 uppercase tracking-tight">
+              {studentFullname}
+            </span>
+            <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">
+              {item.examId ? "Final Exam" : "Assessment"}
             </span>
           </div>
         </td>
-      )}
 
-      {/* C.A SCORE */}
-      <td className="p-4 text-center hidden sm:table-cell">
-        <span className="text-xs font-black text-slate-400 bg-slate-50 px-2 py-1 rounded-md">
-          {caScore}
-        </span>
-      </td>
+        {/* 🎯 STUDENT (Only rendered if role is NOT student) */}
+        {role !== "student" && (
+          <td className="hidden md:table-cell p-4">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500 uppercase">
+                {item.student.name[0]}
+              </div>
+              <span className="text-xs font-bold text-slate-600">
+                {item.student.name} {item.student.surname}
+              </span>
+            </div>
+          </td>
+        )}
 
-      {/* EXAM SCORE */}
-      <td className="p-4 text-center hidden sm:table-cell">
-        <span className="text-xs font-black text-slate-400 bg-slate-50 px-2 py-1 rounded-md">
-          {examScore}
-        </span>
-      </td>
+        {/* C.A SCORE */}
+        <td className="p-4 text-center hidden sm:table-cell">
+          <span className="text-xs font-black text-slate-400 bg-slate-50 px-2 py-1 rounded-md">
+            {caScore}
+          </span>
+        </td>
 
-      {/* TOTAL */}
-      <td className="p-4 text-center">
-        <span className={`font-black text-lg ${scoreColor}`}>
-          {total}<span className="text-[10px] ml-0.5">%</span>
-        </span>
-      </td>
+        {/* EXAM SCORE */}
+        <td className="p-4 text-center hidden sm:table-cell">
+          <span className="text-xs font-black text-slate-400 bg-slate-50 px-2 py-1 rounded-md">
+            {examScore}
+          </span>
+        </td>
 
-      {/* ACTIONS */}
-      <td className="p-4 text-right">
-        <div className="flex items-center gap-2 justify-end">
-          <Link href={`/print/${item.studentId}`}>
-            <button className="p-2 bg-slate-100 rounded-full hover:bg-amber-500 hover:text-white transition-all">
-              <FileText size={14} />
-            </button>
-          </Link>
-          {(role === "admin" || role === "teacher") && (
-            <>
-              <FormContainer table="result" type="update" data={item} relatedData={relatedData} />
-              <FormContainer table="result" type="delete" id={item.id} />
-            </>
-          )}
-        </div>
-      </td>
-    </tr>
-  );
-};
+        {/* TOTAL */}
+        <td className="p-4 text-center">
+          <span className={`font-black text-lg ${scoreColor}`}>
+            {total}<span className="text-[10px] ml-0.5">%</span>
+          </span>
+        </td>
+
+        {/* ACTIONS */}
+        <td className="p-4 text-right">
+          <div className="flex items-center gap-2 justify-end">
+            <Link href={`/print/${item.studentId}`}>
+              <button className="p-2 bg-slate-100 rounded-full hover:bg-amber-500 hover:text-white transition-all">
+                <FileText size={14} />
+              </button>
+            </Link>
+            {(role === "admin" || role === "teacher") && (
+              <>
+                <FormContainer table="result" type="update" data={item} relatedData={relatedData} />
+                <FormContainer table="result" type="delete" id={item.id} />
+              </>
+            )}
+          </div>
+        </td>
+      </tr>
+    );
+  };
 
   return (
     <div className="bg-white p-8 rounded-[2.5rem] flex-1 m-4 mt-0 shadow-sm border border-slate-100">
@@ -346,37 +349,35 @@ const ResultListPage = async ({
       </div>
 
       <div className="relative mb-6">
-  {/* Horizontal Scroll Container */}
-  <div className="flex overflow-x-auto no-scrollbar items-center gap-2 pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap">
-    <Link
-      href={`/list/results?classId=${classId}`}
-      className={`whitespace-nowrap px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border shrink-0 ${
-        !params.subjectId 
-          ? 'bg-slate-900 text-white border-slate-900' 
-          : 'bg-white text-slate-400 border-slate-100 hover:border-slate-300'
-      }`}
-    >
-      All Subjects
-    </Link>
+        {/* Horizontal Scroll Container */}
+        <div className="flex overflow-x-auto no-scrollbar items-center gap-2 pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap">
+          <Link
+            href={`/list/results?classId=${classId}`}
+            className={`whitespace-nowrap px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border shrink-0 ${!params.subjectId
+                ? 'bg-slate-900 text-white border-slate-900'
+                : 'bg-white text-slate-400 border-slate-100 hover:border-slate-300'
+              }`}
+          >
+            All Subjects
+          </Link>
 
-    {subjects.map((sub: any) => (
-      <Link
-        key={sub.id}
-        href={`/list/results?classId=${classId}&subjectId=${sub.id}`}
-        className={`whitespace-nowrap px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border shrink-0 ${
-          params.subjectId === sub.id.toString() 
-            ? 'bg-amber-500 text-white border-amber-500 shadow-md' 
-            : 'bg-white text-slate-400 border-slate-100 hover:border-slate-200'
-        }`}
-      >
-        {sub.name}
-      </Link>
-    ))}
-  </div>
-  
-  {/* Gradient fade to indicate more items - Optional but nice */}
-  <div className="absolute right-0 top-0 bottom-2 w-8 bg-gradient-to-l from-slate-50 to-transparent pointer-events-none sm:hidden" />
-</div>
+          {subjects.map((sub: any) => (
+            <Link
+              key={sub.id}
+              href={`/list/results?classId=${classId}&subjectId=${sub.id}`}
+              className={`whitespace-nowrap px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border shrink-0 ${params.subjectId === sub.id.toString()
+                  ? 'bg-amber-500 text-white border-amber-500 shadow-md'
+                  : 'bg-white text-slate-400 border-slate-100 hover:border-slate-200'
+                }`}
+            >
+              {sub.name}
+            </Link>
+          ))}
+        </div>
+
+        {/* Gradient fade to indicate more items - Optional but nice */}
+        <div className="absolute right-0 top-0 bottom-2 w-8 bg-gradient-to-l from-slate-50 to-transparent pointer-events-none sm:hidden" />
+      </div>
 
       <div className="rounded-3xl border border-slate-50 overflow-hidden bg-white shadow-sm">
         <Table columns={columns} renderRow={renderRow} data={data} />

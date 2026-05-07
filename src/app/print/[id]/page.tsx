@@ -9,10 +9,19 @@ const ReportPrintPage = async ({ params }: { params: Promise<{ id: string }> }) 
   const { userId, sessionClaims } = await auth();
   const role = (sessionClaims?.metadata as any)?.role?.toLowerCase();
 
+
+
+  const getOrdinal = (n: number) => {
+    const s = ["th", "st", "nd", "rd"];
+    const v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+  };
+
+
   // 1. Get Current Academic Year
   const currentYear = await prisma.academicYear.findFirst({ where: { isCurrent: true } });
   const yearLabel = currentYear?.name || "2025/2026";
-  const academicYearId = currentYear?.id || 1; 
+  const academicYearId = currentYear?.id || 1;
 
   // 2. Fetch Student with Attendance and Results
   const student = await prisma.student.findUnique({
@@ -47,7 +56,7 @@ const ReportPrintPage = async ({ params }: { params: Promise<{ id: string }> }) 
   }
 
   // 4. Attendance Aggregation Logic
-  
+
   const attendanceRecords = student.attendances || [];
   const uniqueDates = Array.from(new Set(attendanceRecords.map((a) => a.date.toISOString().split("T")[0])));
   const daysPresent = uniqueDates.filter((date) =>
@@ -79,6 +88,29 @@ const ReportPrintPage = async ({ params }: { params: Promise<{ id: string }> }) 
     return "Standard below average. See Principal.";
   };
 
+  // --- 6.5 RANKING LOGIC ---
+  // Fetch all students in the same class to compare performance
+  const allClassStudents = await prisma.student.findMany({
+    where: { classId: student.classId },
+    include: {
+      results: {
+        where: { academicYearId: academicYearId },
+      },
+    },
+  });
+
+  // Map every student to their average score
+  const classRankings = allClassStudents.map((s) => {
+    const total = s.results.reduce((acc, curr) => acc + (curr.totalScore ?? 0), 0);
+    const avg = s.results.length > 0 ? total / s.results.length : 0;
+    return { id: s.id, avg };
+  })
+    .sort((a, b) => b.avg - a.avg); // Sort descending (highest average first)
+
+  // Find the current student's index in that sorted list
+  const currentPosition = classRankings.findIndex((r) => r.id === student.id) + 1;
+  const totalStudentsInClass = allClassStudents.length;
+
   // 7. FINAL DATA MERGE
   const finalData = {
     studentName: `${student.name} ${student.surname}`,
@@ -86,6 +118,10 @@ const ReportPrintPage = async ({ params }: { params: Promise<{ id: string }> }) 
     className: className,
     academicYear: yearLabel,
     principalComment: getPrincipalComment(studentAverage),
+
+
+    position: getOrdinal(currentPosition),
+
     attendance: {
       present: daysPresent,
       total: uniqueDates.length

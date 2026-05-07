@@ -18,6 +18,8 @@ import {
   deleteSubject, 
   deleteTeacher,
   deleteLevel, 
+  deleteLesson, 
+
 } from "@/lib/actions";
 
 // 1. Action Map for Deletions
@@ -33,6 +35,7 @@ const deleteActionMap: any = {
   parent: deleteParent,
   assignment: deleteAssignment,
   level: deleteLevel,
+  lesson: deleteLesson,
 };
 
 // 2. Dynamic Imports
@@ -45,7 +48,7 @@ const MessageForm = dynamic(() => import("./forms/MessageForm"), { loading: () =
 const ParentForm = dynamic(() => import("./forms/ParentForm"), { loading: () => <h1>Loading...</h1> });
 const AssignmentForm = dynamic(() => import("./forms/AssignmentForm"), { loading: () => <h1>Loading...</h1> });
 const EventForm = dynamic(() => import("./forms/EventForm"), { loading: () => <div>Loading...</div> });
-
+const LessonForm = dynamic(() => import("./forms/LessonForm"), { loading: () => <div>Loading...</div> });
 const ResultForm = dynamic(() => import("./forms/ResultForm"), { loading: () => <div>Loading...</div> });
 const AttendanceForm = dynamic(() => import("./forms/AttendanceForm"), { loading: () => <div>Loading...</div> });
 const AnnouncementForm = dynamic(() => import("./forms/AnnouncementForm"), { loading: () => <div>Loading...</div> });
@@ -70,7 +73,9 @@ const forms: {
   attendance: (setOpen, type, data, relatedData) => <AttendanceForm type={type} data={data} setOpen={setOpen} relatedData={relatedData} />,
   announcement: (setOpen, type, data, relatedData) => <AnnouncementForm type={type} data={data} setOpen={setOpen} relatedData={relatedData} />,
   // level: (setOpen, type, data) => <LevelForm type={type} data={data} setOpen={setOpen} />,
-   admin: (setOpen, type, data, relatedData) => <AdminForm type={type} data={data} setOpen={setOpen} />,
+   lesson: ( setOpen, type, data,  relatedData) =>  <LessonForm type={type} data={data} setOpen={setOpen} relatedData={relatedData} />,
+  
+  admin: (setOpen, type, data, relatedData) => <AdminForm type={type} data={data} setOpen={setOpen} />,
 };
 
 const FormModal = ({ table, type, data, id, relatedData }: FormContainerProps & { relatedData?: any }) => {
@@ -85,27 +90,24 @@ const FormModal = ({ table, type, data, id, relatedData }: FormContainerProps & 
     message: "",
   });
 
+  
+
   useEffect(() => {
-  // 1. Check if state even exists first
   if (state) {
     if (state.success) {
-      toast.success(`${table} has been ${type === "create" ? "created" : "updated"}!`);
+      // 🎯 Dynamic message for deletion vs creation/update
+      const actionVerb = type === "create" ? "created" : type === "update" ? "updated" : "deleted";
+      toast.success(`${table} has been ${actionVerb}!`);
+      
       setOpen(false);
       router.refresh();
     }
     
-    // 2. Safely check for error only if state exists
     if (state.error) {
-      toast.error("Something went wrong!");
+      toast.error(state.message || "Something went wrong!");
     }
   }
 }, [state, router, type, table]);
-
-  // Lock scroll when modal is open
-  useEffect(() => {
-    if (open) document.body.style.overflow = "hidden";
-    else document.body.style.overflow = "unset";
-  }, [open]);
 
   return (
     <>

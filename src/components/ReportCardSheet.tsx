@@ -32,8 +32,8 @@ const ReportCardSheet = ({ data }: ReportCardProps) => {
 
   const average = (data.subjects.reduce((acc, curr) => acc + parseFloat(curr.total), 0) / data.subjects.length).toFixed(2);
   const isSSS = data.className.toLowerCase().includes("sss");
-  const attendancePct = data.attendance?.total 
-    ? Math.round((data.attendance.present / data.attendance.total) * 100) 
+  const attendancePct = data.attendance?.total
+    ? Math.round((data.attendance.present / data.attendance.total) * 100)
     : 0;
 
   return (
@@ -113,7 +113,20 @@ const ReportCardSheet = ({ data }: ReportCardProps) => {
                 <td className="p-4 text-center font-bold text-slate-500 tabular-nums">{sub.exam}</td>
                 <td className="p-4 text-center font-black text-slate-900 tabular-nums text-base">{sub.total}%</td>
                 <td className="p-4 text-center">
-                   <span className="font-black text-xs uppercase">{sub.level || (parseFloat(sub.total) >= 50 ? "Pass" : "Fail")}</span>
+                  <span className={`font-black text-xs uppercase ${parseFloat(sub.total) >= 70
+                      ? "text-green-600"
+                      : parseFloat(sub.total) >= 50
+                        ? "text-blue-600"
+                        : "text-red-600"
+                    }`}>
+                    {sub.level || (
+                      parseFloat(sub.total) >= 70
+                        ? "Excellent"
+                        : parseFloat(sub.total) >= 50
+                          ? "Pass"
+                          : "Fail"
+                    )}
+                  </span>
                 </td>
               </tr>
             ))}
@@ -160,7 +173,7 @@ const ReportCardSheet = ({ data }: ReportCardProps) => {
         </div>
         <div className="flex flex-col items-center">
           <div className="w-full border-b-2 border-slate-900 mb-2 h-10 relative">
-             <div className="absolute -top-6 right-0 w-20 h-20 border-4 border-slate-100 rounded-full flex items-center justify-center text-[8px] font-black text-slate-200 rotate-12 uppercase text-center leading-none">
+            <div className="absolute -top-6 right-0 w-20 h-20 border-4 border-slate-100 rounded-full flex items-center justify-center text-[8px] font-black text-slate-200 rotate-12 uppercase text-center leading-none">
               School <br /> Seal
             </div>
           </div>
