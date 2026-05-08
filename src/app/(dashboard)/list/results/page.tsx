@@ -13,7 +13,7 @@ import Link from "next/link";
 const ResultListPage = async ({
   searchParams,
 }: {
-  searchParams: Promise<{ [key: string]: string | undefined }>; // ✅ Added Promise
+  searchParams: Promise<{ [key: string]: string | undefined }>;
 }) => {
   // Now this line works correctly with the new type:
   const params = await searchParams;
