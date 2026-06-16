@@ -241,7 +241,13 @@ else if (total >= 45) autoGrade = "E8";
           <div className="relative group">
             <select
               {...register("examId", {
-                setValueAs: (v) => v === "" ? null : parseInt(v)
+                setValueAs: (v) => v === "" ? null : parseInt(v)const ResultForm = () => {
+                  return (
+                    <div className=''>ResultForm</div>
+                  )
+                }
+                
+                export default ResultForm
               })}
               className="w-full p-4 rounded-2xl bg-white border border-slate-200 text-sm font-medium focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500 outline-none transition-all appearance-none"
               defaultValue={data?.examId || ""}

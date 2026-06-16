@@ -12,11 +12,17 @@ const levelNames = ["JSS 1", "JSS 2", "JSS 3", "SSS 1", "SSS 2", "SSS 3"];
 const jssCore = [
   "Mathematics",
   "English Studies",
-  "Basic Science",
-  "Digital Technologies",
-  "Citizenship Studies",
+  "Social studies",
+  "Intro Technologies",
+  "P.H.E",
   "History",
   "CRS",
+  "IRS",
+  "Agriculture",
+  "Yoruba",
+  "Igbo",
+  "Hausa",
+  
 ];
 const sssElectives = [
   "Biology",
@@ -32,7 +38,7 @@ const sssElectives = [
 const allSubjectNames = [...new Set([...jssCore, ...sssElectives])];
 
 const teacherNames = [
-  "Olawale Adeoga",
+  "Komolafe Ajayi",
   "Ifeanyi Okafor",
   "Bisi Akande",
   "Musa Yar'Adua",

@@ -329,19 +329,41 @@ export const deleteTeacher = async (
   data: FormData,
 ) => {
   const id = data.get("id") as string;
+  if (!id) return { success: false, error: true, message: "Teacher ID missing." };
+
   try {
     const client = await clerkClient();
-    await client.users.deleteUser(id);
-    await prisma.teacher.delete({ where: { id } });
+
+    // 1. Attempt to delete from Clerk first
+    try {
+      await client.users.deleteUser(id);
+    } catch (clerkErr: any) {
+      // 🎯 GRACEFUL CATCH: If it's a 404 error, log it and keep moving
+      if (clerkErr.status === 404 || clerkErr.errors?.[0]?.code === 'resource_not_found') {
+        console.log(`⚠️ Warning: User ${id} not found in Clerk. Proceeding with database cleanup.`);
+      } else {
+        // If it fails for a different reason (network timeout, unauthorized, etc.), throw it
+        throw clerkErr;
+      }
+    }
+
+    // 2. Clear Database Records safely
+    // (Include any cascade delete blocks here if you have foreign key constraints)
+    await prisma.teacher.delete({
+      where: { id },
+    });
+
+    // 3. Purge router cache states cleanly
     revalidatePath("/list/teachers");
     revalidateTag("dashboard-stats", "dashboard-stats");
-    return { success: true, error: false, message: "" };
+
+    return { success: true, error: false, message: "Teacher deleted successfully." };
   } catch (err: any) {
-    console.log(err);
+    console.error("Core Deletion Error:", err);
     return {
       success: false,
       error: true,
-      message: "Failed to delete student.",
+      message: err.message || "Failed to delete Teacher.",
     };
   }
 };
