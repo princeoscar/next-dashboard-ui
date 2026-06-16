@@ -1,4 +1,3 @@
-
 import FormContainer from "@/components/FormContainer";
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
@@ -11,7 +10,7 @@ import { auth } from "@clerk/nextjs/server";
 import { ITEM_PER_PAGE } from "@/lib/settings";
 import { getCachedTeachers } from "@/lib/data-fetchers";
 import { redirect } from "next/navigation";
-import { Mail, Phone, Fingerprint, Eye, MoreHorizontal } from "lucide-react"; // --> Added icons
+import { Mail, Fingerprint, Eye } from "lucide-react"; 
 
 type TeacherList = Teacher & { subjects: Subject[] } & { classes: Class[] };
 
@@ -29,12 +28,18 @@ const TeacherListPage = async ({
   }
 
   const columns = [
-    { header: "Staff Member", accessor: "info", className: "pl-2 md:pl-6" }, // --> Renamed
+    { header: "Staff Member", accessor: "info", className: "pl-2 md:pl-6" }, 
     { header: "ID", accessor: "teacherId", className: "hidden md:table-cell" },
-    { header: "Expertise", accessor: "subjects", className: "hidden md:table-cell" }, // --> Renamed
+    { header: "Expertise", accessor: "subjects", className: "hidden md:table-cell" }, 
     { header: "Assignments", accessor: "classes", className: "hidden lg:table-cell" },
     { header: "Actions", accessor: "action", className: "text-right pr-2 md:pr-6" },
   ];
+
+  // Moving data dependencies compilation logic upward so relatedData is accessible inside renderRow scope
+  const subjectsData = await prisma.subject.findMany({ select: { id: true, name: true } });
+  const classesData = await prisma.class.findMany({ select: { id: true, name: true } });
+  
+  const relatedData = { subjects: subjectsData, classes: classesData };
 
   const renderRow = (item: TeacherList) => (
     <tr key={item.id} className="border-b border-slate-50 last:border-0 text-sm hover:bg-slate-50/80 transition-all group">
@@ -63,7 +68,7 @@ const TeacherListPage = async ({
         </div>
       </td>
 
-      {/* --> BEAUTIFIED SUBJECTS BADGES */}
+      {/* BEAUTIFIED SUBJECTS BADGES */}
       <td className="hidden md:table-cell">
         <div className="flex flex-wrap gap-1 max-w-[200px]">
           {item.subjects.map((s) => (
@@ -74,7 +79,7 @@ const TeacherListPage = async ({
         </div>
       </td>
 
-      {/* --> BEAUTIFIED CLASSES BADGES */}
+      {/* BEAUTIFIED CLASSES BADGES */}
       <td className="hidden lg:table-cell">
         <div className="flex flex-wrap gap-1">
           {item.classes.map((c) => (
@@ -85,13 +90,22 @@ const TeacherListPage = async ({
         </div>
       </td>
 
-      <td className="p-4 pr-6">
+      {/* ACTIONS COLUMN */}
+      <td className="p-2 md:p-4 pr-2 md:pr-6">
         <div className="flex items-center gap-2 justify-end">
+          {/* View Profile Button */}
           <Link href={`/list/teachers/${item.id}`}>
             <button className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 hover:bg-slate-900 hover:text-white transition-all border border-slate-100">
               <Eye size={16} />
             </button>
           </Link>
+
+          {/* 🎯 INJECTED EDIT BUTTON CONTAINER FOR ADMINS */}
+          {role === "admin" && (
+            <FormContainer table="teacher" type="update" data={item} relatedData={relatedData} />
+          )}
+
+          {/* Delete Button */}
           {role === "admin" && (
             <FormContainer table="teacher" type="delete" id={item.id} />
           )}
@@ -111,19 +125,15 @@ const TeacherListPage = async ({
     query.classes = { some: { id: parseInt(queryParams.classId) } };
   }
 
-  const [teachers, count, subjects] = await Promise.all([
+  const [teachers, count] = await Promise.all([
     getCachedTeachers(query, p),
     prisma.teacher.count({ where: query }),
-    prisma.subject.findMany({ select: { id: true, name: true } }),
   ]);
 
-  const relatedData = { subjects };
-
   return (
-    // --> RESPONSIVE PADDING
     <div className="bg-white p-2 md:p-8 rounded-[1.5rem] md:rounded-[2.5rem] flex-1 m-1 md:m-4 mt-0 shadow-sm border border-slate-100">
       
-      {/* --> RESPONSIVE HEADER FIX (STACKS ON MOBILE) */}
+      {/* RESPONSIVE HEADER FIX */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
         <div>
           <h1 className="text-xl md:text-2xl font-black text-slate-800 uppercase tracking-tighter">Teachers Registry</h1>
@@ -131,7 +141,6 @@ const TeacherListPage = async ({
         </div>
 
         <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
-          {/* SEARCH BOX IS NOW FULL WIDTH ON MOBILE --> */}
           <div className="w-full md:w-auto">
              <TableSearch />
           </div>
