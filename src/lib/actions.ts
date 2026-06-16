@@ -72,12 +72,13 @@ export const createSubject = async (
         schoolId: school.id,
         teachers: {
           connect:
-            data.teachers?.map((teacherId: string) => ({ id: teacherId })) || [],
+            data.teachers?.map((teacherId: string) => ({ id: teacherId })) ||
+            [],
         },
         classes: {
-      // 🎯 You must connect the classes here!
-      connect: data.classes?.map((id: string) => ({ id: parseInt(id) })),
-    },
+          // 🎯 You must connect the classes here!
+          connect: data.classes?.map((id: string) => ({ id: parseInt(id) })),
+        },
       },
     });
 
@@ -338,20 +339,47 @@ export const deleteTeacher = async (
     try {
       await client.users.deleteUser(id);
     } catch (clerkErr: any) {
-      // 🎯 GRACEFUL CATCH: If it's a 404 error, log it and keep moving
       if (clerkErr.status === 404 || clerkErr.errors?.[0]?.code === 'resource_not_found') {
         console.log(`⚠️ Warning: User ${id} not found in Clerk. Proceeding with database cleanup.`);
       } else {
-        // If it fails for a different reason (network timeout, unauthorized, etc.), throw it
         throw clerkErr;
       }
     }
 
-    // 2. Clear Database Records safely
-    // (Include any cascade delete blocks here if you have foreign key constraints)
-    await prisma.teacher.delete({
-      where: { id },
-    });
+    // 2. Clear Database Records safely using an extended timeout transaction block
+    await prisma.$transaction(
+      async (tx) => {
+        // A. Delete all Exams directly owned by this teacher first
+        await tx.exam.deleteMany({
+          where: { teacherId: id },
+        });
+
+        // B. Dissociate any Classes where they act as a supervisor
+        await tx.class.updateMany({
+          where: { supervisorId: id },
+          data: { supervisorId: null },
+        });
+
+        // C. Handle Lessons if they point directly to this teacher
+        try {
+          await tx.lesson.deleteMany({
+            where: { teacherId: id },
+          });
+        } catch (lessonErr) {
+          console.log("ℹ️ Skipping lesson deletion if relation structure differs.");
+        }
+
+        // D. Finally, safely delete the core Teacher profile record
+        await tx.teacher.delete({
+          where: { id },
+        });
+      },
+      {
+        // 🎯 FIX: Extend timeout window to 15 seconds (15000ms) to accommodate network latency
+        maxWait: 5000,   // Time Prisma waits to acquire a database connection
+        timeout: 15000,  // Time allowed for the entire transaction execution query sequence
+      }
+    );
 
     // 3. Purge router cache states cleanly
     revalidatePath("/list/teachers");
@@ -524,7 +552,11 @@ export const createParent = async (
   try {
     const client = await clerkClient();
 
-    console.log("Attempting to create Clerk user with:", data.username, data.email);
+    console.log(
+      "Attempting to create Clerk user with:",
+      data.username,
+      data.email,
+    );
 
     const user = await client.users.createUser({
       username: data.username,
@@ -699,14 +731,17 @@ export const sendReplyMessage = async (receiverId: string, content: string) => {
 
 export const createAnnouncement = async (
   currentState: { success: boolean; error: boolean },
-  data: AnnouncementSchema
+  data: AnnouncementSchema,
 ) => {
   try {
     // 1. Validate exactly like we did for Results
     const validatedFields = announcementSchema.safeParse(data);
 
     if (!validatedFields.success) {
-      console.log("❌ SERVER VALIDATION ERROR:", validatedFields.error.flatten().fieldErrors);
+      console.log(
+        "❌ SERVER VALIDATION ERROR:",
+        validatedFields.error.flatten().fieldErrors,
+      );
       return { success: false, error: true };
     }
 
@@ -715,7 +750,7 @@ export const createAnnouncement = async (
       data: {
         title: validatedFields.data.title,
         description: validatedFields.data.description,
-        date: validatedFields.data.date, 
+        date: validatedFields.data.date,
         classId: validatedFields.data.classId || null,
       },
     });
@@ -723,7 +758,6 @@ export const createAnnouncement = async (
     // 3. Clear the cache so it actually shows up
     revalidatePath("/list/announcements");
     return { success: true, error: false };
-    
   } catch (err: any) {
     // 🔍 This is where the "Server Closed" error happens
     console.error("🔥 PRISMA ERROR:", err.message);
@@ -775,7 +809,7 @@ export const deleteAnnouncement = async (
 export const createEvent = async (currentState: any, formData: FormData) => {
   // Convert FormData back to a plain object for Zod validation
   const data = Object.fromEntries(formData.entries());
-  
+
   const validatedFields = eventSchema.safeParse(data);
 
   if (!validatedFields.success) {
@@ -789,7 +823,9 @@ export const createEvent = async (currentState: any, formData: FormData) => {
         description: validatedFields.data.description,
         startTime: new Date(validatedFields.data.startTime),
         endTime: new Date(validatedFields.data.endTime),
-        classId: validatedFields.data.classId ? parseInt(validatedFields.data.classId as any) : null,
+        classId: validatedFields.data.classId
+          ? parseInt(validatedFields.data.classId as any)
+          : null,
       },
     });
     return { success: true, error: false };
@@ -798,12 +834,16 @@ export const createEvent = async (currentState: any, formData: FormData) => {
   }
 };
 
-export const updateEvent = async (currentState: any, formData: FormData | any) => {
+export const updateEvent = async (
+  currentState: any,
+  formData: FormData | any,
+) => {
   // 🎯 FIX: Check if formData is actually FormData, otherwise assume it's an object
-  const data = formData instanceof FormData 
-    ? Object.fromEntries(formData.entries()) 
-    : formData;
-  
+  const data =
+    formData instanceof FormData
+      ? Object.fromEntries(formData.entries())
+      : formData;
+
   const validatedFields = eventSchema.safeParse(data);
 
   if (!validatedFields.success) {
@@ -819,7 +859,9 @@ export const updateEvent = async (currentState: any, formData: FormData | any) =
         description: validatedFields.data.description,
         startTime: new Date(validatedFields.data.startTime),
         endTime: new Date(validatedFields.data.endTime),
-        classId: validatedFields.data.classId ? Number(validatedFields.data.classId) : null,
+        classId: validatedFields.data.classId
+          ? Number(validatedFields.data.classId)
+          : null,
       },
     });
     revalidatePath("/list/events");
@@ -1168,7 +1210,6 @@ export const registerSchool = async (formData: FormData) => {
         data: {
           name: yearName,
           isCurrent: true,
-          
         },
       });
 
@@ -1178,8 +1219,8 @@ export const registerSchool = async (formData: FormData) => {
           id: userId,
           username: "Admin",
           school: {
-      connect: { id: newSchool.id } // Use the variable for the school ID here
-    },
+            connect: { id: newSchool.id }, // Use the variable for the school ID here
+          },
         },
       });
 
@@ -1212,28 +1253,28 @@ export async function createSchool(formData: FormData, adminId: string) {
   try {
     // 1. Create the School and connect the Admin in ONE transaction
     // 1. Create the school first (just the name)
-const school = await prisma.school.create({
-  data: {
-    name: schoolName,
-  },
-});
+    const school = await prisma.school.create({
+      data: {
+        name: schoolName,
+      },
+    });
 
-// 2. Link the Admin to the School separately
-await prisma.admin.upsert({
-  where: { id: adminId },
-  update: { 
-    school: {
-      connect: { id: school.id } // 🎯 Use 'school' and 'connect'
-    }
-  },
-  create: {
-    id: adminId,
-    username: "Admin", // Or get the real username if available
-    school: {
-      connect: { id: school.id } // 🎯 Use 'school' and 'connect'
-    },
-  },
-});
+    // 2. Link the Admin to the School separately
+    await prisma.admin.upsert({
+      where: { id: adminId },
+      update: {
+        school: {
+          connect: { id: school.id }, // 🎯 Use 'school' and 'connect'
+        },
+      },
+      create: {
+        id: adminId,
+        username: "Admin", // Or get the real username if available
+        school: {
+          connect: { id: school.id }, // 🎯 Use 'school' and 'connect'
+        },
+      },
+    });
 
     // 2. Update Clerk Metadata so the Middleware sees the schoolId
     const client = await clerkClient();
@@ -1328,7 +1369,7 @@ export const saveResult = async (
 
 export const createAssignment = async (
   currentState: { success: boolean; error: boolean },
-  data: AssignmentSchema // Or whatever your type is
+  data: AssignmentSchema, // Or whatever your type is
 ) => {
   try {
     await prisma.assignment.create({
@@ -1352,13 +1393,13 @@ export const createAssignment = async (
 
 export const updateAssignment = async (
   currentState: { success: boolean; error: boolean },
-  data: AssignmentSchema
+  data: AssignmentSchema,
 ) => {
   try {
     // 🎯 Ensure ID is a number for the 'where' clause
     await prisma.assignment.update({
       where: {
-        id: parseInt(data.id as unknown as string), 
+        id: parseInt(data.id as unknown as string),
       },
       data: {
         title: data.title,
@@ -1393,7 +1434,7 @@ export const deleteAssignment = async (currentState: State, data: FormData) => {
   }
 };
 
- // ----------------- Exam ----------------------
+// ----------------- Exam ----------------------
 
 type State = {
   success: boolean;
@@ -1447,13 +1488,13 @@ export const updateExam = async (currentState: State, data: any) => {
 
 export const deleteExam = async (
   currentState: { success: boolean; error: boolean },
-  data: FormData
+  data: FormData,
 ) => {
   const id = data.get("id") as string;
   try {
     await prisma.exam.delete({
       where: {
-        id: parseInt(id), 
+        id: parseInt(id),
       },
     });
 
@@ -1464,7 +1505,6 @@ export const deleteExam = async (
   }
 };
 
-
 const dayToDate: { [key: string]: number } = {
   MONDAY: 4,
   TUESDAY: 5,
@@ -1473,29 +1513,40 @@ const dayToDate: { [key: string]: number } = {
   FRIDAY: 8,
 };
 
-
 export const createLesson = async (
   currentState: { success: boolean; error: boolean },
-  data: LessonSchema 
+  data: LessonSchema,
 ) => {
   try {
-    // Look at the line below: we put 'singleClassId' inside the ( ) 
+    // Look at the line below: we put 'singleClassId' inside the ( )
     // so we can use it inside the loop.
     await Promise.all(
-      data.classes.map(async (singleClassId) => { 
+      data.classes.map(async (singleClassId) => {
         return prisma.lesson.create({
           data: {
             name: data.name,
             day: data.day,
-            startTime: new Date(2026, 4, dayToDate[data.day], parseInt(data.startTime.split(":")[0]), parseInt(data.startTime.split(":")[1])),
-  endTime: new Date(2026, 4, dayToDate[data.day], parseInt(data.endTime.split(":")[0]), parseInt(data.endTime.split(":")[1])),
+            startTime: new Date(
+              2026,
+              4,
+              dayToDate[data.day],
+              parseInt(data.startTime.split(":")[0]),
+              parseInt(data.startTime.split(":")[1]),
+            ),
+            endTime: new Date(
+              2026,
+              4,
+              dayToDate[data.day],
+              parseInt(data.endTime.split(":")[0]),
+              parseInt(data.endTime.split(":")[1]),
+            ),
             subjectId: Number(data.subjectId),
             teacherId: data.teacherId,
             // Now 'singleClassId' is defined!
-            classId: Number(singleClassId), 
+            classId: Number(singleClassId),
           },
         });
-      })
+      }),
     );
 
     return { success: true, error: false };
@@ -1508,9 +1559,10 @@ export const createLesson = async (
 // UPDATE ACTION
 export const updateLesson = async (
   currentState: { success: boolean; error: boolean },
-  data: LessonSchema
+  data: LessonSchema,
 ) => {
-  if (!data.id) return { success: false, error: true, message: "ID is required" };
+  if (!data.id)
+    return { success: false, error: true, message: "ID is required" };
 
   try {
     await prisma.lesson.update({
@@ -1521,9 +1573,9 @@ export const updateLesson = async (
         name: data.name,
         day: data.day,
         startTime: new Date(`1970-01-01T${data.startTime}:00`),
-endTime: new Date(`1970-01-01T${data.endTime}:00`),
-        subjectId: Number(data.subjectId), 
-       classId: data.classes.length > 0 ? Number(data.classes[0]) : undefined,
+        endTime: new Date(`1970-01-01T${data.endTime}:00`),
+        subjectId: Number(data.subjectId),
+        classId: data.classes.length > 0 ? Number(data.classes[0]) : undefined,
         teacherId: data.teacherId,
       },
     });
@@ -1541,7 +1593,7 @@ endTime: new Date(`1970-01-01T${data.endTime}:00`),
 
 export const deleteLesson = async (
   currentState: { success: boolean; error: boolean; message: string },
-  formData: FormData // 🎯 Change this from an object to FormData
+  formData: FormData, // 🎯 Change this from an object to FormData
 ) => {
   const id = formData.get("id"); // 🎯 Extract the ID from the hidden input
 
@@ -1554,15 +1606,17 @@ export const deleteLesson = async (
 
     // Revalidate so the UI updates immediately
     // revalidatePath("/list/lessons");
-    
-    return { success: true, error: false, message: "Lesson deleted successfully" };
+
+    return {
+      success: true,
+      error: false,
+      message: "Lesson deleted successfully",
+    };
   } catch (err) {
     console.log(err);
     return { success: false, error: true, message: "Failed to delete lesson" };
   }
 };
-
-
 
 export const createResult = async (
   currentState: State,
@@ -1613,17 +1667,17 @@ export const updateResult = async (
         subjectId: parseInt(data.subjectId),
         academicYearId: parseInt(data.academicYearId),
         term: parseInt(data.term),
-        
+
         // Handle optional relations
         examId: data.examId ? parseInt(data.examId) : null,
         assignmentId: data.assignmentId ? parseInt(data.assignmentId) : null,
-        
+
         // Handle Scores
         testScore: parseInt(data.testScore) || 0,
         assignmentScore: parseInt(data.assignmentScore) || 0,
         examScore: parseInt(data.examScore) || 0,
         totalScore: parseInt(data.totalScore) || 0,
-        
+
         remark: data.remark,
         grade: data.grade,
       },
