@@ -346,21 +346,27 @@ export const deleteTeacher = async (
       }
     }
 
-    // 2. Clear Database Records safely using an extended timeout transaction block
+    // 2. Clear Database Records safely using a Transaction
     await prisma.$transaction(
       async (tx) => {
-        // A. Delete all Exams directly owned by this teacher first
+        
+        // 🎯 FIX: Delete all Assignments belonging to this teacher first
+        await tx.assignment.deleteMany({
+          where: { teacherId: id },
+        });
+
+        // B. Delete all Exams directly owned by this teacher
         await tx.exam.deleteMany({
           where: { teacherId: id },
         });
 
-        // B. Dissociate any Classes where they act as a supervisor
+        // C. Dissociate any Classes where they act as a supervisor
         await tx.class.updateMany({
           where: { supervisorId: id },
           data: { supervisorId: null },
         });
 
-        // C. Handle Lessons if they point directly to this teacher
+        // D. Handle Lessons if they point directly to this teacher
         try {
           await tx.lesson.deleteMany({
             where: { teacherId: id },
@@ -369,15 +375,14 @@ export const deleteTeacher = async (
           console.log("ℹ️ Skipping lesson deletion if relation structure differs.");
         }
 
-        // D. Finally, safely delete the core Teacher profile record
+        // E. Finally, safely delete the core Teacher profile record
         await tx.teacher.delete({
           where: { id },
         });
       },
       {
-        // 🎯 FIX: Extend timeout window to 15 seconds (15000ms) to accommodate network latency
-        maxWait: 5000,   // Time Prisma waits to acquire a database connection
-        timeout: 15000,  // Time allowed for the entire transaction execution query sequence
+        maxWait: 5000,
+        timeout: 15000, // Keeps your connection stable over hotspot latency
       }
     );
 
