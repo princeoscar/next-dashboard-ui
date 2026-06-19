@@ -54,7 +54,7 @@ const SubjectListPage = async ({
             </h1>
             <p className="text-sm text-slate-400 font-medium italic">Select a class to manage its subjects</p>
           </div>
-          <FormContainer table="subject" type="create" relatedData={relatedData} />
+          {/* <FormContainer table="subject" type="create" relatedData={relatedData} /> */}
         </div>
         <ClassSelector classes={classes} role={role} target="subjects" relatedData={relatedData} />
       </div>

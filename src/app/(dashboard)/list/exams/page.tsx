@@ -241,7 +241,7 @@ const ExamListPage = async ({
                   <ClipboardCheck size={16} />
                 </button>
               </Link>
-              <FormContainer table="exam" type="update" data={item} relatedData={relatedData} />
+              {/* <FormContainer table="exam" type="update" data={item} relatedData={relatedData} /> */}
               <FormContainer table="exam" type="delete" id={item.id} />
             </div>
           </td>

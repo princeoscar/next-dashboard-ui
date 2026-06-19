@@ -49,7 +49,7 @@ const ClassSelector = ({
                 className="group relative bg-white border border-slate-100 p-4 md:p-5 rounded-[1.5rem] md:rounded-3xl hover:border-rubixPurple hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col justify-between min-h-[120px] md:min-h-[140px]"
               >
                 {/* ADMIN ACTIONS: Only show if admin and NOT in student view (where we want it clean) */}
-                {role === "admin" && target !== "students" && (
+                {/* {role === "admin" && target !== "students" && (
                   <div
                     className="absolute top-3 right-3 z-30 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
                     onClick={(e) => e.stopPropagation()}
@@ -62,7 +62,7 @@ const ClassSelector = ({
                     />
                     <FormContainer table="class" type="delete" id={cls.id} />
                   </div>
-                )}
+                )} */}
 
                 <div className="relative z-10">
                   <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1 group-hover:text-rubixPurple transition-colors">
