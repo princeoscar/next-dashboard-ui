@@ -1,6 +1,5 @@
-import {prisma} from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import BigCalendar from "./BigCalendar";
-import { adjustScheduleToCurrentWeek } from "@/lib/utils";
 import { CalendarOff } from "lucide-react";
 
 interface BigCalendarContainerProps {
@@ -14,44 +13,61 @@ const BigCalendarContainer = async ({
 }: BigCalendarContainerProps) => {
   
   // 1. Fetch Lessons with related Subject & Class info for better labels
- const dataRes = await prisma.lesson.findMany({
-  where: {
-    ...(type === "teacherId" ? { teacherId: id as string } : { classId: parseInt(id as string) }),
-  },
-  include: { subject: true },
-});
+  const dataRes = await prisma.lesson.findMany({
+    where: {
+      ...(type === "teacherId" ? { teacherId: id as string } : { classId: parseInt(id as string) }),
+    },
+    include: { 
+      subject: true,
+      class: true 
+    },
+  });
 
-const dayToDate: { [key: string]: number } = {
-  MONDAY: 4,
-  TUESDAY: 5,
-  WEDNESDAY: 6,
-  THURSDAY: 7,
-  FRIDAY: 8,
-};
-
-  // 2. Format data for react-big-calendar with more detail
-  const data = dataRes.map((item) => {
-  const dayNum = dayToDate[item.day as keyof typeof dayToDate] || 4;
-  
-  // We extract the hours and minutes from the database Date object
-  const startHours = item.startTime.getHours();
-  const startMinutes = item.startTime.getMinutes();
-  const endHours = item.endTime.getHours();
-  const endMinutes = item.endTime.getMinutes();
-
-  return {
-    title: item.name,
-    // We force the Year (2026), Month (4 = May), and Day (4-8)
-    // IMPORTANT: No "Z" at the end, so it stays local time
-    start: new Date(2026, 4, dayNum, startHours, startMinutes),
-    end: new Date(2026, 4, dayNum, endHours, endMinutes),
+  // Map weekday names to standard JavaScript day indices (0 = Sunday, 1 = Monday, etc.)
+  const daysMap: { [key: string]: number } = {
+    SUNDAY: 0,
+    MONDAY: 1,
+    TUESDAY: 2,
+    WEDNESDAY: 3,
+    THURSDAY: 4,
+    FRIDAY: 5,
+    SATURDAY: 6,
   };
-});
 
-  // 3. Normalize the dates to the current viewing week
-  const schedule = adjustScheduleToCurrentWeek(data);
+  // Get the base time context for the current week range
+  const today = new Date();
+  const currentDayOfWeek = today.getDay(); // e.g., 0 for Sunday, 1 for Monday
 
-  // 4. Handle Empty State
+  // 2. Format data dynamically for react-big-calendar
+  const schedule = dataRes.map((item) => {
+    const targetDayOfWeek = daysMap[item.day.toUpperCase()];
+    
+    // Calculate how many days to move forward or backward from today to reach this lesson's day
+    const distance = targetDayOfWeek - currentDayOfWeek;
+    
+    const eventDate = new Date(today);
+    eventDate.setDate(today.getDate() + distance);
+
+    // 🎯 FIX: Parse string time formats cleanly (e.g., "08:15" -> hours: 8, minutes: 15)
+    // Works seamlessly whether your schema types are String or DateTime strings!
+    const startTimeStr = item.startTime instanceof Date ? item.startTime.toISOString().split('T')[1] : String(item.startTime);
+    const endTimeStr = item.endTime instanceof Date ? item.endTime.toISOString().split('T')[1] : String(item.endTime);
+
+    const [startHours, startMinutes] = startTimeStr.split(":").map(Number);
+    const [endHours, endMinutes] = endTimeStr.split(":").map(Number);
+
+    const startObj = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate(), startHours, startMinutes, 0);
+    const endObj = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate(), endHours, endMinutes, 0);
+
+    return {
+      // Create a nice display label combining details
+      title: `${item.subject?.name || "Lesson"} (${item.class?.name || ""})`,
+      start: startObj,
+      end: endObj,
+    };
+  });
+
+  // 3. Handle Empty State
   if (schedule.length === 0) {
     return (
       <div className="h-full w-full flex flex-col items-center justify-center bg-slate-50/50 rounded-3xl border-2 border-dashed border-slate-200 p-8">

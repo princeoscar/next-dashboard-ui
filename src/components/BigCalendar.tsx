@@ -14,6 +14,23 @@ const BigCalendar = ({
 }) => {
   const [view, setView] = useState<View>(Views.WORK_WEEK);
 
+  // 🎯 FIX 1: Smart Real-Time Check + Sunday Look-Ahead
+  const getInitialDate = () => {
+    const today = new Date();
+    
+    // If today is Sunday (0), automatically fast-forward by 1 day to show Monday's schedule
+    if (today.getDay() === 0) {
+      const tomorrow = new Date(today);
+      tomorrow.setDate(today.getDate() + 1);
+      return tomorrow;
+    }
+    
+    return today;
+  };
+
+  // Turn it into an active controlled component state
+  const [currentDate, setCurrentDate] = useState<Date>(getInitialDate());
+
   return (
     <div className="h-full rubix-big-calendar font-sans">
       <Calendar
@@ -26,12 +43,14 @@ const BigCalendar = ({
         onView={(v) => setView(v)}
         style={{ height: "100%" }}
 
-        // 1. Set the default date to the Monday of our fixed week (May 4, 2026)
-        defaultDate={new Date(2026, 4, 4)}
+        // 🎯 FIX 2: Swapped static defaultDate for dynamic controlled properties
+        date={currentDate}
+        onNavigate={(date) => setCurrentDate(date)} // 👈 Keeps header arrows working!
 
-        // 2. Adjust Min/Max to show 8am to 4pm
-        min={new Date(2026, 4, 4, 7, 0, 0)}
-        max={new Date(2026, 4, 4, 18, 0, 0)}
+        // Adjust Min/Max window settings dynamically using the currently viewed date context
+        min={new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate(), 7, 0, 0)}
+        max={new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate(), 18, 0, 0)}
+        
         messages={{ work_week: "School Week", day: "Daily" }}
         formats={{ timeGutterFormat: "HH:mm" }}
         components={{
@@ -48,7 +67,6 @@ const BigCalendar = ({
         eventPropGetter={(event) => {
           const title = event.title.toLowerCase();
 
-          // Define your color themes
           const themes = {
             blue: { bg: "#EDF9FD", bar: "#C3EBFA" },
             yellow: { bg: "#FEFCE8", bar: "#FAE27C" },
@@ -56,7 +74,6 @@ const BigCalendar = ({
             pink: { bg: "#FFF0F3", bar: "#FFD6E0" },
           };
 
-          // Assign keywords to themes
           let theme = themes.blue; // Default
 
           if (["english", "economics", "commerce"].some(k => title.includes(k))) {
