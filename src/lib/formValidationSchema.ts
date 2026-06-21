@@ -92,7 +92,12 @@ export const examSchema = z.object({
   startTime: z.coerce.date({ message: "Start time is required!" }),
   endTime: z.coerce.date({ message: "End time is required!" }),
   subjectId: z.coerce.number({ message: "Subject is required!" }),
-  classId: z.coerce.number({ message: "Class is required!" }),
+  
+  // 🎯 FIX: Allow either a Number (for updates) or a String (for our comma-separated cohorts)
+  classId: z.union([z.string(), z.number()]).refine(val => String(val).length > 0, {
+    message: "Class is required!",
+  }),
+  
   teacherId: z.string().min(1, { message: "Teacher is required!" }),
 });
 

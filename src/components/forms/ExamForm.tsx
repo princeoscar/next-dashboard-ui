@@ -3,15 +3,11 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import InputField from "../InputField";
-import { createExam, updateExam } from "@/lib/actions"; // Cleaned up unused imports
+import { createExam, updateExam } from "@/lib/actions"; 
 import { Dispatch, SetStateAction, startTransition, useActionState, useEffect } from "react";
-import { toast } from "react-toastify"; // Switched to toast for better UX
+import { toast } from "react-toastify"; 
 import { useRouter } from "next/navigation";
 import { examSchema, ExamSchema } from "@/lib/formValidationSchema";
-
-
-
-
 
 const ExamForm = ({
   type,
@@ -31,8 +27,6 @@ const ExamForm = ({
   } = useForm<ExamSchema>({
     resolver: zodResolver(examSchema) as any,
   });
-
-
 
   const [state, formAction] = useActionState(
     type === "create" ? createExam : updateExam,
@@ -55,9 +49,9 @@ const ExamForm = ({
       startTransition(() => {
         formAction({
           ...formData,
-          schoolId: "1", // You already have this
-          // ✅ Add these two lines to satisfy Zod:
-          classId: formData.classId || relatedData.classId,
+          schoolId: "1", 
+          // 🎯 Pass down the class ID data configuration (can be single or comma-separated string)
+          classId: String(formData.classId || relatedData.classId),
           teacherId: formData.teacherId || relatedData.teacherId,
           ...(type === "update" && { id: data.id }),
         });
@@ -74,7 +68,6 @@ const ExamForm = ({
     teachers = []
   } = relatedData || {};
 
-  // FIX: Format dates for datetime-local input
   const formatDate = (date: Date | string) => {
     if (!date) return "";
     const d = new Date(date);
@@ -101,7 +94,7 @@ const ExamForm = ({
           <InputField
             label="Start Date"
             name="startTime"
-            defaultValue={formatDate(data?.startTime)} // FIX: Formatted date
+            defaultValue={formatDate(data?.startTime)} 
             register={register}
             error={errors?.startTime}
             type="datetime-local"
@@ -109,7 +102,7 @@ const ExamForm = ({
           <InputField
             label="End Date"
             name="endTime"
-            defaultValue={formatDate(data?.endTime)} // FIX: Formatted date
+            defaultValue={formatDate(data?.endTime)} 
             register={register}
             error={errors?.endTime}
             type="datetime-local"
@@ -129,8 +122,6 @@ const ExamForm = ({
             <input type="hidden" value={data?.id} {...register("id")} />
           )}
 
-
-
           <div className="flex flex-col gap-2 w-full md:w-1/4">
             <label className="text-xs text-gray-500">Subject</label>
             <select
@@ -139,7 +130,6 @@ const ExamForm = ({
               defaultValue={data?.subjectId}
             >
               <option value="">Select a Subject</option>
-              {/* 2. Simplified map logic to match your flattened Subject model */}
               {subjects.map((subject: { id: number; name: string }) => (
                 <option value={subject.id} key={subject.id}>
                   {subject.name}
@@ -152,28 +142,44 @@ const ExamForm = ({
               </p>
             )}
           </div>
+
+          {/* 🎯 CONSOLIDATED CLASS SELECTION OPTION */}
           <div className="flex flex-col gap-2 w-full md:w-1/3">
-            <label className="text-xs text-gray-500">Class</label>
+            <label className="text-xs text-gray-500">Class Cohort</label>
             <select
               className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
               {...register("classId")}
               defaultValue={data?.classId}
             >
-              {relatedData.classes?.map((c: { id: string | number; name: string }) => (
-                <option value={c.id} key={c.id}>
-                  {c.name}
-                </option>
-              ))}
+              <option value="">Select Class Group</option>
+              {(() => {
+                // Group class options dynamically on the fly by base name
+                const levelsMap: { [key: string]: any[] } = {};
+                
+                classes.forEach((c: { id: string | number; name: string }) => {
+                  const baseName = c.name.replace(/\s*[A-Z]$/i, "").trim(); // "JSS 1A" -> "JSS 1"
+                  if (!levelsMap[baseName]) levelsMap[baseName] = [];
+                  levelsMap[baseName].push(c.id);
+                });
+
+                return Object.entries(levelsMap).map(([gradeName, ids]) => (
+                  <option value={ids.join(",")} key={gradeName}>
+                    {gradeName} (All Arms)
+                  </option>
+                ));
+              })()}
             </select>
           </div>
+
           <div className="flex flex-col gap-2 w-full md:w-1/3">
             <label className="text-xs text-gray-500">Teacher</label>
             <select
               className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
               {...register("teacherId")}
-              defaultValue={data?.teacherId} // 👈 This selects the assigned teacher
+              defaultValue={data?.teacherId} 
             >
-              {relatedData.teachers?.map((t: { id: string | number; name: string; surname: string }) => (
+              <option value="">Select Teacher</option>
+              {teachers.map((t: { id: string | number; name: string; surname: string }) => (
                 <option value={t.id} key={t.id}>
                   {t.name} {t.surname}
                 </option>

@@ -1439,46 +1439,76 @@ export const deleteAssignment = async (currentState: State, data: FormData) => {
   }
 };
 
-// ----------------- Exam ----------------------
-
-type State = {
+export type State = {
   success: boolean;
   error: boolean;
 };
 
 export const createExam = async (currentState: State, data: any) => {
   try {
-    await prisma.exam.create({
-      data: {
-        title: data.title,
-        startTime: new Date(data.startTime),
-        endTime: new Date(data.endTime),
-        subjectId: data.subjectId,
-        classId: data.classId,
-        teacherId: data.teacherId,
-      },
-    });
+    const title = data.title;
+    const startTime = new Date(data.startTime);
+    const endTime = new Date(data.endTime);
+    const subjectId = parseInt(data.subjectId);
+    const teacherId = data.teacherId;
+
+    // 🎯 Fan-out Strategy: Check if multiple class IDs are passed
+    const classIdStr = String(data.classId);
+
+    if (classIdStr.includes(",")) {
+      const targetClassIds = classIdStr.split(",").map((id) => parseInt(id.trim())).filter(Boolean);
+
+      // Map through every individual class arm to build distinct database insertions
+      const operations = targetClassIds.map((cid) =>
+        prisma.exam.create({
+          data: {
+            title,
+            startTime,
+            endTime,
+            subjectId,
+            teacherId,
+            classId: cid,
+          },
+        })
+      );
+
+      // Execute all insertion queries safely within an atomic transaction block
+      await prisma.$transaction(operations);
+    } else {
+      // Fallback for single class selections
+      await prisma.exam.create({
+        data: {
+          title,
+          startTime,
+          endTime,
+          subjectId,
+          teacherId,
+          classId: parseInt(classIdStr),
+        },
+      });
+    }
 
     revalidatePath("/list/exams");
     return { success: true, error: false };
   } catch (err) {
-    console.log(err);
+    console.error("CREATE EXAM ERROR:", err);
     return { success: false, error: true };
   }
 };
 
 export const updateExam = async (currentState: State, data: any) => {
   try {
+    // When editing an exam record, handle singular string values directly
     await prisma.exam.update({
       where: {
-        id: data.id,
+        id: parseInt(data.id),
       },
       data: {
         title: data.title,
         startTime: new Date(data.startTime),
         endTime: new Date(data.endTime),
-        subjectId: data.subjectId,
-        classId: data.classId,
+        subjectId: parseInt(data.subjectId),
+        classId: parseInt(data.classId),
         teacherId: data.teacherId,
       },
     });
@@ -1486,7 +1516,7 @@ export const updateExam = async (currentState: State, data: any) => {
     revalidatePath("/list/exams");
     return { success: true, error: false };
   } catch (err) {
-    console.log(err);
+    console.error("UPDATE EXAM ERROR:", err);
     return { success: false, error: true };
   }
 };
@@ -1503,9 +1533,10 @@ export const deleteExam = async (
       },
     });
 
+    revalidatePath("/list/exams");
     return { success: true, error: false };
   } catch (err) {
-    console.log(err);
+    console.error("DELETE EXAM ERROR:", err);
     return { success: false, error: true };
   }
 };
