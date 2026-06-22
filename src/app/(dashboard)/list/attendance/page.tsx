@@ -26,12 +26,14 @@ const AttendanceListPage = async ({
   const { sessionClaims, userId } = await auth();
   const role = (sessionClaims?.metadata as { role?: string })?.role?.toLowerCase();
 
+  // 🎯 FIX 1: Extract real current school identification context straight from active Clerk Metadata profiles
+  const sessionSchoolId = (sessionClaims?.metadata as { schoolId?: string })?.schoolId || "1";
+
   const params = await searchParams;
   const p = params.page ? parseInt(params.page) : 1;
   const { classId, search, studentId: selectedStudentId } = params;
 
-  // 🎯 Note: Fetch this from your app settings or DB in a real scenario
-  const currentAcademicYearId = 1; 
+  const currentAcademicYearId = 7;
 
   // --- 1. PARENT GALLERY VIEW ---
   if (role === "parent" && !selectedStudentId) {
@@ -96,14 +98,14 @@ const AttendanceListPage = async ({
           <h1 className="text-3xl font-black text-slate-800 tracking-tighter uppercase">Attendance <span className="text-blue-500">Registry</span></h1>
           <p className="text-sm text-slate-400 font-medium italic uppercase tracking-widest mt-1">Select class to manage daily logs</p>
         </div>
-        <ClassSelector classes={classes} role={role!} target="attendance" relatedData={{}} />
+        <ClassSelector classes={classes} role={role!} target="attendance" relatedData={{ schoolId: sessionSchoolId }} />
       </div>
     );
   }
 
-  // --- 3. ATTENDANCE AGGREGATION (ONLY IF STUDENT SELECTED) ---
+  // --- 3. ATTENDANCE AGGREGATION ---
   let attendanceSummary = { present: 0, total: 0 };
-  
+
   if (selectedStudentId) {
     const studentData = await prisma.student.findUnique({
       where: { id: selectedStudentId },
@@ -116,14 +118,14 @@ const AttendanceListPage = async ({
 
     const records = studentData?.attendances || [];
     const uniqueDaysOpened = Array.from(new Set(records.map((a) => a.date.toISOString().split("T")[0])));
-    const daysPresent = uniqueDaysOpened.filter((date) => 
+    const daysPresent = uniqueDaysOpened.filter((date) =>
       records.some((a) => a.date.toISOString().split("T")[0] === date && a.present === true)
     ).length;
 
     attendanceSummary = { present: daysPresent, total: uniqueDaysOpened.length };
   }
 
-  // --- 4. CONSOLIDATED QUERY BUILDING ---
+  // --- 4. QUERY BUILDING ---
   const query: Prisma.AttendanceWhereInput = {};
   const andConditions: Prisma.AttendanceWhereInput[] = [];
 
@@ -169,7 +171,7 @@ const AttendanceListPage = async ({
   if (andConditions.length > 0) query.AND = andConditions;
 
   // --- 5. DATA FETCHING ---
-  const [data, count, subjects, students] = await prisma.$transaction([
+  const [rawAttendance, count, rawSubjects, rawStudents] = await prisma.$transaction([
     prisma.attendance.findMany({
       where: query,
       include: {
@@ -181,26 +183,45 @@ const AttendanceListPage = async ({
       orderBy: { date: "desc" },
     }),
     prisma.attendance.count({ where: query }),
-   prisma.subject.findMany({
-  where: (role === "teacher" 
-    ? { teachers: { some: { id: userId! } } } 
-    : {}) as any, // 🎯 The 'as any' bypasses the 'never' check
-  select: { 
-    id: true, 
-    name: true, 
-    classes: { select: { id: true, name: true } } 
-  }
-}),
+    prisma.subject.findMany({
+      where: (role === "teacher" ? { teachers: { some: { id: userId! } } } : {}) as any,
+      select: {
+        id: true,
+        name: true,
+        classes: { select: { id: true, name: true } }
+      }
+    }),
     prisma.student.findMany({
       where: {
         ...(role === "parent" ? { parentId: userId! } : {}),
         ...(classId ? { classId: parseInt(classId) } : {}),
       },
-      select: { id: true, name: true, surname: true, classId: true }
+      // 🎯 FIX 2: Explicitly fetch schoolId and academicYearId columns from database tables
+      select: { id: true, name: true, surname: true, classId: true, schoolId: true }
     })
   ]);
 
-  const relatedData = { subjects, students };
+  // Sanitize and structuralize relatedData to pass flat primitives
+  const subjects = rawSubjects.map(sub => ({
+    id: sub.id,
+    name: sub.name,
+    classIds: sub.classes.map(c => c.id)
+  }));
+
+  const students = rawStudents.map(stud => ({
+    id: stud.id,
+    name: `${stud.name} ${stud.surname}`,
+    classId: stud.classId,
+    schoolId: stud.schoolId, // Clean primitive pass-through
+  }));
+
+  // 🎯 FIX 4: Securely spread session school identification directly into context root wrapper 
+  const relatedData = {
+    subjects,
+    students,
+    schoolId: sessionSchoolId,
+    academicYearId: currentAcademicYearId
+  };
 
   // --- 6. TABLE CONFIGURATION ---
   const columns = [
@@ -235,8 +256,13 @@ const AttendanceListPage = async ({
       </td>
       <td className="hidden lg:table-cell p-4">
         <div className="flex flex-col">
-          <span className="text-slate-700 font-bold text-xs">{item.subject.classes[0]?.name || "No Class"}</span>
-          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{item.subject.name}</span>
+          {/* 🎯 FIX: Added item.subject?. to safely fallback if it's a general daily log */}
+          <span className="text-slate-700 font-bold text-xs">
+            {item.subject?.classes?.[0]?.name || "General"}
+          </span>
+          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+            {item.subject?.name || "Daily Attendance"}
+          </span>
         </div>
       </td>
       {(role === "admin" || role === "teacher") && (
@@ -252,8 +278,7 @@ const AttendanceListPage = async ({
 
   return (
     <div className="bg-white p-4 md:p-8 rounded-[2rem] md:rounded-[2.5rem] flex-1 m-2 md:m-4 mt-0 shadow-sm border border-slate-100">
-      
-      {/* 🎯 Added Attendance Summary UI for Parents/Students */}
+
       {selectedStudentId && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100">
@@ -275,7 +300,7 @@ const AttendanceListPage = async ({
             <ArrowLeft size={20} />
           </Link>
           <h1 className="text-xl md:text-2xl font-black text-slate-800 tracking-tighter uppercase">
-            {selectedStudentId ? `Daily Status` : "Log Registry"}
+            {classId ? `Daily Status` : "Log Registry"}
           </h1>
         </div>
         <div className="flex items-center gap-4 w-full md:w-auto">
@@ -287,10 +312,10 @@ const AttendanceListPage = async ({
       </div>
 
       <div className="rounded-3xl border border-slate-50 overflow-hidden shadow-sm bg-white">
-        <Table columns={columns} renderRow={renderRow} data={data} />
+        <Table columns={columns} renderRow={renderRow} data={rawAttendance} />
       </div>
 
-      {!data.length && (
+      {!rawAttendance.length && (
         <div className="py-20 text-center border-2 border-dashed border-slate-50 rounded-[2rem] mt-4">
           <p className="text-xs font-black text-slate-300 uppercase tracking-widest">No attendance records found</p>
         </div>

@@ -209,14 +209,14 @@ model Attendance {
   date           DateTime
   present        Boolean
   studentId      String
-  subjectId      Int
+  subjectId      Int?
   teacherId      String?
   schoolId       String
   academicYearId Int
   academicYear   AcademicYear @relation(fields: [academicYearId], references: [id])
   school         School       @relation(fields: [schoolId], references: [id])
   student        Student      @relation(fields: [studentId], references: [id])
-  subject        Subject      @relation(fields: [subjectId], references: [id])
+  subject        Subject?      @relation(fields: [subjectId], references: [id])
 
   @@unique([date, studentId])
 }

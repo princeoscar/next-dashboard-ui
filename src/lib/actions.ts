@@ -1096,45 +1096,59 @@ export const saveBulkResultsAction = async (
 };
 // ---------------- ATTENDANCE ----------------
 
-export const createAttendance = async (
-  prevState: any,
-  data: AttendanceSchema,
-) => {
+export async function createAttendance(prevState: any, formData: FormData) {
   try {
-    const attendanceDate = new Date(data.date);
+    const dateStr = formData.get("date") as string;
+    const schoolId = formData.get("schoolId") as string;
+    const academicYearIdStr = formData.get("academicYearId") as string;
+    const subjectIdStr = formData.get("subjectId") as string | null;
+    
+    // 🎯 FIX: Parse the stringified students back into a structural array
+    const studentsRaw = formData.get("students") as string;
+    const students = studentsRaw ? JSON.parse(studentsRaw) : [];
 
-    const { subjectId, schoolId, academicYearId } = data;
+    if (!students || students.length === 0) {
+      return { success: false, error: true, message: "No students provided" };
+    }
+
+    const date = new Date(dateStr);
+    const academicYearId = parseInt(academicYearIdStr);
+    const subjectId = subjectIdStr ? parseInt(subjectIdStr) : null;
+
     // 1. We use a transaction so it's all or nothing
     await prisma.$transaction(
-      data.students.map((s) =>
-        prisma.attendance.upsert({
-          where: {
-            date_studentId: {
-              date: attendanceDate,
-              studentId: s.studentId,
+  students.map((s: any) =>
+    prisma.attendance.upsert({
+      where: {
+        date_studentId: {
+          date: date,
+          studentId: s.studentId,
             },
-          }, // <--- This brace must close the 'where' block!
-          update: {
-            present: s.present,
           },
-          create: {
-            date: data.date,
-            studentId: s.studentId,
-            present: s.present,
-            schoolId: data.schoolId,
-            academicYearId: academicYearId,
-            subjectId: subjectId, // 👈 Now 'subjectId' is defined!
-          },
-        }),
-      ),
-    );
+      update: {
+        present: s.present,
+        // 🎯 Pass null explicitly if subjectId is missing
+        subjectId: subjectId ?? null, 
+      },
+      create: {
+        date: date,
+        studentId: s.studentId,
+        present: s.present,
+        schoolId: schoolId,
+        academicYearId: academicYearId,
+        // 🎯 Pass null explicitly here too
+        subjectId: subjectId ?? null,
+      },
+    })
+  )
+);
 
     return { success: true, error: false };
   } catch (err) {
-    console.log(err);
+    console.error("Server Action Error:", err);
     return { success: false, error: true };
   }
-};
+}
 
 // ----------------SAVE ATTENDANCE ----------------
 

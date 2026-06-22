@@ -143,7 +143,11 @@ export const attendanceSchema = z.object({
   date: z.coerce.date(),
   schoolId: z.string().min(1, "School ID is required"),
   academicYearId: z.coerce.number().min(1, "Academic Year is required"),
-  subjectId: z.coerce.number().min(1, "Subject is required"),
+  // 🎯 Make subjectId optional so Daily Attendance submissions pass validation
+  subjectId: z.preprocess(
+    (val) => (val === "" || val === undefined ? undefined : Number(val)),
+    z.number().optional()
+  ),
   students: z.array(
     z.object({
       studentId: z.string(),
@@ -153,6 +157,8 @@ export const attendanceSchema = z.object({
 });
 
 export type AttendanceSchema = z.infer<typeof attendanceSchema>;
+
+
 
 // --- EVENT ---
 export const eventSchema = z.object({
