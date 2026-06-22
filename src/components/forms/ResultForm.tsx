@@ -24,11 +24,24 @@ const ResultForm = ({
   const {
     register,
     handleSubmit,
+    watch, // 🎯 Watch values to update total in real time
+    setValue,
     formState: { errors },
   } = useForm<ResultSchema>({
     resolver: zodResolver(resultSchema) as any,
     defaultValues: data,
   });
+
+  // 🎯 Live watch input scores
+  const watchTestScore = watch("testScore");
+  const watchAssignmentScore = watch("assignmentScore");
+  const watchExamScore = watch("examScore");
+
+  // 🎯 Instantly calculate total as variables change
+  const liveTotal = 
+    (Number(watchTestScore) || 0) + 
+    (Number(watchAssignmentScore) || 0) + 
+    (Number(watchExamScore) || 0);
 
   const [state, formAction] = useActionState(
     type === "create" ? createResult : updateResult,
@@ -47,67 +60,47 @@ const ResultForm = ({
 
   const { students, exams, assignments, academicYears, subjects } = relatedData || {};
 
-
-const handleRawSubmit = (e: React.FormEvent) => {
-  console.log("Button actually clicked - Form is attempting to submit");
-};
-
-// Then update your form tag temporarily:
-<form className="flex flex-col gap-8 p-2" onSubmit={(e) => {
-  handleRawSubmit(e);
-  onSubmit(e);
-}}></form>
-
   const onSubmit = handleSubmit(
-  (formData) => {
-    // 1. Calculate Scores manually to ensure they are valid numbers
-    const test = Number(formData.testScore) || 0;
-    const assignment = Number(formData.assignmentScore) || 0;
-    const exam = Number(formData.examScore) || 0;
-    const total = test + assignment + exam;
+    (formData) => {
+      const test = Number(formData.testScore) || 0;
+      const assignment = Number(formData.assignmentScore) || 0;
+      const exam = Number(formData.examScore) || 0;
+      const total = test + assignment + exam;
 
-    // 2. Automated Grade Logic (Adjust thresholds to match your school)
-    let autoGrade = "F9";
-if (total >= 80) autoGrade = "A1";
-else if (total >= 75) autoGrade = "B2";
-else if (total >= 70) autoGrade = "B3";
-else if (total >= 66) autoGrade = "C4";
-else if (total >= 60) autoGrade = "C5";
-else if (total >= 55) autoGrade = "C6";
-else if (total >= 50) autoGrade = "D7";
-else if (total >= 45) autoGrade = "E8";
+      let autoGrade = "F9";
+      if (total >= 80) autoGrade = "A1";
+      else if (total >= 75) autoGrade = "B2";
+      else if (total >= 70) autoGrade = "B3";
+      else if (total >= 66) autoGrade = "C4";
+      else if (total >= 60) autoGrade = "C5";
+      else if (total >= 55) autoGrade = "C6";
+      else if (total >= 50) autoGrade = "D7";
+      else if (total >= 45) autoGrade = "E8";
 
-    console.log("✅ FORM VALIDATED. SENDING PAYLOAD...");
+      console.log("✅ FORM VALIDATED. SENDING PAYLOAD...");
 
-    startTransition(() => {
-      formAction({
-        ...formData,
-        // Ensure ID is passed as a string for the UUID update
-        id: type === "update" ? data?.id : undefined,
-        
-        // Clean Number conversions for Prisma
-        testScore: test,
-        assignmentScore: assignment,
-        examScore: exam,
-        totalScore: total,
-        grade: autoGrade,
-        subjectId: Number(formData.subjectId),
-        academicYearId: Number(formData.academicYearId),
-        term: Number(formData.term),
-        
-        // Handle optional relations
-        examId: formData.examId ? Number(formData.examId) : null,
-        assignmentId: formData.assignmentId ? Number(formData.assignmentId) : null,
+      startTransition(() => {
+        formAction({
+          ...formData,
+          id: type === "update" ? data?.id : undefined,
+          testScore: test,
+          assignmentScore: assignment,
+          examScore: exam,
+          totalScore: total,
+          grade: autoGrade,
+          subjectId: Number(formData.subjectId),
+          academicYearId: Number(formData.academicYearId),
+          term: Number(formData.term),
+          examId: formData.examId ? Number(formData.examId) : null,
+          assignmentId: formData.assignmentId ? Number(formData.assignmentId) : null,
+        });
       });
-    });
-  },
-  (validationErrors) => {
-    // 🎯 THIS IS THE IMPORTANT PART: 
-    // If the button does nothing, this will tell us EXACTLY why.
-    console.log("VALIDATION ERRORS:", validationErrors);
-    alert("Form Error: Check the browser console (F12) to see which field is invalid.");
-  }
-);
+    },
+    (validationErrors) => {
+      console.log("VALIDATION ERRORS:", validationErrors);
+      alert("Form Error: Check the browser console (F12) to see which field is invalid.");
+    }
+  );
 
   return (
     <form className="flex flex-col gap-8 p-2" onSubmit={onSubmit}>
@@ -126,7 +119,7 @@ else if (total >= 45) autoGrade = "E8";
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 ...">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* STUDENT SELECTOR */}
         <div className="flex flex-col gap-2">
           <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
@@ -155,36 +148,42 @@ else if (total >= 45) autoGrade = "E8";
         </div>
 
         {/* Subject Select */}
-        <select
-          {...register("subjectId")}
-          defaultValue={data?.subjectId} // 🎯 This ensures the value is set on load
-          className="..."
-        >
-          <option value="">Select Subject...</option>
-          {subjects?.map((s: any) => (
-            <option key={s.id} value={s.id}>{s.name}</option>
-          ))}
-        </select>
+        <div className="flex flex-col gap-2">
+          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Subject</label>
+          <select
+            {...register("subjectId")}
+            defaultValue={data?.subjectId}
+            className="w-full p-4 rounded-2xl bg-white border border-slate-200 text-sm font-medium outline-none"
+          >
+            <option value="">Select Subject...</option>
+            {subjects?.map((s: any) => (
+              <option key={s.id} value={s.id}>{s.name}</option>
+            ))}
+          </select>
+        </div>
 
         {/* Academic Year Select */}
-        <select
-          {...register("academicYearId")}
-          defaultValue={data?.academicYearId} // 🎯 This ensures the value is set on load
-          className="..."
-        >
-          <option value="">Select Year...</option>
-          {academicYears?.map((y: any) => (
-            <option key={y.id} value={y.id}>{y.name}</option>
-          ))}
-        </select>
-
-        {/* TERM SELECTOR - 🎯 ADDED defaultValue */}
         <div className="flex flex-col gap-2">
-          <label className="text-xs font-bold text-gray-500">Term</label>
+          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Academic Year</label>
+          <select
+            {...register("academicYearId")}
+            defaultValue={data?.academicYearId}
+            className="w-full p-4 rounded-2xl bg-white border border-slate-200 text-sm font-medium outline-none"
+          >
+            <option value="">Select Year...</option>
+            {academicYears?.map((y: any) => (
+              <option key={y.id} value={y.id}>{y.name}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* TERM SELECTOR */}
+        <div className="flex flex-col gap-2">
+          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Term</label>
           <select
             {...register("term")}
-            className="p-4 rounded-2xl bg-slate-50 border"
-            defaultValue={data?.term}
+            className="w-full p-4 rounded-2xl bg-white border border-slate-200 text-sm font-medium outline-none"
+            defaultValue={data?.term || "1"}
           >
             <option value="1">First Term</option>
             <option value="2">Second Term</option>
@@ -221,71 +220,22 @@ else if (total >= 45) autoGrade = "E8";
           defaultValue={data?.examScore}
           error={errors.examScore}
         />
-          {/* SCORE INPUT */}
-        <InputField
-          label="Total Score"
-          name="totalScore"
-          type="number"
-          register={register}
-          defaultValue={data?.totalScore}
-          error={errors.totalScore}
-        />
 
-
-
-
-        {/* <div className="flex flex-col gap-2">
+        {/* AUTOMATED TOTAL SCORE DISPLAY */}
+        <div className="flex flex-col gap-2">
           <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
-            Linked Exam
+            Total Score
           </label>
-          <div className="relative group">
-            <select
-              {...register("examId", {
-                setValueAs: (v) => v === "" ? null : parseInt(v)const ResultForm = () => {
-                  return (
-                    <div className=''>ResultForm</div>
-                  )
-                }
-                
-                export default ResultForm
-              })}
-              className="w-full p-4 rounded-2xl bg-white border border-slate-200 text-sm font-medium focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500 outline-none transition-all appearance-none"
-              defaultValue={data?.examId || ""}
-            >
-              <option value="">None</option>
-              {exams?.map((e: any) => (
-                <option value={e.id} key={e.id}>
-                  {e.title} {e.subject?.name ? `(${e.subject.name})` : ""}
-                </option>
-              ))}
-            </select>
-            <FileText className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none group-focus-within:text-amber-500 transition-colors" size={18} />
-          </div>
-        </div> */}
-
-
-        {/* <div className="flex flex-col gap-2">
-          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
-            Assignment (if applicable)
-          </label>
-          <div className="relative group">
-            <select
-              {...register("assignmentId", {
-                setValueAs: (v) => v === "" ? null : parseInt(v)
-              })}
-              className="w-full p-4 rounded-2xl bg-white border border-slate-200 text-sm font-medium focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500 outline-none transition-all appearance-none"
-              defaultValue={data?.assignmentId || ""}
-            >
-              <option value="">None</option>
-              {assignments?.map((a: any) => (
-                <option value={a.id} key={a.id}>
-                  {a.title} {a.subject?.name ? `(${a.subject.name})` : ""}
-                </option>
-              ))}
-            </select>
-            <ClipboardCheck className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none group-focus-within:text-amber-500 transition-colors" size={18} />
-          </div>
-        </div> */}
+          <input
+            type="number"
+            readOnly
+            value={liveTotal}
+            className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 text-sm font-black text-slate-700 outline-none cursor-not-allowed shadow-inner"
+            placeholder="0"
+          />
+          {/* Hidden field so React Hook Form still passes totalScore on submit */}
+          <input type="hidden" value={liveTotal} {...register("totalScore")} />
+        </div>
 
         {data && (
           <input type="hidden" {...register("id")} defaultValue={data.id} />

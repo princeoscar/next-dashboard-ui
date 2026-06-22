@@ -811,13 +811,16 @@ export const deleteAnnouncement = async (
 
 // ---------------- EVENT ----------------
 
-export const createEvent = async (currentState: any, formData: FormData) => {
-  // Convert FormData back to a plain object for Zod validation
-  const data = Object.fromEntries(formData.entries());
+export const createEvent = async (currentState: any, formData: any) => {
+  // 🎯 Convert FormData if it's a native form submission, otherwise use the plain object directly
+  const data = formData instanceof FormData 
+    ? Object.fromEntries(formData.entries()) 
+    : formData;
 
   const validatedFields = eventSchema.safeParse(data);
 
   if (!validatedFields.success) {
+    console.log("❌ ZOD VALIDATION FAILED:", validatedFields.error.flatten());
     return { success: false, error: true };
   }
 
@@ -828,13 +831,15 @@ export const createEvent = async (currentState: any, formData: FormData) => {
         description: validatedFields.data.description,
         startTime: new Date(validatedFields.data.startTime),
         endTime: new Date(validatedFields.data.endTime),
+        // 🎯 Safely parse classId whether it comes in as a string or a raw number
         classId: validatedFields.data.classId
-          ? parseInt(validatedFields.data.classId as any)
+          ? parseInt(String(validatedFields.data.classId), 10)
           : null,
       },
     });
     return { success: true, error: false };
   } catch (err) {
+    console.error("❌ DATABASE INSERT ERROR:", err);
     return { success: false, error: true };
   }
 };
@@ -1498,25 +1503,47 @@ export const createExam = async (currentState: State, data: any) => {
 
 export const updateExam = async (currentState: State, data: any) => {
   try {
-    // When editing an exam record, handle singular string values directly
+    const examId = parseInt(data.id);
+    if (isNaN(examId)) {
+      console.error("UPDATE ERROR: Missing or invalid Exam ID");
+      return { success: false, error: true };
+    }
+
+    // 🎯 Enforce clean extraction of fields
+    const title = data.title;
+    const startTime = new Date(data.startTime);
+    const endTime = new Date(data.endTime);
+    const subjectId = parseInt(data.subjectId);
+    const teacherId = data.teacherId;
+
+    // 🎯 Cleanly parse classId down to a singular integer for the target row
+    // If it comes as a comma string or array from previous fallbacks, take the first option
+    const rawClassId = String(data.classId).split(",")[0];
+    const classId = parseInt(rawClassId.trim());
+
+    if (isNaN(subjectId) || isNaN(classId)) {
+      console.error("UPDATE ERROR: Invalid Subject or Class ID values passed", { subjectId, classId });
+      return { success: false, error: true };
+    }
+
     await prisma.exam.update({
       where: {
-        id: parseInt(data.id),
+        id: examId,
       },
       data: {
-        title: data.title,
-        startTime: new Date(data.startTime),
-        endTime: new Date(data.endTime),
-        subjectId: parseInt(data.subjectId),
-        classId: parseInt(data.classId),
-        teacherId: data.teacherId,
+        title,
+        startTime,
+        endTime,
+        subjectId,
+        classId,
+        teacherId,
       },
     });
 
     revalidatePath("/list/exams");
     return { success: true, error: false };
   } catch (err) {
-    console.error("UPDATE EXAM ERROR:", err);
+    console.error("UPDATE EXAM DATABASE ERROR:", err);
     return { success: false, error: true };
   }
 };

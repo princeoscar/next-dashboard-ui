@@ -73,7 +73,8 @@ const ReportCardSheet = ({ data }: ReportCardProps) => {
       </div>
 
       {/* 3. PERFORMANCE SUMMARY */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-8">
+      {/* 🎯 Dynamic grid setup: spans 1 column if SSS to ensure clean balance across full layout width */}
+      <div className={`grid grid-cols-1 ${isSSS ? "md:grid-cols-1" : "md:grid-cols-2"} gap-4 md:gap-6 mb-8`}>
         <div className="border-2 border-indigo-100 bg-indigo-50/30 p-4 rounded-2xl flex items-center gap-4">
           <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center text-white shrink-0"><Award size={20} /></div>
           <div>
@@ -82,7 +83,8 @@ const ReportCardSheet = ({ data }: ReportCardProps) => {
           </div>
         </div>
 
-        {data.position && (
+        {/* 🎯 Hide entirely if it is an SSS class */}
+        {!isSSS && data.position && (
           <div className="border-2 border-amber-100 bg-amber-50/30 p-4 rounded-2xl flex items-center gap-4">
             <div className="w-10 h-10 bg-amber-500 rounded-lg flex items-center justify-center text-white shrink-0"><Award size={20} /></div>
             <div>

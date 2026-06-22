@@ -86,26 +86,23 @@ const ExamListPage = async ({
       orderBy: { name: "asc" },
     });
 
-    // 🎯 Group individual section rows on the fly by their base grade level (e.g., "JSS 1")
     const consolidatedMap: { [key: string]: any } = {};
 
     rawClasses.forEach((c) => {
-      // Strip trailing letters to isolate base class name (e.g., "JSS 1A" -> "JSS 1")
       const baseGradeName = c.name.replace(/\s*[A-Z]$/i, "").trim();
 
       if (!consolidatedMap[baseGradeName]) {
         consolidatedMap[baseGradeName] = {
           ...c,
-          id: c.id, // Keeps the first section ID as a point of entry
+          id: c.id, 
           name: `${baseGradeName} (All Arms)`,
-          allIds: [c.id], // Stores all section IDs to pass downward if needed
+          allIds: [c.id], 
           _count: {
             students: c._count.students,
             exams: c._count.exams,
           }
         };
       } else {
-        // Aggregate totals across sections
         consolidatedMap[baseGradeName].allIds.push(c.id);
         consolidatedMap[baseGradeName]._count.students += c._count.students;
         consolidatedMap[baseGradeName]._count.exams += c._count.exams;
@@ -120,7 +117,6 @@ const ExamListPage = async ({
           <h1 className="text-3xl font-black text-slate-800 tracking-tighter uppercase">Exam <span className="text-blue-600">Portal</span></h1>
           <p className="text-sm text-slate-400 font-medium italic uppercase tracking-widest mt-1">Select a grade level cohort to manage schedules</p>
         </div>
-        {/* Swapped rawClasses with our new grouped data configuration */}
         <ClassSelector classes={consolidatedClasses} role={role!} target="exams" relatedData={{}} />
       </div>
     );
@@ -226,11 +222,14 @@ const ExamListPage = async ({
             </div>
           </div>
         </td>
+        
+        {/* 🎯 ENHANCEMENT: Cleaned trailing section identifiers to keep pure base grade block layouts */}
         <td className="hidden md:table-cell p-4 text-center">
           <span className="px-2 py-0.5 bg-slate-50 rounded border border-slate-100 text-[10px] font-black uppercase text-slate-400">
-            {item.class.name}
+            {item.class.name.replace(/\s*[A-Z]$/i, "").trim()}
           </span>
         </td>
+
         <td className="hidden md:table-cell p-4 text-center">
           {item.teacher.name + " " + item.teacher.surname}
         </td>
@@ -255,10 +254,13 @@ const ExamListPage = async ({
           <td className="p-4 text-right">
             <div className="flex items-center gap-2 justify-end">
               <Link href={`/list/results/entry?examId=${item.id}`}>
-                <button className="w-8 h-8 flex items-center justify-center rounded-full bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all shadow-sm">
+                <button className="w-8 h-8 flex items-center justify-center rounded-full bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all shadow-sm mr-1">
                   <ClipboardCheck size={16} />
                 </button>
               </Link>
+              
+              {/* 🎯 ENHANCEMENT: Integrated Update trigger button seamlessly into the layout */}
+              {/* <FormContainer table="exam" type="update" data={item} relatedData={relatedData} /> */}
               <FormContainer table="exam" type="delete" id={item.id} />
             </div>
           </td>

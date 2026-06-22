@@ -22,18 +22,26 @@ const EventListPage = async ({
   const role = (sessionClaims?.metadata as { role?: string })?.role?.toLowerCase();
 
   const p = params.page ? parseInt(params.page) : 1;
-  const { classId, search } = params;
-
-  const dateParam = params?.date || new Date().toISOString().split("T")[0];
-const selectedDate = new Date(dateParam);
+  const { classId, search, date: dateParam } = params;
 
   // --- 1. BUILD QUERY ---
-  const query: Prisma.EventWhereInput = {
-    startTime: {
-    gte: new Date(selectedDate.setHours(0, 0, 0, 0)),
-    lte: new Date(selectedDate.setHours(23, 59, 59, 999)),
-  },
-  };
+  const query: Prisma.EventWhereInput = {};
+
+  // 📅 Check if a specific single date filter was explicitly passed
+  if (dateParam) {
+    const selectedDate = new Date(dateParam);
+    query.startTime = {
+      gte: new Date(selectedDate.setHours(0, 0, 0, 0)),
+      lte: new Date(selectedDate.setHours(23, 59, 59, 999)),
+    };
+  } else {
+    // 🎯 Fallback: Show all events from the start of today onwards
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    query.startTime = {
+      gte: todayStart,
+    };
+  }
 
   // 🔍 Apply Search Filter
   if (search) {
@@ -75,7 +83,6 @@ const selectedDate = new Date(dateParam);
     const conditions = roleConditions[role as keyof typeof roleConditions];
 
     if (classId) {
-      // 🎯 Logic: (User has permission for this class) AND (Event is Global OR Event is for this Class)
       query.AND = [
         conditions,
         {
@@ -86,7 +93,6 @@ const selectedDate = new Date(dateParam);
         }
       ];
     } else {
-      // Standard role-based visibility
       if (conditions) {
         query.AND = [conditions];
       }
@@ -94,13 +100,11 @@ const selectedDate = new Date(dateParam);
   } else {
     // 🛡️ ADMIN VIEW
     if (classId) {
-      // Admin sees Global events + specific class events
       query.OR = [
         { classId: null },
         { classId: parseInt(classId) }
       ];
     }
-    // If no classId, Admin query remains {} (sees all)
   }
 
   // --- 2. FOLDER VIEW (CLASS CARDS) ---
@@ -188,7 +192,7 @@ const selectedDate = new Date(dateParam);
           <div className="flex items-center gap-2">
             <CalendarDays size={14} className="text-slate-300" />
             <span className="tabular-nums">
-              {new Intl.DateTimeFormat("en-GB", { day: '2-digit', month: 'short' }).format(start)}
+              {new Intl.DateTimeFormat("en-GB", { day: '2-digit', month: 'short', year: 'numeric' }).format(start)}
             </span>
           </div>
         </td>
