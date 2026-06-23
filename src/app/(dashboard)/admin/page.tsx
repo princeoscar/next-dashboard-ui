@@ -74,33 +74,33 @@ const AdminPage = async ({ searchParams }: SearchParamsProps) => {
     });
 
     // 4. ATTENDANCE OVERSIGHT LOGIC (Today's Missing Logs)
-    const allSubjectAssignments = await prisma.subject.findMany({
-      include: {
-        classes: { select: { id: true, name: true } },
-        teachers: { select: { name: true, surname: true } },
-      },
-    });
+    // const allSubjectAssignments = await prisma.subject.findMany({
+    //   include: {
+    //     classes: { select: { id: true, name: true } },
+    //     teachers: { select: { name: true, surname: true } },
+    //   },
+    // });
 
-    const todaysLogs = await prisma.attendance.findMany({
-      where: { date: { gte: startOfToday, lte: endOfToday } },
-      select: { subjectId: true, student: { select: { classId: true } } },
-    });
+    // const todaysLogs = await prisma.attendance.findMany({
+    //   where: { date: { gte: startOfToday, lte: endOfToday } },
+    //   select: { subjectId: true, student: { select: { classId: true } } },
+    // });
 
-    const submittedKeys = new Set(todaysLogs.map((log) => `${log.subjectId}-${log.student.classId}`));
+    // const submittedKeys = new Set(todaysLogs.map((log) => `${log.subjectId}-${log.student.classId}`));
 
-    const pending = [];
-    for (const subject of allSubjectAssignments) {
-      for (const cls of subject.classes) {
-        const key = `${subject.id}-${cls.id}`;
-        if (!submittedKeys.has(key)) {
-          pending.push({
-            subjectName: subject.name,
-            className: cls.name,
-            teacher: subject.teachers[0],
-          });
-        }
-      }
-    }
+    // const pending = [];
+    // for (const subject of allSubjectAssignments) {
+    //   for (const cls of subject.classes) {
+    //     const key = `${subject.id}-${cls.id}`;
+    //     if (!submittedKeys.has(key)) {
+    //       pending.push({
+    //         subjectName: subject.name,
+    //         className: cls.name,
+    //         teacher: subject.teachers[0],
+    //       });
+    //     }
+    //   }
+    // }
 
     return (
       <div className="flex flex-col gap-4">
