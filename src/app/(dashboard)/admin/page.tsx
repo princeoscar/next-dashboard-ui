@@ -16,8 +16,8 @@ const AdminPage = async ({ searchParams }: SearchParamsProps) => {
   const { userId } = await auth();
 
   const currentAdmin = await prisma.admin.findUnique({
-  where: { id: userId! },
-});
+    where: { id: userId! },
+  });
 
   // 1. Get the Active Session
   const activeSession = await prisma.academicYear.findFirst({
@@ -28,8 +28,6 @@ const AdminPage = async ({ searchParams }: SearchParamsProps) => {
     const today = new Date();
     const startOfToday = new Date(today);
     startOfToday.setHours(0, 0, 0, 0);
-    const endOfToday = new Date(today);
-    endOfToday.setHours(23, 59, 59, 999);
 
     const endOfRange = new Date();
     endOfRange.setMonth(endOfRange.getMonth() + 3);
@@ -73,35 +71,6 @@ const AdminPage = async ({ searchParams }: SearchParamsProps) => {
       }
     });
 
-    // 4. ATTENDANCE OVERSIGHT LOGIC (Today's Missing Logs)
-    // const allSubjectAssignments = await prisma.subject.findMany({
-    //   include: {
-    //     classes: { select: { id: true, name: true } },
-    //     teachers: { select: { name: true, surname: true } },
-    //   },
-    // });
-
-    // const todaysLogs = await prisma.attendance.findMany({
-    //   where: { date: { gte: startOfToday, lte: endOfToday } },
-    //   select: { subjectId: true, student: { select: { classId: true } } },
-    // });
-
-    // const submittedKeys = new Set(todaysLogs.map((log) => `${log.subjectId}-${log.student.classId}`));
-
-    // const pending = [];
-    // for (const subject of allSubjectAssignments) {
-    //   for (const cls of subject.classes) {
-    //     const key = `${subject.id}-${cls.id}`;
-    //     if (!submittedKeys.has(key)) {
-    //       pending.push({
-    //         subjectName: subject.name,
-    //         className: cls.name,
-    //         teacher: subject.teachers[0],
-    //       });
-    //     }
-    //   }
-    // }
-
     return (
       <div className="flex flex-col gap-4">
         {/* SESSION INFO BAR */}
@@ -117,14 +86,10 @@ const AdminPage = async ({ searchParams }: SearchParamsProps) => {
           </Link>
         </div>
 
-
-
         {/* DASHBOARD CONTENT */}
         <AdminClientPage
-        
           counts={{
             ...stats, // Spreads existing counts (student, teacher, etc.)
-            attendanceOversight: pending, // 🎯 Pass the pending array here
           }}
           searchParams={resolvedSearchParams}
           announcements={announcements}

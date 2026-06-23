@@ -5,7 +5,7 @@ import FinanceChart from "@/components/FinanceChart";
 import UserCard from "@/components/UserCard";
 import Image from "next/image";
 import React, { useState } from "react";
-import { MessageSquare, Send, Calendar, CheckCircle2, AlertCircle } from "lucide-react"; 
+import { MessageSquare, Send, Calendar, CheckCircle2 } from "lucide-react"; 
 import { createAnnouncement, sendReplyMessage, createEvent } from "@/lib/actions";
 import { toast } from "react-toastify";
 
@@ -17,7 +17,6 @@ interface AdminClientProps {
     adminCount: number;
     announcementCount: number;
     msgCount: number;
-    attendanceOversight: any[]; // Data is coming through here
   };
   searchParams: { [key: string]: string | undefined };
   announcements: any[];
@@ -52,9 +51,6 @@ const AdminClientPage = ({
   const [isSending, setIsSending] = useState(false);
   const [isPostMode, setIsPostMode] = useState(false);
   const [isEventMode, setIsEventMode] = useState(false);
-
-  // 🎯 Use the prop from counts
-  const pending = counts?.attendanceOversight || [];
 
   const handleSendReply = async () => {
     if (!selectedMessage || !replyText.trim()) return;
@@ -99,48 +95,6 @@ const AdminClientPage = ({
         <div className="w-full h-[500px]">
           <FinanceChart />
         </div>
-{/* 🎯 ATTENDANCE OVERSIGHT */}
-        <div className="p-6 bg-white rounded-[2rem] border border-slate-100 shadow-sm">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-2">
-              <div className="p-2 bg-rose-50 rounded-lg text-rose-500">
-                <AlertCircle size={20}/>
-              </div>
-              <h2 className="text-xl font-black text-slate-800 uppercase tracking-tighter">
-                Daily <span className="text-rose-500">Oversight</span>
-              </h2>
-            </div>
-            <span className="px-3 py-1 bg-slate-100 rounded-full text-[10px] font-black text-slate-400 uppercase tracking-widest">
-              {new Intl.DateTimeFormat("en-GB").format(new Date())}
-            </span>
-          </div>
-
-          {pending.length === 0 ? (
-            <div className="py-8 text-center bg-emerald-50 rounded-2xl border border-emerald-100 flex flex-col items-center gap-2">
-              <CheckCircle2 className="text-emerald-500" size={24} />
-              <p className="text-emerald-600 text-xs font-bold uppercase italic tracking-widest">All teachers have submitted logs!</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-              {pending.map((item) => (
-                <div 
-                  key={`${item.subjectName}-${item.className}`} 
-                  className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-rose-200 hover:bg-rose-50/30 transition-all"
-                >
-                  <div>
-                    <p className="text-sm font-black text-slate-700 uppercase leading-none mb-1">{item.subjectName}</p>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest italic">
-                      {item.className} • {item.teacher ? `${item.teacher.name} ${item.teacher.surname}` : "Unassigned"}
-                    </p>
-                  </div>
-                  <span className="text-[8px] font-black bg-white border border-rose-100 text-rose-500 px-3 py-1 rounded-full uppercase tracking-tighter shadow-sm">
-                    Pending
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div> 
       </div>
 
       {/* RIGHT SIDE - Events, Inbox, Announcements */}
@@ -148,66 +102,61 @@ const AdminClientPage = ({
         
         {/* EVENTS SECTION */}
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-  {/* 🎯 Removed the top header div that had the "+ NEW" button and duplicated title */}
-
-  {isEventMode ? (
-    <form 
-      action={async (formData) => {
-        // 🎯 FIX: Pass formData directly since our action now handles it
-        const res = await createEvent({ success: false, error: false }, formData);
-        
-        if (res.success) {
-          toast.success("Event Scheduled!");
-          setIsEventMode(false);
-          // router.refresh(); // Recommended to refresh the calendar view
-        }
-      }} 
-      className="space-y-3 mb-6 animate-in fade-in slide-in-from-top-2"
-    >
-      <input 
-        name="title" 
-        placeholder="Event Name" 
-        className="w-full bg-slate-50 p-3 rounded-xl text-xs border border-slate-100 outline-none" 
-        required 
-      />
-      <div className="grid grid-cols-2 gap-2">
-        <input 
-          name="startTime" // Changed to match your Zod schema
-          type="datetime-local" 
-          className="bg-slate-50 p-2 rounded-lg text-[10px] border border-slate-100 outline-none" 
-          required 
-        />
-        <input 
-          name="endTime" // Changed to match your Zod schema
-          type="datetime-local" 
-          className="bg-slate-50 p-2 rounded-lg text-[10px] border border-slate-100 outline-none" 
-          required 
-        />
-      </div>
-      <textarea 
-        name="description" 
-        placeholder="Event Description"
-        className="w-full bg-slate-50 p-3 rounded-xl text-xs border border-slate-100 outline-none h-20 resize-none"
-      />
-      <button 
-        type="submit" 
-        className="w-full bg-blue-600 text-white font-bold py-2 rounded-xl text-[10px] uppercase tracking-widest hover:bg-blue-700 shadow-md transition-all active:scale-95"
-      >
-        Schedule Event
-      </button>
-      <button 
-        type="button"
-        onClick={() => setIsEventMode(false)}
-        className="w-full bg-slate-100 text-slate-500 font-bold py-2 rounded-xl text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-all"
-      >
-        Cancel
-      </button>
-    </form>
-  ) : (
-    /* This will now display your calendar and messages without the extra header */
-    eventList 
-  )}
-</div>
+          {isEventMode ? (
+            <form 
+              action={async (formData) => {
+                const res = await createEvent({ success: false, error: false }, formData);
+                
+                if (res.success) {
+                  toast.success("Event Scheduled!");
+                  setIsEventMode(false);
+                }
+              }} 
+              className="space-y-3 mb-6 animate-in fade-in slide-in-from-top-2"
+            >
+              <input 
+                name="title" 
+                placeholder="Event Name" 
+                className="w-full bg-slate-50 p-3 rounded-xl text-xs border border-slate-100 outline-none" 
+                required 
+              />
+              <div className="grid grid-cols-2 gap-2">
+                <input 
+                  name="startTime" 
+                  type="datetime-local" 
+                  className="bg-slate-50 p-2 rounded-lg text-[10px] border border-slate-100 outline-none" 
+                  required 
+                />
+                <input 
+                  name="endTime" 
+                  type="datetime-local" 
+                  className="bg-slate-50 p-2 rounded-lg text-[10px] border border-slate-100 outline-none" 
+                  required 
+                />
+              </div>
+              <textarea 
+                name="description" 
+                placeholder="Event Description"
+                className="w-full bg-slate-50 p-3 rounded-xl text-xs border border-slate-100 outline-none h-20 resize-none"
+              />
+              <button 
+                type="submit" 
+                className="w-full bg-blue-600 text-white font-bold py-2 rounded-xl text-[10px] uppercase tracking-widest hover:bg-blue-700 shadow-md transition-all active:scale-95"
+              >
+                Schedule Event
+              </button>
+              <button 
+                type="button"
+                onClick={() => setIsEventMode(false)}
+                className="w-full bg-slate-100 text-slate-500 font-bold py-2 rounded-xl text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-all"
+              >
+                Cancel
+              </button>
+            </form>
+          ) : (
+            eventList 
+          )}
+        </div>
 
         {/* MESSAGES HUB */}
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
@@ -277,18 +226,6 @@ const AdminClientPage = ({
 
         {/* ANNOUNCEMENTS SECTION */}
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-          {/* <div className="flex items-center justify-between mb-4">
-            <h1 className="text-xl font-black text-slate-800 tracking-tight uppercase">News Flash</h1>
-            <button 
-              onClick={() => setIsPostMode(!isPostMode)}
-              className={`text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest transition-all ${
-                isPostMode ? "bg-rose-50 text-rose-500" : "bg-blue-50 text-blue-600"
-              }`}
-            >
-              {isPostMode ? "Cancel" : "+ Post"}
-            </button>
-          </div> */}
-
           {isPostMode ? (
             <form action={async (formData) => {
               const res = await createAnnouncement({ success: false, error: false }, {
