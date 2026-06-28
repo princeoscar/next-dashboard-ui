@@ -15,14 +15,12 @@ const ResultListPage = async ({
 }: {
   searchParams: Promise<{ [key: string]: string | undefined }>;
 }) => {
-  // Now this line works correctly with the new type:
   const params = await searchParams;
   
   const { userId, sessionClaims } = await auth();
   const role = (sessionClaims?.metadata as { role?: string })?.role?.toLowerCase();
 
-  
-  const { classId, search, studentId: selectedStudentId, subjectId } = params; // Add subjectId here
+  const { classId, search, studentId: selectedStudentId, subjectId } = params;
   const p = params.page ? parseInt(params.page) : 1;
 
   // --- 1. THE GALLERY VIEW (FOR PARENTS ONLY) ---
@@ -36,7 +34,7 @@ const ResultListPage = async ({
     });
 
     return (
-      <div className="bg-white p-8 rounded-[2.5rem] flex-1 m-4 mt-0 shadow-sm border border-slate-100">
+      <div className="bg-white p-4 md:p-8 rounded-[2.5rem] flex-1 m-4 mt-0 shadow-sm border border-slate-100 max-w-full overflow-hidden">
         <div className="mb-10 text-center md:text-left">
           <div className="flex items-center justify-center md:justify-start gap-2 mb-1">
             <Trophy size={28} className="text-amber-400 fill-amber-400" />
@@ -101,7 +99,7 @@ const ResultListPage = async ({
     });
 
     return (
-      <div className="bg-white p-8 rounded-[2.5rem] flex-1 m-4 mt-0 shadow-sm border border-slate-100">
+      <div className="bg-white p-4 md:p-8 rounded-[2.5rem] flex-1 m-4 mt-0 shadow-sm border border-slate-100 max-w-full overflow-hidden">
         <div className="mb-10 text-center md:text-left">
           <h1 className="text-3xl font-black text-slate-800 tracking-tighter uppercase">Academic <span className="text-amber-500">Directory</span></h1>
           <p className="text-sm text-slate-400 font-medium italic uppercase tracking-widest mt-1 ml-1">Select a class to manage results</p>
@@ -140,7 +138,6 @@ const ResultListPage = async ({
       break;
   }
 
-  // 🎯 SUBJECT FILTER: Move this OUTSIDE the switch so it works for all roles
   if (subjectId) {
     andConditions.push({
       AND: [
@@ -155,7 +152,6 @@ const ResultListPage = async ({
     });
   }
 
-  // Keep your existing search and classId logic below...
   if (search) {
     andConditions.push({
       OR: [
@@ -172,9 +168,7 @@ const ResultListPage = async ({
 
   if (andConditions.length > 0) query.AND = andConditions;
 
-
   const cid = classId ? parseInt(classId) : undefined;
-
 
   // --- 4. DATA FETCHING ---
   const [data, count, exams, assignments, students, academicYears, subjects] = await prisma.$transaction([
@@ -206,31 +200,26 @@ const ResultListPage = async ({
       select: {
         id: true,
         title: true,
-        subject: { select: { name: true } } // 🎯 Make sure this is here!
+        subject: { select: { name: true } }
       },
     }),
-
     prisma.assignment.findMany({
       where: { classId: cid },
       select: { id: true, title: true }
     }),
-
     prisma.student.findMany({
-      where: { classId: cid }, // 🎯 Only students in this class
+      where: { classId: cid },
       select: { id: true, name: true, surname: true },
       orderBy: { name: "asc" }
     }),
-
     prisma.academicYear.findMany({
       select: { id: true, name: true }
     }),
-
-    // 🎯 Fetch subjects so the teacher can pick which subject the grade is for
     prisma.subject.findMany({
       where: {
         classes: {
           some: {
-            id: cid, // Only subjects associated with this class ID
+            id: cid,
           },
         },
       },
@@ -238,18 +227,18 @@ const ResultListPage = async ({
     }),
   ]);
 
-
   const relatedData = { exams, assignments, students, academicYears, subjects };
 
   // --- 5. RENDER TABLE ---
   const columns = [
     { header: "Subject & Student", accessor: "subject", className: "pl-2" },
     ...(role !== "student" ? [{ header: "Student", accessor: "student", className: "hidden md:table-cell" }] : []),
-    { header: "C.A", accessor: "ca", className: "hidden sm:table-cell text-center" }, // Add this
-    { header: "Exam", accessor: "exam", className: "hidden sm:table-cell text-center" }, // Add this
+    { header: "C.A", accessor: "ca", className: "hidden sm:table-cell text-center" },
+    { header: "Exam", accessor: "exam", className: "hidden sm:table-cell text-center" },
     { header: "Total", accessor: "total", className: "text-center w-[60px]" },
     { header: "Actions", accessor: "action", className: "text-right pr-4" },
   ];
+
   const renderRow = (item: any) => {
     const subjectName = item.subject?.name || item.exam?.subject?.name || item.assignment?.subject?.name || "Unknown";
     const studentFullname = `${item.student.name} ${item.student.surname}`;
@@ -260,11 +249,10 @@ const ResultListPage = async ({
 
     return (
       <tr key={item.id} className="border-b border-slate-100 last:border-0 text-sm hover:bg-slate-50 transition-all">
-        {/* SUBJECT */}
         <td className="p-2 pl-2 max-w-[150px] sm:max-w-none">
           <div className="flex flex-col gap-0.5">
-            <span className="font-black text-slate-700 uppercase text-[11px]">{subjectName}</span>
-            <span className="md:hidden text-[10px] font-bold text-amber-600 uppercase tracking-tight">
+            <span className="font-black text-slate-700 uppercase text-[11px] whitespace-normal">{subjectName}</span>
+            <span className="md:hidden text-[10px] font-bold text-amber-600 uppercase tracking-tight whitespace-normal">
               {studentFullname}
             </span>
             <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">
@@ -273,7 +261,6 @@ const ResultListPage = async ({
           </div>
         </td>
 
-        {/* 🎯 STUDENT (Only rendered if role is NOT student) */}
         {role !== "student" && (
           <td className="hidden md:table-cell p-4">
             <div className="flex items-center gap-2">
@@ -287,28 +274,24 @@ const ResultListPage = async ({
           </td>
         )}
 
-        {/* C.A SCORE */}
         <td className="p-4 text-center hidden sm:table-cell">
           <span className="text-xs font-black text-slate-400 bg-slate-50 px-2 py-1 rounded-md">
             {caScore}
           </span>
         </td>
 
-        {/* EXAM SCORE */}
         <td className="p-4 text-center hidden sm:table-cell">
           <span className="text-xs font-black text-slate-400 bg-slate-50 px-2 py-1 rounded-md">
             {examScore}
           </span>
         </td>
 
-        {/* TOTAL */}
         <td className="p-4 text-center">
           <span className={`font-black text-lg ${scoreColor}`}>
             {total}<span className="text-[10px] ml-0.5">%</span>
           </span>
         </td>
 
-        {/* ACTIONS */}
         <td className="p-4 text-right">
           <div className="flex items-center gap-2 justify-end">
             <Link href={`/print/${item.studentId}`}>
@@ -329,7 +312,8 @@ const ResultListPage = async ({
   };
 
   return (
-    <div className="bg-white p-8 rounded-[2.5rem] flex-1 m-4 mt-0 shadow-sm border border-slate-100">
+    // 🎯 FIX: Converted padding to p-4 dynamically, enforced max-w-full containment rules
+    <div className="bg-white p-4 md:p-8 rounded-[2.5rem] flex-1 m-4 mt-0 shadow-sm border border-slate-100 max-w-full overflow-hidden">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4 md:gap-6">
         <div className="flex items-center gap-4">
           <Link href="/list/results" className="p-2 hover:bg-slate-100 rounded-full transition-colors">
@@ -348,11 +332,9 @@ const ResultListPage = async ({
             <FormContainer table="result" type="create" relatedData={relatedData} />
           )}
         </div>
-
       </div>
 
       <div className="relative mb-6">
-        {/* Horizontal Scroll Container */}
         <div className="flex overflow-x-auto no-scrollbar items-center gap-2 pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap">
           <Link
             href={`/list/results?classId=${classId}`}
@@ -377,13 +359,14 @@ const ResultListPage = async ({
             </Link>
           ))}
         </div>
-
-        {/* Gradient fade to indicate more items - Optional but nice */}
         <div className="absolute right-0 top-0 bottom-2 w-8 bg-gradient-to-l from-slate-50 to-transparent pointer-events-none sm:hidden" />
       </div>
 
-      <div className="rounded-3xl border border-slate-50 overflow-hidden bg-white shadow-sm">
-        <Table columns={columns} renderRow={renderRow} data={data} />
+      {/* 🎯 FIX: Applied overflow wrapper constraints around your generic custom Table layout */}
+      <div className="rounded-3xl border border-slate-50 overflow-hidden bg-white shadow-sm w-full">
+        <div className="w-full overflow-x-auto">
+          <Table columns={columns} renderRow={renderRow} data={data} />
+        </div>
       </div>
 
       <div className="mt-8 border-t border-slate-50 pt-6">

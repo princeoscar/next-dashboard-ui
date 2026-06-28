@@ -7,7 +7,7 @@ const isPublicRoute = createRouteMatcher([
   '/sign-up(.*)',
   '/', 
   '/api/webhooks(.*)',
-  '/onboarding(.*)' // 🎯 CRITICAL: Onboarding must be public so you can see it!
+  '/onboarding(.*)'
 ]);
 
 const matchers = Object.entries(routeAccessMap).map(([route, allowedRoles]) => ({
@@ -35,13 +35,11 @@ export default clerkMiddleware(async (auth, req) => {
   const schoolId = metadata.schoolId;
 
   // 4. ONBOARDING REDIRECT (The "Guard")
-  // If they are an admin but have no school attached yet, send them to onboarding
   if (role === "admin" && !schoolId && currentPath !== "/onboarding") {
     return NextResponse.redirect(new URL("/onboarding", req.url));
   }
 
   // 5. PREVENT RE-ONBOARDING
-  // If they already have a school, don't let them go back to the onboarding page
   if (schoolId && currentPath === "/onboarding") {
     return NextResponse.redirect(new URL("/admin", req.url));
   }
@@ -50,7 +48,14 @@ export default clerkMiddleware(async (auth, req) => {
   for (const { matcher, allowedRoles } of matchers) {
     if (matcher(req)) {
       if (!allowedRoles.includes(role)) {
-        const fallbackPath = role ? `/${role}` : '/';
+        
+        // 🎯 FIX: If user has NO role, do not throw them into a homepage loop.
+        // Send them to a generic dashboard list or let them through if no fallback is available.
+        if (!role) {
+          return NextResponse.redirect(new URL('/list/results', req.url)); 
+        }
+
+        const fallbackPath = `/${role}`;
         if (currentPath.startsWith(fallbackPath)) return NextResponse.next();
         return NextResponse.redirect(new URL(fallbackPath, req.url));
       }

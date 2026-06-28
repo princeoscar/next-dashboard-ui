@@ -37,7 +37,7 @@ const ReportCardSheet = ({ data }: ReportCardProps) => {
     : 0;
 
   return (
-    <div className="p-4 md:p-12 bg-white flex flex-col min-h-screen md:min-h-[297mm] shadow-none print:p-8">
+    <div className="p-4 md:p-12 bg-white flex flex-col min-h-screen md:min-h-[297mm] shadow-none print:p-8 w-full max-w-[210mm] mx-auto">
 
       {/* 1. HEADER BRANDING */}
       <div className="flex flex-col sm:flex-row justify-between items-center gap-6 mb-10 border-b-2 border-slate-900 pb-6 text-center sm:text-left">
@@ -73,7 +73,6 @@ const ReportCardSheet = ({ data }: ReportCardProps) => {
       </div>
 
       {/* 3. PERFORMANCE SUMMARY */}
-      {/* 🎯 Dynamic grid setup: spans 1 column if SSS to ensure clean balance across full layout width */}
       <div className={`grid grid-cols-1 ${isSSS ? "md:grid-cols-1" : "md:grid-cols-2"} gap-4 md:gap-6 mb-8`}>
         <div className="border-2 border-indigo-100 bg-indigo-50/30 p-4 rounded-2xl flex items-center gap-4">
           <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center text-white shrink-0"><Award size={20} /></div>
@@ -83,7 +82,6 @@ const ReportCardSheet = ({ data }: ReportCardProps) => {
           </div>
         </div>
 
-        {/* 🎯 Hide entirely if it is an SSS class */}
         {!isSSS && data.position && (
           <div className="border-2 border-amber-100 bg-amber-50/30 p-4 rounded-2xl flex items-center gap-4">
             <div className="w-10 h-10 bg-amber-500 rounded-lg flex items-center justify-center text-white shrink-0"><Award size={20} /></div>
@@ -95,45 +93,47 @@ const ReportCardSheet = ({ data }: ReportCardProps) => {
         )}
       </div>
 
-      {/* 4. RESULTS TABLE */}
+      {/* 4. RESULTS TABLE - 🎯 FIX: Wrapped inside a fluid scrollbox container to avoid mobile clipping */}
       <div className="w-full border-2 border-slate-200 rounded-2xl overflow-hidden mb-6">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="bg-slate-900 text-white">
-              <th className="p-4 text-left text-[10px] font-black uppercase tracking-widest">Subject Title</th>
-              <th className="p-4 text-center text-[10px] font-black uppercase tracking-widest">CA (40)</th>
-              <th className="p-4 text-center text-[10px] font-black uppercase tracking-widest">Exam (60)</th>
-              <th className="p-4 text-center text-[10px] font-black uppercase tracking-widest">Total</th>
-              <th className="p-4 text-center text-[10px] font-black uppercase tracking-widest">{isSSS ? "Grade" : "Status"}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.subjects.map((sub, i) => (
-              <tr key={i} className="border-b border-slate-100 last:border-0 even:bg-slate-50/50">
-                <td className="p-4 font-black text-slate-800 text-sm uppercase">{sub.name}</td>
-                <td className="p-4 text-center font-bold text-slate-500 tabular-nums">{sub.ca}</td>
-                <td className="p-4 text-center font-bold text-slate-500 tabular-nums">{sub.exam}</td>
-                <td className="p-4 text-center font-black text-slate-900 tabular-nums text-base">{sub.total}%</td>
-                <td className="p-4 text-center">
-                  <span className={`font-black text-xs uppercase ${parseFloat(sub.total) >= 70
-                      ? "text-green-600"
-                      : parseFloat(sub.total) >= 50
-                        ? "text-blue-600"
-                        : "text-red-600"
-                    }`}>
-                    {sub.level || (
-                      parseFloat(sub.total) >= 70
-                        ? "Excellent"
-                        : parseFloat(sub.total) >= 50
-                          ? "Pass"
-                          : "Fail"
-                    )}
-                  </span>
-                </td>
+        <div className="w-full overflow-x-auto">
+          <table className="w-full border-collapse min-w-[500px] md:min-w-0">
+            <thead>
+              <tr className="bg-slate-900 text-white">
+                <th className="p-4 text-left text-[10px] font-black uppercase tracking-widest">Subject Title</th>
+                <th className="p-4 text-center text-[10px] font-black uppercase tracking-widest">CA (40)</th>
+                <th className="p-4 text-center text-[10px] font-black uppercase tracking-widest">Exam (60)</th>
+                <th className="p-4 text-center text-[10px] font-black uppercase tracking-widest">Total</th>
+                <th className="p-4 text-center text-[10px] font-black uppercase tracking-widest">{isSSS ? "Grade" : "Status"}</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {data.subjects.map((sub, i) => (
+                <tr key={i} className="border-b border-slate-100 last:border-0 even:bg-slate-50/50">
+                  <td className="p-4 font-black text-slate-800 text-sm uppercase whitespace-normal">{sub.name}</td>
+                  <td className="p-4 text-center font-bold text-slate-500 tabular-nums">{sub.ca}</td>
+                  <td className="p-4 text-center font-bold text-slate-500 tabular-nums">{sub.exam}</td>
+                  <td className="p-4 text-center font-black text-slate-900 tabular-nums text-base">{sub.total}%</td>
+                  <td className="p-4 text-center">
+                    <span className={`font-black text-xs uppercase ${parseFloat(sub.total) >= 70
+                        ? "text-green-600"
+                        : parseFloat(sub.total) >= 50
+                          ? "text-blue-600"
+                          : "text-red-600"
+                      }`}>
+                      {sub.level || (
+                        parseFloat(sub.total) >= 70
+                          ? "Excellent"
+                          : parseFloat(sub.total) >= 50
+                            ? "Pass"
+                            : "Fail"
+                      )}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* 5. ATTENDANCE SUMMARY SECTION */}
@@ -167,8 +167,8 @@ const ReportCardSheet = ({ data }: ReportCardProps) => {
         </div>
       </div>
 
-      {/* 7. SIGNATURES */}
-      <div className="mt-auto grid grid-cols-2 gap-32 px-10 pb-10 pt-12">
+      {/* 7. SIGNATURES - 🎯 FIX: Balanced layout spacing to drop down gracefully on small screens */}
+      <div className="mt-auto grid grid-cols-1 sm:grid-cols-2 gap-10 sm:gap-20 md:gap-32 px-4 sm:px-10 pb-10 pt-12">
         <div className="flex flex-col items-center">
           <div className="w-full border-b-2 border-slate-900 mb-2 h-10 flex items-end justify-center" />
           <p className="text-[10px] font-black uppercase tracking-widest text-slate-900 text-center">Class Teacher</p>

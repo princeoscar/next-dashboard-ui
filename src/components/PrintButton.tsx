@@ -2,7 +2,7 @@
 
 export default function PrintButton() {
   return (
-    <div className="fixed top-8 right-8 print:hidden z-50">
+    <div className="top-8 right-8 print:hidden z-50">
       <button 
         onClick={() => window.print()} 
         className="bg-slate-900 text-white px-6 py-3 rounded-xl font-bold hover:bg-slate-800
