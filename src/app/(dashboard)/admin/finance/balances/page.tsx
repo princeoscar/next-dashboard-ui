@@ -3,13 +3,13 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 
 interface AdminBalancesPageProps {
-  searchParams: {
-    status?: "FULLY_PAID" | "PARTIAL" | "UNPAID";
-  };
+  searchParams: Promise<{ status?: "UNPAID" | "PARTIAL" | "FULLY_PAID" }>;
 }
 
-export default async function AdminOutstandingBalancesReport({ searchParams }: AdminBalancesPageProps) {
-  const currentTab = searchParams.status || "UNPAID";
+export default async function AdminOutstandingBalancesReport(props: AdminBalancesPageProps) {
+  // Await the searchParams immediately here
+  const { status } = await props.searchParams;
+  const currentTab = status || "UNPAID";
 
   // 1. Fetch ledger accounts and include the nested Student and Class/Level relationships
   const studentLedger = await prisma.studentBalance.findMany({
@@ -17,6 +17,7 @@ export default async function AdminOutstandingBalancesReport({ searchParams }: A
       status: currentTab
     },
     include: {
+      student: { include: { class: true } },
       allocation: {
         include: { category: true }
       }
@@ -130,8 +131,8 @@ export default async function AdminOutstandingBalancesReport({ searchParams }: A
                     <td className="p-4 text-red-600 font-bold">₦{Number(row.outstanding).toLocaleString()}</td>
                     <td className="p-4">
                       <span className={`text-[9px] px-2.5 py-0.5 rounded-full font-bold ${row.status === "FULLY_PAID" ? "bg-green-50 text-green-700 border border-green-200" :
-                          row.status === "PARTIAL" ? "bg-amber-50 text-amber-700 border border-amber-200" :
-                            "bg-red-50 text-red-700 border border-red-200"
+                        row.status === "PARTIAL" ? "bg-amber-50 text-amber-700 border border-amber-200" :
+                          "bg-red-50 text-red-700 border border-red-200"
                         }`}>
                         {row.status}
                       </span>
