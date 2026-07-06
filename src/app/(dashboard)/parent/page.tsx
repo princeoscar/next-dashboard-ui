@@ -5,10 +5,20 @@ import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { FileText, Bell, UserCircle, Wallet, Calendar as CalendarIcon } from "lucide-react";
 
-const ParentPage = async ({ searchParams }: { searchParams: { studentId?: string } }) => {
+// 1. Update the Props type to expect a Promise
+const ParentPage = async ({
+  searchParams
+}: {
+  searchParams: Promise<{ studentId?: string }>
+}) => {
   const { userId } = await auth();
   if (!userId) return null;
 
+  // 2. Await the searchParams here
+  const params = await searchParams;
+  const studentIdParam = params.studentId;
+
+  // 1. Fetch Parent, Students, and Active Session
   // 1. Fetch Parent, Students, and Active Session
   const [parentData, activeYear] = await Promise.all([
     prisma.parent.findFirst({
@@ -23,8 +33,8 @@ const ParentPage = async ({ searchParams }: { searchParams: { studentId?: string
   if (!parentData) return <div className="p-8 text-center">Parent profile not found.</div>;
   if (!activeYear) return <div className="p-8 text-red-500 font-bold">⚠️ Contact Admin to set active session.</div>;
 
-  // 2. Identify Active Child
-  const activeStudentId = searchParams.studentId || parentData.students[0]?.id;
+  // 3. Identify Active Child using the awaited param
+  const activeStudentId = studentIdParam || parentData.students[0]?.id;
   const selectedStudent = parentData.students.find((s: any) => s.id === activeStudentId);
 
   // 3. Fetch Data for Selected Child
@@ -32,9 +42,9 @@ const ParentPage = async ({ searchParams }: { searchParams: { studentId?: string
     prisma.announcement.findMany({ take: 5, orderBy: { date: "desc" } }),
     prisma.event.findMany({ take: 5, orderBy: { startTime: "asc" } }),
     prisma.message.findMany({ where: { receiverId: userId }, take: 5 }),
-    selectedStudent ? prisma.studentBalance.findMany({ 
-        where: { studentId: selectedStudent.id },
-        include: { allocation: { include: { category: true } } }
+    selectedStudent ? prisma.studentBalance.findMany({
+      where: { studentId: selectedStudent.id },
+      include: { allocation: { include: { category: true } } }
     }) : []
   ]);
 
@@ -43,18 +53,17 @@ const ParentPage = async ({ searchParams }: { searchParams: { studentId?: string
   return (
     <div className="p-4 md:p-8 flex gap-8 flex-col xl:flex-row bg-slate-50/50 min-h-screen">
       <div className="w-full xl:w-2/3 flex flex-col gap-8">
-        
+
         {/* CHILD SWITCHER */}
         <div className="flex gap-3">
           {parentData.students.map((student: any) => (
             <Link
               key={student.id}
               href={`/dashboard/parent?studentId=${student.id}`}
-              className={`px-6 py-3 rounded-2xl font-black uppercase text-xs tracking-widest border transition-all ${
-                activeStudentId === student.id 
-                  ? "bg-slate-900 text-white border-slate-900" 
+              className={`px-6 py-3 rounded-2xl font-black uppercase text-xs tracking-widest border transition-all ${activeStudentId === student.id
+                  ? "bg-slate-900 text-white border-slate-900"
                   : "bg-white text-slate-400 border-slate-200 hover:border-slate-300"
-              }`}
+                }`}
             >
               {student.name}
             </Link>
@@ -94,7 +103,10 @@ const ParentPage = async ({ searchParams }: { searchParams: { studentId?: string
             </div>
 
             <div className="h-[400px]">
-              <BigCalendarContainer type="classId" id={selectedStudent.classId} />
+              <BigCalendarContainer
+                type="classId"
+                id={selectedStudent.classId ?? 0}
+              />
             </div>
           </div>
         )}
@@ -102,8 +114,8 @@ const ParentPage = async ({ searchParams }: { searchParams: { studentId?: string
 
       <div className="w-full xl:w-1/3">
         <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
-            <h2 className="text-lg font-black mb-6 flex items-center gap-2"><Bell size={20} /> Bulletins</h2>
-            <Announcements data={announcements} />
+          <h2 className="text-lg font-black mb-6 flex items-center gap-2"><Bell size={20} /> Bulletins</h2>
+          <Announcements data={announcements} />
         </div>
       </div>
     </div>
