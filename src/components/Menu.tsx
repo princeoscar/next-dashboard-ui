@@ -6,7 +6,11 @@ import {
   Home, Users, UserSquare2, UserCircle, BookOpen, GraduationCap,
   Book, FileText, ClipboardList, BarChart3, CheckCircle2,
   Calendar, MessageCircle, Megaphone, User, Settings, LogOut,
-  CalendarDays
+  CalendarDays,
+  ClipboardListIcon,
+  Banknote,
+  Calculator,
+  Bell
 } from "lucide-react";
 
 const getMenuItems = (role: string) => [
@@ -14,8 +18,17 @@ const getMenuItems = (role: string) => [
     title: "MENU",
     items: [
       { icon: <Home size={20} />, label: "Home", href: "/", visible: ["admin", "teacher", "student", "parent"] },
+      { icon: <ClipboardListIcon size={20} />, label: "Admissions", href: "/list/admissions", visible: ["admin"] },
+      { icon: <Banknote size={20} />, label: "Finance Tracking", href: "/admin/finance/balances", visible: ["admin"], },
+      {
+      icon: <Calculator size={20} />, // Or Lucide icon
+      label: "Allocate Fees",
+      href: "/admin/finance/allocate", // The new page we built
+      visible: ["admin"],
+    },
       { icon: <Users size={20} />, label: "Teachers", href: "/list/teachers", visible: ["admin", "teacher"] },
       { icon: <UserSquare2 size={20} />, label: "Students", href: "/list/students", visible: ["admin", "teacher"] },
+      
       { icon: <UserCircle size={20} />, label: "Parents", href: "/list/parents", visible: ["admin", "teacher"] },
       { icon: <GraduationCap size={20} />, label: "Classes", href: "/list/classes", visible: ["admin", "teacher"] },
       { icon: <BookOpen size={20} />, label: "Subjects", href: "/list/subjects", visible: ["admin"] },
@@ -24,10 +37,13 @@ const getMenuItems = (role: string) => [
       { icon: <ClipboardList size={20} />, label: "Assignments", href: "/list/assignments", visible: ["admin", "teacher", "student", "parent"] },
       { icon: <BarChart3 size={20} />, label: "Results", href: "/list/results", visible: ["admin", "teacher", "student", "parent"] },
       { icon: <CheckCircle2 size={20} />, label: "Attendance", href: "/list/attendance", visible: ["admin", "teacher", "student", "parent"] },
+      { icon: <Bell size={20} />, label: "Notifications", href: "/list/notifications", visible: ["admin", "teacher", "student", "parent"] },
+
       { icon: <Calendar size={20} />, label: "Events", href: "/list/events", visible: ["admin", "teacher", "student", "parent"] },
       { icon: <MessageCircle size={20} />, label: "Messages", href: "/list/messages", visible: ["admin", "teacher", "student", "parent"] },
       { icon: <Megaphone size={20} />, label: "Announcements", href: "/list/announcements", visible: ["admin", "teacher", "student", "parent"] },
       
+
 
     ],
   },
@@ -48,10 +64,30 @@ const Menu = ({ role, onClose }: { role: string; onClose?: () => void }) => {
   return (
     <div className="flex flex-col justify-between h-full min-h-[calc(100vh-40px)]">
       {/* 1. TOP SECTION: NAV LINKS */}
-      <div className="text-sm flex flex-col gap-2 p-4">
+      <div
+className="
+text-sm
+flex
+flex-col
+gap-4
+px-3
+py-5
+overflow-y-auto
+"
+>
         {menuItems.map((container) => (
           <div className="flex flex-col gap-2" key={container.title}>
-            <span className="text-gray-400 font-semibold my-3 uppercase tracking-wider text-[11px] px-2">
+            <span
+className="
+px-4
+mb-2
+text-[10px]
+font-black
+uppercase
+tracking-[0.25em]
+text-slate-400
+"
+>
               {container.title}
             </span>
 
@@ -62,12 +98,46 @@ const Menu = ({ role, onClose }: { role: string; onClose?: () => void }) => {
                     <SignOutButton key={item.label} redirectUrl="/">
                       <button
                         onClick={onClose}
-                        className="flex items-center justify-start gap-3 text-slate-700 py-2 px-3 rounded-lg hover:bg-rose-50 hover:text-rose-600 transition-all duration-200 active:scale-95 group w-full text-left"
+                        className="
+flex items-center
+gap-4
+rounded-xl
+px-4
+py-3
+text-slate-700
+font-medium
+transition-all
+duration-300
+hover:bg-gradient-to-r
+hover:from-blue-50
+hover:to-indigo-50
+hover:text-blue-700
+hover:shadow-md
+hover:shadow-blue-100
+hover:-translate-y-[2px]
+active:scale-95
+group
+"
                       >
-                        <span className="text-slate-500 group-hover:text-rose-500 transition-colors">
+                        <span
+className="
+text-slate-500
+group-hover:text-blue-600
+transition-all
+duration-300
+group-hover:scale-110
+"
+>
                           {item.icon}
                         </span>
-                        <span className="lg:block font-semibold">{item.label}</span>
+                        <span
+className="
+hidden
+lg:block
+tracking-wide
+font-semibold
+"
+>{item.label}</span>
                       </button>
                     </SignOutButton>
                   );
@@ -78,12 +148,46 @@ const Menu = ({ role, onClose }: { role: string; onClose?: () => void }) => {
                     href={item.href}
                     key={item.label}
                     onClick={onClose}
-                    className="flex items-center justify-start gap-3 text-slate-700 py-2 px-3 rounded-lg hover:bg-blue-50/50 hover:text-blue-600 transition-all duration-200 active:scale-95 group"
+                    className="
+flex items-center
+gap-4
+rounded-xl
+px-4
+py-3
+text-slate-700
+font-medium
+transition-all
+duration-300
+hover:bg-gradient-to-r
+hover:from-blue-50
+hover:to-indigo-50
+hover:text-blue-700
+hover:shadow-md
+hover:shadow-blue-100
+hover:-translate-y-[2px]
+active:scale-95
+group
+"
                   >
-                    <span className="text-slate-500 group-hover:text-blue-500 transition-colors">
+                    <span
+                      className="
+text-slate-500
+group-hover:text-blue-600
+transition-all
+duration-300
+group-hover:scale-110
+"
+                    >
                       {item.icon}
                     </span>
-                    <span className="lg:block font-semibold">{item.label}</span>
+                    <span
+className="
+hidden
+lg:block
+tracking-wide
+font-semibold
+"
+>{item.label}</span>
                   </Link>
                 );
               }
@@ -94,18 +198,68 @@ const Menu = ({ role, onClose }: { role: string; onClose?: () => void }) => {
       </div>
 
       {/* 2. BOTTOM SECTION: VERSION FOOTER */}
+      {/* Premium Footer */}
       <div className="p-4 mt-auto">
-        <div className="flex flex-col items-center justify-center p-4 bg-slate-50 rounded-2xl border border-slate-100">
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
-            System Version
-          </p>
-          <div className="flex items-center gap-2 mt-1">
-            <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
-            <p className="text-xs font-bold text-slate-600">v1.0.4-stable</p>
+        <div className="rounded-3xl overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white shadow-xl">
+
+          <div className="p-5">
+
+            <div className="flex items-center gap-3">
+
+              <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center text-2xl font-black">
+                R
+              </div>
+
+              <div>
+                <h3 className="font-extrabold tracking-wide">
+                  RUBIX
+                </h3>
+
+                <p className="text-xs text-blue-200">
+                  School ERP
+                </p>
+              </div>
+
+            </div>
+
+            <div className="mt-5 border-t border-white/10 pt-4">
+
+              <div className="flex justify-between">
+
+                <span className="text-xs text-slate-300">
+                  Enterprise
+                </span>
+
+                <span className="font-bold text-green-400">
+                  v2.0
+                </span>
+
+              </div>
+
+              <div className="flex justify-between mt-2">
+
+                <span className="text-xs text-slate-300">
+                  Status
+                </span>
+
+                <span className="flex items-center gap-2 text-green-400 text-xs font-bold">
+
+                  <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+
+                  Online
+
+                </span>
+
+              </div>
+
+            </div>
+
           </div>
-          <p className="text-[9px] text-slate-400 mt-2 font-medium">
-            © RubixTech 2026 Dashboard UI
-          </p>
+
+          <div className="bg-black/20 px-5 py-3 text-center text-[10px] text-slate-300">
+            © 2026 Rubix Technologies
+          </div>
+
         </div>
       </div>
     </div>

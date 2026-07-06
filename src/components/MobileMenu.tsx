@@ -55,7 +55,7 @@ const MobileMenu = ({ role }: { role: string }) => {
               >
                 {/* Apply Premium font 'font-playfair' here */}
                 <span className="text-2xl font-bold font-playfair tracking-tight text-slate-900">
-                  <span className="text-blue-600">Rubix</span> Schools
+                  <span className="text-blue-600">Rubix</span>  ERP
                 </span>
               </Link>
 

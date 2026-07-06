@@ -5,6 +5,18 @@ export const currentUserId = async () => {
   return userId;
 };
 
+export function formatPhoneNumber(phone: string) {
+  // Remove spaces, dashes, or parentheses
+  let cleaned = phone.replace(/\D/g, ""); 
+  
+  // Convert 080... to 23480...
+  if (cleaned.startsWith("0")) {
+    return "234" + cleaned.substring(1); 
+  }
+  // If it already starts with 234, return as is
+  return cleaned;
+}
+
 export const getRole = async () => {
   const { sessionClaims } = await auth();
   return (sessionClaims?.metadata as { role?: string })?.role;
@@ -17,6 +29,9 @@ export const adjustScheduleToCurrentWeek = (
   const day = startOfWeek.getDay();
   const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1); // Adjust to Monday
   startOfWeek.setDate(diff);
+
+
+
 
   return subjects.map((subject) => {
     const subjectDay = subject.start.getDay();

@@ -29,7 +29,7 @@ const Navbar = ({
 }: NavbarProps) => {
   const router = useRouter();
   const [isMounted, setIsMounted] = useState(false);
-  
+
   // Local state for live updates
   const [announcementNotify, setAnnouncementNotify] = useState(announcementCount);
   const [messageNotify, setMessageNotify] = useState(messageCount);
@@ -63,7 +63,7 @@ const Navbar = ({
       cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
     });
 
-    
+
 
     // --- CHANNEL 1: PUBLIC ANNOUNCEMENTS ---
     // Note: If you want class-specific Pusher notifications, you'd subscribe to `class-${userClassId}`
@@ -105,21 +105,30 @@ const Navbar = ({
       {/* LEFT: MOBILE MENU & SEARCH */}
       <div className="flex items-center gap-4">
         <div className="md:hidden">
+          <div className="hidden lg:flex flex-col">
+            <h2 className="text-xl font-bold text-slate-800">
+              Dashboard
+            </h2>
+
+            <span className="text-xs text-slate-500">
+              Welcome back, {firstName}
+            </span>
+          </div>
           <MobileMenu role={role} />
         </div>
-        <div className="hidden md:flex items-center gap-2 text-xs rounded-full ring-[1.5px] ring-slate-200 px-3 py-2 focus-within:ring-blue-400 transition-all bg-slate-50/50">
+        <div className="hidden md:flex items-center gap-2 text-xs rounded-full ring-[1.5px] ring-slate-200 px-3 py-2 focus-within:ring-blue-400 transition-all bg-white shadow-sm">
           <Search size={14} className="text-slate-400" />
-          <input 
-            type="text" 
-            placeholder="Search dashboard..." 
-            className="w-[200px] bg-transparent outline-none text-slate-600" 
+          <input
+            type="text"
+            placeholder="Search students, teachers, classes..."
+            className="w-[260px] xl:w-[340px] bg-transparent outline-none text-slate-600"
           />
         </div>
       </div>
 
       {/* RIGHT: ICONS & USER */}
       <div className="flex items-center gap-3 sm:gap-5">
-        
+
         {/* Messages Icon */}
         <div onClick={handleMessageClick} className="group relative bg-slate-50 p-2.5 rounded-full hover:bg-blue-50 transition-all cursor-pointer border border-slate-100">
           <MessageSquare size={18} className="text-slate-500 group-hover:text-blue-600" />
@@ -145,16 +154,17 @@ const Navbar = ({
         <div className="flex items-center gap-3 border-l pl-4 border-slate-200 ml-1">
           <div className="hidden sm:flex flex-col items-end">
             <span className="text-[11px] font-bold text-slate-800 leading-tight">{firstName || "User"}</span>
-            <span className="text-[9px] uppercase font-black text-blue-600 tracking-tighter">{role}</span>
+            <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-[10px] font-bold uppercase">{role}</span>
           </div>
           <UserButton
-           appearance={{
-             elements: {
-               userButtonAvatarBox: "w-9 h-9 border border-slate-200 shadow-sm",
-               footer: "hidden",
-            footerAction: "hidden",
-            internal: "display-none",
-               } }} />
+            appearance={{
+              elements: {
+                userButtonAvatarBox: "w-9 h-9 border border-slate-200 shadow-sm",
+                footer: "hidden",
+                footerAction: "hidden",
+                internal: "display-none",
+              }
+            }} />
         </div>
       </div>
     </div>

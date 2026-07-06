@@ -15,8 +15,8 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "Rubix Schools Admin Dashboard",
-  description: "Secure school management platform.",
+  title: "Rubix School ERP",
+  description: "A complete School Management & ERP Solution",
 };
 
 export default function RootLayout({

@@ -1,6 +1,9 @@
 "use server";
 
 import { revalidatePath, revalidateTag } from "next/cache";
+import { sendAttendanceAlert } from "@/lib/notifications";
+import { formatPhoneNumber } from "@/lib/utils";
+import { sendResultNotification } from "@/lib/notifications"; // Ensure this is imported
 import {
   AnnouncementSchema,
   AssignmentSchema,
@@ -1094,55 +1097,62 @@ export const saveBulkResultsAction = async (
     };
   }
 };
-// ---------------- ATTENDANCE ----------------
 
 export async function createAttendance(prevState: any, formData: FormData) {
   try {
+    // ... (Your existing parsing logic remains the same)
     const dateStr = formData.get("date") as string;
     const schoolId = formData.get("schoolId") as string;
     const academicYearIdStr = formData.get("academicYearId") as string;
     const subjectIdStr = formData.get("subjectId") as string | null;
-    
-    // 🎯 FIX: Parse the stringified students back into a structural array
     const studentsRaw = formData.get("students") as string;
     const students = studentsRaw ? JSON.parse(studentsRaw) : [];
 
-    if (!students || students.length === 0) {
-      return { success: false, error: true, message: "No students provided" };
-    }
+    if (!students || students.length === 0) return { success: false, error: true };
 
     const date = new Date(dateStr);
     const academicYearId = parseInt(academicYearIdStr);
     const subjectId = subjectIdStr ? parseInt(subjectIdStr) : null;
 
-    // 1. We use a transaction so it's all or nothing
+    // 1. Transaction
     await prisma.$transaction(
-  students.map((s: any) =>
-    prisma.attendance.upsert({
-      where: {
-        date_studentId: {
-          date: date,
-          studentId: s.studentId,
-            },
+      students.map((s: any) =>
+        prisma.attendance.upsert({
+          where: { date_studentId: { date: date, studentId: s.studentId } },
+          update: { present: s.present, subjectId: subjectId ?? null },
+          create: {
+            date: date,
+            studentId: s.studentId,
+            present: s.present,
+            schoolId: schoolId,
+            academicYearId: academicYearId,
+            subjectId: subjectId ?? null,
           },
-      update: {
-        present: s.present,
-        // 🎯 Pass null explicitly if subjectId is missing
-        subjectId: subjectId ?? null, 
-      },
-      create: {
-        date: date,
-        studentId: s.studentId,
-        present: s.present,
-        schoolId: schoolId,
-        academicYearId: academicYearId,
-        // 🎯 Pass null explicitly here too
-        subjectId: subjectId ?? null,
-      },
-    })
-  )
-);
+        })
+      )
+    );
 
+   // 2. TRIGGER NOTIFICATIONS (Only for those marked absent)
+const absentStudents = students.filter((s: any) => s.present === false);
+
+if (absentStudents.length > 0) {
+  const absentStudentIds = absentStudents.map((s: any) => s.studentId);
+  
+  const studentsWithParents = await prisma.student.findMany({
+    where: { id: { in: absentStudentIds } },
+    include: { parent: true },
+  });
+
+  for (const student of studentsWithParents) {
+    if (student.parent?.phone) {
+      // Use the utility to ensure proper format (080 -> 23480)
+      const formattedPhone = formatPhoneNumber(student.parent.phone);
+      
+      // Pass the student.id so the log links correctly in the DB
+      await sendAttendanceAlert(formattedPhone, student.name, student.id);
+    }
+  }
+}
     return { success: true, error: false };
   } catch (err) {
     console.error("Server Action Error:", err);
@@ -1695,12 +1705,9 @@ export const deleteLesson = async (
   }
 };
 
-export const createResult = async (
-  currentState: State,
-  data: any,
-): Promise<State> => {
+export const createResult = async (currentState: State, data: any): Promise<State> => {
   try {
-    await prisma.result.create({
+    const result = await prisma.result.create({
       data: {
         studentId: data.studentId,
         subjectId: parseInt(data.subjectId),
@@ -1709,15 +1716,28 @@ export const createResult = async (
         examId: data.examId ? parseInt(data.examId) : null,
         assignmentId: data.assignmentId ? parseInt(data.assignmentId) : null,
         testScore: data.testScore ? parseInt(data.testScore) : null,
-        assignmentScore: data.assignmentScore
-          ? parseInt(data.assignmentScore)
-          : null,
+        assignmentScore: data.assignmentScore ? parseInt(data.assignmentScore) : null,
         examScore: data.examScore ? parseInt(data.examScore) : null,
         totalScore: data.totalScore ? parseInt(data.totalScore) : null,
         grade: data.grade,
         remark: data.remark,
       },
+      include: {
+        student: { include: { parent: true } },
+        subject: true
+      }
     });
+
+    // 🎯 TRIGGER NOTIFICATION
+    if (result.student.parent?.phone) {
+        await sendResultNotification(
+            formatPhoneNumber(result.student.parent.phone),
+            result.student.name,
+            result.subject.name,
+            result.totalScore ?? 0,
+            result.studentId
+        );
+    }
 
     revalidatePath("/list/results");
     return { success: true, error: false };

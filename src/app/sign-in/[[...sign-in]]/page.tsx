@@ -4,24 +4,25 @@ import { SignIn, useUser } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import Image from 'next/image';
+import Link from 'next/link'; // 🎯 FIXED: Added missing import
 
 const LoginPage = () => {
     const { isLoaded, isSignedIn, user } = useUser()
     const router = useRouter()
 
     useEffect(() => {
-    if (isLoaded && isSignedIn && user) {
-        const role = (user.publicMetadata?.role as string)?.toLowerCase();
-        console.log("Current User Role:", role); // <--- Add this
-        
-        if (role) {
-            router.push(`/${role}`);
-        } else {
-            console.log("No role found, trying to redirect to /admin...");
-            router.push('/admin');
+        if (isLoaded && isSignedIn && user) {
+            const role = (user.publicMetadata?.role as string)?.toLowerCase();
+            console.log("Current User Role:", role);
+
+            if (role) {
+                router.push(`/${role}`);
+            } else {
+                console.log("No role found, trying to redirect to /admin...");
+                router.push('/admin');
+            }
         }
-    }
-}, [isLoaded, isSignedIn, user, router])
+    }, [isLoaded, isSignedIn, user, router])
 
     if (!isLoaded) return null;
 
@@ -41,17 +42,17 @@ const LoginPage = () => {
                         <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
                             <span className="text-white font-black text-2xl">R</span>
                         </div>
-                        <h1 className="text-white text-3xl font-bold tracking-tight italic">Rubix Schools</h1>
+                        <h1 className="text-white text-3xl font-bold tracking-tight italic">Rubix School ERP</h1>
                     </div>
 
                     {/* Value Proposition */}
                     <div className="max-w-md">
                         <h2 className="text-white text-5xl font-extrabold leading-tight mb-6">
-                            Smart School <br /> 
-                            <span className="text-indigo-400">Management.</span>
+                            Smart School <br />
+                            <span className="text-indigo-400">Management System.</span>
                         </h2>
                         <p className="text-slate-400 text-lg leading-relaxed">
-                            Empowering educators and students with real-time insights, 
+                            Empowering educators and students with real-time insights,
                             automated attendance, and seamless communication.
                         </p>
                     </div>
@@ -82,10 +83,10 @@ const LoginPage = () => {
                 </div>
 
                 <div className="w-full max-w-md">
-                    <SignIn 
-                        path="/sign-in" 
-                        routing="path" 
-                        signUpUrl="/sign-up" 
+                    <SignIn
+                        path="/sign-in"
+                        routing="path"
+                        signUpUrl="/sign-up"
                         appearance={{
                             elements: {
                                 card: "shadow-2xl border border-slate-200/50 rounded-3xl",
@@ -98,10 +99,20 @@ const LoginPage = () => {
                             }
                         }}
                     />
+                    <div className="mt-6 border-t pt-6 text-center">
+                        <p className="text-sm text-gray-500">Prospective parent looking to enroll your ward?</p>
+                        <Link
+                            href="/apply" // 🎯 UPDATED: Pointed to your newly created application route
+                            className="mt-2 inline-block text-sm font-semibold text-blue-600 hover:underline"
+                        >
+                            Apply for Admission Online &rarr;
+                        </Link>
+                    </div>
                 </div>
-                
-                <p className="mt-8 text-slate-400 text-sm">
-                    © 2026 RubixTech Systems. All rights reserved.
+
+                <p className="mt-8 text-slate-400 text-sm text-center">
+                    © 2026 Rubix School ERP<br />
+                    Developed by Rubix Technologies. All rights reserved.
                 </p>
             </div>
         </div>
