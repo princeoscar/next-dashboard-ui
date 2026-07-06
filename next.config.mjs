@@ -10,31 +10,31 @@ const nextConfig = {
       { protocol: "https", hostname: "img.clerk.com" },
     ],
   },
-  experimental: {
-    cacheLife: {
-      // 🎯 Fix for the "student" error
-      student: {
-        stale: 3600,
-        revalidate: 60,
-        expire: 86400,
-      },
-      teachers: {
-        stale: 3600,    // How long to serve old data (1 hour)
-        revalidate: 60, // How often to check for new data (1 minute)
-        expire: 86400,  // When to completely delete (24 hours)
-      },
-      // 🎯 Fix for the "profile" error
-      profile: {
-        stale: 3600,
-        revalidate: 60,
-        expire: 86400,
-      },
-      "dashboard-stats": {
-        stale: 3600,
-        revalidate: 60,
-        expire: 86400,
-      },
+  // 🎯 Moved OUT of experimental
+  cacheLife: {
+    student: {
+      stale: 3600,
+      revalidate: 60,
+      expire: 86400,
     },
+    teachers: {
+      stale: 3600,
+      revalidate: 60,
+      expire: 86400,
+    },
+    profile: {
+      stale: 3600,
+      revalidate: 60,
+      expire: 86400,
+    },
+    "dashboard-stats": {
+      stale: 3600,
+      revalidate: 60,
+      expire: 86400,
+    },
+  },
+  experimental: {
+    // Keep any truly experimental features here if you have them
   },
 };
 

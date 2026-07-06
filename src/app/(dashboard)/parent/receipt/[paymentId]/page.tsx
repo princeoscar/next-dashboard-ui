@@ -1,8 +1,8 @@
 import { prisma } from "@/lib/prisma";
 
-export default async function ReceiptPage({ params }: { params: { paymentId: string } }) {
+export default async function ReceiptPage({ params }: { params: Promise<{ paymentId: string }> }) {
   // 1. Convert string param to number to match your schema's Int ID
-  const paymentId = parseInt(params.paymentId);
+  const paymentId = parseInt((await params).paymentId);
 
   // 2. Fetch with the correct relation path: Payment -> StudentBalance -> Student
   const payment = await prisma.paymentRecord.findUnique({

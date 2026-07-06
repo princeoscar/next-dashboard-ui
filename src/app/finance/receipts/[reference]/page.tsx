@@ -3,9 +3,9 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 
-export default async function PrintableReceiptInvoice({ params }: { params: { reference: string } }) {
+export default async function PrintableReceiptInvoice({ params }: { params: Promise<{ reference: string }> }) {
   const receipt = await prisma.paymentRecord.findUnique({
-    where: { reference: params.reference },
+    where: { reference: (await params).reference },
     include: {
       balance: {
         include: {

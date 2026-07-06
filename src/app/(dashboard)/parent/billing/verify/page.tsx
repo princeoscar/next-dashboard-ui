@@ -3,13 +3,14 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 
 interface VerifyPageProps {
-  searchParams: {
+  searchParams: Promise<{
     reference?: string;
-  };
+  }>;
 }
 
 export default async function PaymentVerificationPage({ searchParams }: VerifyPageProps) {
-  const referenceCode = searchParams.reference;
+  const { reference } = await searchParams;
+  const referenceCode = reference;
 
   if (!referenceCode) {
     return (

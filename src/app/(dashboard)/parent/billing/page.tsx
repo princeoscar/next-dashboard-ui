@@ -2,10 +2,10 @@
 import { prisma } from "@/lib/prisma";
 import PaymentButton from "../../../../components/Finance/PaymentButton";
 
-export default async function ParentBillingDashboard({ searchParams }: { searchParams: { studentId: string } }) {
+export default async function ParentBillingDashboard({ searchParams }: { searchParams: Promise<{ studentId: string }> }) {
   // Query child statements from database using Prisma engine
   const financialStatements = await prisma.studentBalance.findMany({
-    where: { studentId: searchParams.studentId },
+    where: { studentId: (await searchParams).studentId },
     include: {
       allocation: {
         include: { category: true }
