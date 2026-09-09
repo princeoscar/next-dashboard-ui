@@ -19,8 +19,11 @@ export default async function AdminOutstandingBalancesReport(props: AdminBalance
     include: {
       student: { include: { class: true } },
       allocation: {
-        include: { category: true }
-      }
+        include: {
+          category: true,
+          academicYear: true,
+        },
+      },
     },
     orderBy: {
       outstanding: "desc"
@@ -38,6 +41,9 @@ export default async function AdminOutstandingBalancesReport(props: AdminBalance
   const grossAssigned = Number(summaryAggregations._sum.totalAssigned || 0);
   const grossCollected = Number(summaryAggregations._sum.paidAmount || 0);
   const grossOutstanding = Number(summaryAggregations._sum.outstanding || 0);
+
+
+  
 
   return (
     <div className="space-y-8 p-6 max-w-7xl mx-auto">
@@ -90,19 +96,20 @@ export default async function AdminOutstandingBalancesReport(props: AdminBalance
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="bg-gray-50/70 border-b text-gray-400 font-bold uppercase tracking-wider text-[10px]">
-                <th className="p-4">Student Info</th>
-                <th className="p-4">Assigned Class</th>
-                <th className="p-4">Fee Breakdown</th>
-                <th className="p-4">Total Invoice</th>
-                <th className="p-4">Amount Paid</th>
-                <th className="p-4">Outstanding Due</th>
+                <th className="p-4">Student</th>
+                <th className="p-4">Class</th>
+                <th className="p-4">Fee Category</th>
+                <th className="p-4">Invoice</th>
+                <th className="p-4">Paid</th>
+                <th className="p-4">Outstanding</th>
                 <th className="p-4">Status</th>
+                <th className="p-4">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y text-gray-600 font-medium">
               {studentLedger.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center p-12 text-gray-400">
+                  <td colSpan={8} className="text-center p-12 text-gray-400">
                     No student accounts match this payment status filter category.
                   </td>
                 </tr>
@@ -112,7 +119,7 @@ export default async function AdminOutstandingBalancesReport(props: AdminBalance
                     <td className="p-4">
                       <div className="font-bold text-gray-800">
                         {/* Fallback to just the ID if we can't fetch the name yet */}
-                        Student: {row.studentId}
+                        {row.student.name} {row.student.surname}
                       </div>
                     </td>
                     <td className="p-4 font-semibold text-gray-700">
@@ -120,11 +127,13 @@ export default async function AdminOutstandingBalancesReport(props: AdminBalance
                       Pending Class Mapping
                     </td>
                     <td className="p-4 font-semibold text-gray-700">
-                      {row.student?.class?.name || "Class Sandbox Room 1"}
+                      {row.student.class?.name ?? "Unassigned"}
                     </td>
                     <td className="p-4">
                       <div className="font-bold text-gray-800">{row.allocation.category.name}</div>
-                      <div className="text-[10px] text-gray-400">{row.allocation.term} Term • {row.allocation.academicYear}</div>
+                      <div className="text-[10px] text-gray-400">
+                        {row.allocation.term} Term • {row.allocation.academicYear?.name}
+                      </div>
                     </td>
                     <td className="p-4">₦{Number(row.totalAssigned).toLocaleString()}</td>
                     <td className="p-4 text-green-600 font-medium">₦{Number(row.paidAmount).toLocaleString()}</td>
@@ -136,6 +145,14 @@ export default async function AdminOutstandingBalancesReport(props: AdminBalance
                         }`}>
                         {row.status}
                       </span>
+                    </td>
+                    <td className="p-4">
+                      <Link
+                        href={`/admin/list/payment-record?studentId=${row.studentId}`}
+                        className="text-blue-600 font-semibold"
+                      >
+                        View Payments
+                      </Link>
                     </td>
                   </tr>
                 ))

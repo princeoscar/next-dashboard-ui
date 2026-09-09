@@ -1,16 +1,37 @@
-"use client"; // 🚀 This is the magic line that fixes the build error
+"use client"; 
 
 import FormModal from "./FormModal";
 
 export type FormContainerProps = {
   table:
-    | "teacher" | "student" | "parent" | "subject" | "class"
-    | "subject" | "exam" | "assignment" | "result" | "attendance"
-    | "event" | "admin" | "announcement" | "message" | "level" | "lesson";
-  type: "create" | "update" | "delete";
+    | "level"
+    | "class"
+    | "admin"
+    | "subject"
+    | "attendance"
+    | "lesson"
+    | "student"
+    | "teacher"
+    | "parent"
+    | "stream"
+    | "exam"
+    | "assignment"
+    | "result"
+    | "event"
+    | "announcement"
+    | "message"
+    | "paymentRecord"
+    | "income"
+    | "expense";
+  type: "create" | "update" | "delete" 
+  
+  schoolId?: string;
+
   data?: any;
   id?: number | string;
   relatedData?: any;
+   teacherId?: string;
+  
 };
 
 const FormContainer = ({ 
@@ -18,7 +39,8 @@ const FormContainer = ({
   type, 
   data, 
   id, 
-  relatedData 
+  relatedData,
+  schoolId,
 }: FormContainerProps) => {
   
   // 💡 Logic:
@@ -35,9 +57,12 @@ const FormContainer = ({
         data={data}
         id={id}
         relatedData={relatedData}
+        schoolId={schoolId}
       />
     </div>
   );
+
+  
 };
 
 export default FormContainer;

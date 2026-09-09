@@ -73,7 +73,7 @@ export async function POST(req: Request) {
         await tx.paymentRecord.upsert({
           where: { reference: reference },
           update: {
-            status: "SUCCESS",
+            status: "FULLY_PAID",
             amountPaid: parsedAmountPaid,
             channel: channel || "card",
           },
@@ -83,8 +83,10 @@ export async function POST(req: Request) {
             amountPaid: parsedAmountPaid,
             paymentMethod: "PAYSTACK",
             reference: reference,
-            status: "SUCCESS",
+            status: "FULLY_PAID",
+            schoolId: activeLedger.schoolId,
             channel: channel || "card",
+               paymentDate: new Date(),
           },
         });
       });

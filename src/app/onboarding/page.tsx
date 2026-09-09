@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import { createSchool } from "@/lib/actions";
+import { createSchool } from "@/lib/server-actions";
 
 const OnboardingPage = async () => {
   const { userId, sessionClaims } = await auth();
@@ -22,7 +22,7 @@ const OnboardingPage = async () => {
       <div className="bg-white p-8 rounded-md shadow-md w-full max-w-md">
         <h1 className="text-xl font-semibold mb-2">Welcome to Rubix!</h1>
         <p className="text-gray-500 mb-6">Let&apos;s set up your school profile to get started.</p>
-        
+
         <form action={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
             <label className="text-sm text-gray-600">School Name</label>

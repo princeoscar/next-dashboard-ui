@@ -9,7 +9,8 @@ import Image from "next/image";
 import Pusher from "pusher-js";
 import toast, { Toaster } from "react-hot-toast";
 import { useRouter } from "next/navigation";
-import { markMessagesAsRead } from "@/lib/actions";
+import { markParentMessagesAsRead } from "@/lib/server-actions";
+
 
 
 interface NavbarProps {
@@ -48,7 +49,7 @@ const Navbar = ({
     setMessageNotify(0); // Optimistic UI update
     if (currentUserId) {
       try {
-        await markMessagesAsRead(currentUserId);
+        await markParentMessagesAsRead(currentUserId);
       } catch (err) {
         console.error("Failed to mark messages as read:", err);
       }

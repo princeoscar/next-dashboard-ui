@@ -1,19 +1,25 @@
 // src/app/api/parents/route.ts
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 import {prisma} from "@/lib/prisma";
 
 import { auth } from "@clerk/nextjs/server";
 import { Prisma } from "@prisma/client";
 import { ITEM_PER_PAGE } from "@/lib/settings";
 
-export const runtime = "nodejs";
+
 
 export async function GET(req: NextRequest) {
   try {
     // --- Get user session and role ---
     const { sessionClaims, userId } = await auth();
     const role = (sessionClaims?.metadata as { role?: string })?.role?.toLowerCase();
-
+      if (!role) {
+  return NextResponse.json(
+    { error: "Unauthorized" },
+    { status: 401 }
+  );
+}
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get("page") || "1");
     const search = searchParams.get("search") || "";
@@ -43,8 +49,8 @@ export async function GET(req: NextRequest) {
     // Search filter
     if (search) {
       query.OR = [
-        { name: { contains: search, mode: "insensitive" } },
-        { surname: { contains: search, mode: "insensitive" } },
+        { firstName: { contains: search, mode: "insensitive" } },
+        { lastName: { contains: search, mode: "insensitive" } },
         { email: { contains: search, mode: "insensitive" } },
         { phone: { contains: search, mode: "insensitive" } },
       ];
@@ -57,14 +63,20 @@ export async function GET(req: NextRequest) {
         include: { students: { select: { id: true, name: true, surname: true } } },
         take: ITEM_PER_PAGE,
         skip: ITEM_PER_PAGE * (page - 1),
-        orderBy: { name: "asc" },
+        orderBy: { firstName: "asc" },
       }),
       prisma.parent.count({ where: query }),
     ]);
 
-    return NextResponse.json({ data, count, role });
+    return NextResponse.json({
+  data,
+  count,
+  page,
+  totalPages: Math.ceil(count / ITEM_PER_PAGE),
+  role,
+});
   } catch (error) {
-    console.error(error);
+    console.error("GET /api/parents:", error);
     return NextResponse.json(
       { error: "Failed to fetch parents" },
       { status: 500 }

@@ -1,27 +1,46 @@
 "use client";
 
 import { useForm } from "react-hook-form";
-import { createLevel, updateLevel } from "@/lib/actions"; // Make sure to export these
+import { createLevel, updateLevel } from "@/lib/server-actions"; // Make sure to export these
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { Dispatch, SetStateAction } from "react";
 
-const LevelForm = ({ 
-  type, 
-  data, 
-  setOpen 
-}: { 
-  type: "create" | "update"; 
-  data?: any; 
-  setOpen: Dispatch<SetStateAction<boolean>> 
+const LevelForm = ({
+  type,
+  data,
+  setOpen,
+  schoolId,
+}: {
+  type: "create" | "update";
+  data?: any;
+  setOpen: Dispatch<SetStateAction<boolean>>;
+  schoolId: string;
 }) => {
+    
+
   const { register, handleSubmit, formState: { errors } } = useForm();
   const router = useRouter();
 
+
+  
+
   const onSubmit = handleSubmit(async (values: any) => {
-    const result = type === "create" 
-      ? await createLevel({}, { name: values.name, schoolId: "1"})
-      : await updateLevel({}, { ...values, id: data.id });
+    // Include the 'error' property required by CurrentState
+    const initialState = { success: false, error: false };
+
+    const result = type === "create"
+      ? await createLevel(initialState, {
+         name: values.name,
+          level: Number(values.level),
+           stage: values.stage,
+           })
+      : await updateLevel(initialState, { 
+        ...values, 
+         id: data.id,
+        level: Number(values.level), 
+        stage: values.stage
+        });
 
     if (result.success) {
       toast.success(`Level ${type === "create" ? "created" : "updated"}!`);

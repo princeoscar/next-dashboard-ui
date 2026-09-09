@@ -1,0 +1,97 @@
+.next/dev/types/validator.ts(81,31): error TS2344: Type 'typeof import("C:/Users/ademu/Dashboard_UI_v2.0/src/app/(dashboard)/admin/finance/allocate/page")' does not satisfy the constraint 'AppPageConfig<"/admin/finance/allocate">'.
+  Types of property 'default' are incompatible.
+    Type '() => Promise<Element | { success: boolean; error: boolean; message: string; }>' is not assignable to type 'ComponentType<any> | ((props: any) => void | Promise<void> | ReactNode | Promise<ReactNode>)'.
+      Type '() => Promise<Element | { success: boolean; error: boolean; message: string; }>' is not assignable to type 'FunctionComponent<any>'.
+        Type 'Promise<Element | { success: boolean; error: boolean; message: string; }>' is not assignable to type 'ReactNode'.
+          Type 'Promise<Element | { success: boolean; error: boolean; message: string; }>' is not assignable to type 'ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<...>'.
+            Type 'Promise<Element | { success: boolean; error: boolean; message: string; }>' is not assignable to type 'Promise<AwaitedReactNode>'.
+              Type 'Element | { success: boolean; error: boolean; message: string; }' is not assignable to type 'AwaitedReactNode'.
+                Type '{ success: boolean; error: boolean; message: string; }' is not assignable to type 'AwaitedReactNode'.
+.next/dev/types/validator.ts(126,31): error TS2344: Type 'typeof import("C:/Users/ademu/Dashboard_UI_v2.0/src/app/(dashboard)/admin/finance/categories/page")' does not satisfy the constraint 'AppPageConfig<"/admin/finance/categories">'.
+  Types of property 'default' are incompatible.
+    Type '() => Promise<Element | { success: boolean; error: boolean; message: string; }>' is not assignable to type 'ComponentType<any> | ((props: any) => void | Promise<void> | ReactNode | Promise<ReactNode>)'.
+      Type '() => Promise<Element | { success: boolean; error: boolean; message: string; }>' is not assignable to type 'FunctionComponent<any>'.
+        Type 'Promise<Element | { success: boolean; error: boolean; message: string; }>' is not assignable to type 'ReactNode'.
+          Type 'Promise<Element | { success: boolean; error: boolean; message: string; }>' is not assignable to type 'ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<...>'.
+            Type 'Promise<Element | { success: boolean; error: boolean; message: string; }>' is not assignable to type 'Promise<AwaitedReactNode>'.
+              Type 'Element | { success: boolean; error: boolean; message: string; }' is not assignable to type 'AwaitedReactNode'.
+                Type '{ success: boolean; error: boolean; message: string; }' is not assignable to type 'AwaitedReactNode'.
+.next/dev/types/validator.ts(144,31): error TS2344: Type 'typeof import("C:/Users/ademu/Dashboard_UI_v2.0/src/app/(dashboard)/admin/finance/payments/page")' does not satisfy the constraint 'AppPageConfig<"/admin/finance/payments">'.
+  Types of property 'default' are incompatible.
+    Type '({ searchParams, }: { searchParams?: Promise<{ page?: string; search?: string; studentId?: string; }>; }) => Promise<JSX.Element | { success: boolean; error: boolean; message: string; }>' is not assignable to type 'ComponentType<any> | ((props: any) => void | Promise<void> | ReactNode | Promise<ReactNode>)'.
+      Type '({ searchParams, }: { searchParams?: Promise<{ page?: string; search?: string; studentId?: string; }>; }) => Promise<JSX.Element | { success: boolean; error: boolean; message: string; }>' is not assignable to type 'FunctionComponent<any>'.
+        Type 'Promise<Element | { success: boolean; error: boolean; message: string; }>' is not assignable to type 'ReactNode'.
+          Type 'Promise<Element | { success: boolean; error: boolean; message: string; }>' is not assignable to type 'ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<...>'.
+            Type 'Promise<Element | { success: boolean; error: boolean; message: string; }>' is not assignable to type 'Promise<AwaitedReactNode>'.
+              Type 'Element | { success: boolean; error: boolean; message: string; }' is not assignable to type 'AwaitedReactNode'.
+                Type '{ success: boolean; error: boolean; message: string; }' is not assignable to type 'AwaitedReactNode'.
+.next/dev/types/validator.ts(162,31): error TS2344: Type 'typeof import("C:/Users/ademu/Dashboard_UI_v2.0/src/app/(dashboard)/admin/finance/reports/page")' does not satisfy the constraint 'AppPageConfig<"/admin/finance/reports">'.
+  Property 'default' is missing in type 'typeof import("C:/Users/ademu/Dashboard_UI_v2.0/src/app/(dashboard)/admin/finance/reports/page")' but required in type 'AppPageConfig<"/admin/finance/reports">'.
+.next/dev/types/validator.ts(279,31): error TS2344: Type 'typeof import("C:/Users/ademu/Dashboard_UI_v2.0/src/app/(dashboard)/list/expenses/page")' does not satisfy the constraint 'AppPageConfig<"/list/expenses">'.
+  Types of property 'default' are incompatible.
+    Type '({ searchParams, }: { searchParams?: Promise<{ page?: string; search?: string; }>; }) => Promise<JSX.Element | { success: boolean; error: boolean; message: string; }>' is not assignable to type 'ComponentType<any> | ((props: any) => void | Promise<void> | ReactNode | Promise<ReactNode>)'.
+      Type '({ searchParams, }: { searchParams?: Promise<{ page?: string; search?: string; }>; }) => Promise<JSX.Element | { success: boolean; error: boolean; message: string; }>' is not assignable to type 'FunctionComponent<any>'.
+        Type 'Promise<Element | { success: boolean; error: boolean; message: string; }>' is not assignable to type 'ReactNode'.
+          Type 'Promise<Element | { success: boolean; error: boolean; message: string; }>' is not assignable to type 'ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<...>'.
+            Type 'Promise<Element | { success: boolean; error: boolean; message: string; }>' is not assignable to type 'Promise<AwaitedReactNode>'.
+              Type 'Element | { success: boolean; error: boolean; message: string; }' is not assignable to type 'AwaitedReactNode'.
+                Type '{ success: boolean; error: boolean; message: string; }' is not assignable to type 'AwaitedReactNode'.
+.next/dev/types/validator.ts(288,31): error TS2344: Type 'typeof import("C:/Users/ademu/Dashboard_UI_v2.0/src/app/(dashboard)/list/income/page")' does not satisfy the constraint 'AppPageConfig<"/list/income">'.
+  Types of property 'default' are incompatible.
+    Type '({ searchParams, }: { searchParams?: Promise<{ page?: string; search?: string; }>; }) => Promise<JSX.Element | { success: boolean; error: boolean; message: string; }>' is not assignable to type 'ComponentType<any> | ((props: any) => void | Promise<void> | ReactNode | Promise<ReactNode>)'.
+      Type '({ searchParams, }: { searchParams?: Promise<{ page?: string; search?: string; }>; }) => Promise<JSX.Element | { success: boolean; error: boolean; message: string; }>' is not assignable to type 'FunctionComponent<any>'.
+        Type 'Promise<Element | { success: boolean; error: boolean; message: string; }>' is not assignable to type 'ReactNode'.
+          Type 'Promise<Element | { success: boolean; error: boolean; message: string; }>' is not assignable to type 'ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<...>'.
+            Type 'Promise<Element | { success: boolean; error: boolean; message: string; }>' is not assignable to type 'Promise<AwaitedReactNode>'.
+              Type 'Element | { success: boolean; error: boolean; message: string; }' is not assignable to type 'AwaitedReactNode'.
+                Type '{ success: boolean; error: boolean; message: string; }' is not assignable to type 'AwaitedReactNode'.
+.next/dev/types/validator.ts(387,31): error TS2344: Type 'typeof import("C:/Users/ademu/Dashboard_UI_v2.0/src/app/(dashboard)/list/streams/page")' does not satisfy the constraint 'AppPageConfig<"/list/streams">'.
+  Types of property 'default' are incompatible.
+    Type '({ searchParams, }: { searchParams: Promise<{ page?: string; search?: string; }>; }) => Promise<JSX.Element | { success: boolean; error: boolean; message: string; }>' is not assignable to type 'ComponentType<any> | ((props: any) => void | Promise<void> | ReactNode | Promise<ReactNode>)'.
+      Type '({ searchParams, }: { searchParams: Promise<{ page?: string; search?: string; }>; }) => Promise<JSX.Element | { success: boolean; error: boolean; message: string; }>' is not assignable to type 'FunctionComponent<any>'.
+        Type 'Promise<Element | { success: boolean; error: boolean; message: string; }>' is not assignable to type 'ReactNode'.
+          Type 'Promise<Element | { success: boolean; error: boolean; message: string; }>' is not assignable to type 'ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<...>'.
+            Type 'Promise<Element | { success: boolean; error: boolean; message: string; }>' is not assignable to type 'Promise<AwaitedReactNode>'.
+              Type 'Element | { success: boolean; error: boolean; message: string; }' is not assignable to type 'AwaitedReactNode'.
+                Type '{ success: boolean; error: boolean; message: string; }' is not assignable to type 'AwaitedReactNode'.
+.next/dev/types/validator.ts(414,31): error TS2344: Type 'typeof import("C:/Users/ademu/Dashboard_UI_v2.0/src/app/(dashboard)/list/students/page")' does not satisfy the constraint 'AppPageConfig<"/list/students">'.
+  Types of property 'default' are incompatible.
+    Type '({ searchParams, }: { searchParams: Promise<{ [key: string]: string | undefined; }>; }) => Promise<JSX.Element | { success: boolean; error: boolean; message: string; }>' is not assignable to type 'ComponentType<any> | ((props: any) => void | Promise<void> | ReactNode | Promise<ReactNode>)'.
+      Type '({ searchParams, }: { searchParams: Promise<{ [key: string]: string | undefined; }>; }) => Promise<JSX.Element | { success: boolean; error: boolean; message: string; }>' is not assignable to type 'FunctionComponent<any>'.
+        Type 'Promise<Element | { success: boolean; error: boolean; message: string; }>' is not assignable to type 'ReactNode'.
+          Type 'Promise<Element | { success: boolean; error: boolean; message: string; }>' is not assignable to type 'ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<...>'.
+            Type 'Promise<Element | { success: boolean; error: boolean; message: string; }>' is not assignable to type 'Promise<AwaitedReactNode>'.
+              Type 'Element | { success: boolean; error: boolean; message: string; }' is not assignable to type 'AwaitedReactNode'.
+                Type '{ success: boolean; error: boolean; message: string; }' is not assignable to type 'AwaitedReactNode'.
+src/app/(dashboard)/list/messages/[id]/page.tsx(29,11): error TS2353: Object literal may only specify known properties, and 'img' does not exist in type 'AdminSelect<DefaultArgs>'.
+src/app/(dashboard)/list/messages/[id]/page.tsx(89,18): error TS2551: Property 'receiverTeacher' does not exist on type '{ subject: string | null; content: string; id: number; createdAt: Date; updatedAt: Date; senderId: string; isRead: boolean; readAt: Date | null; receiverTeacherId: string | null; receiverParentId: string | null; }'. Did you mean 'receiverTeacherId'?
+src/app/(dashboard)/list/messages/[id]/page.tsx(89,45): error TS2551: Property 'receiverParent' does not exist on type '{ subject: string | null; content: string; id: number; createdAt: Date; updatedAt: Date; senderId: string; isRead: boolean; readAt: Date | null; receiverTeacherId: string | null; receiverParentId: string | null; }'. Did you mean 'receiverParentId'?
+src/app/(dashboard)/list/messages/[id]/page.tsx(90,17): error TS2551: Property 'sender' does not exist on type '{ subject: string | null; content: string; id: number; createdAt: Date; updatedAt: Date; senderId: string; isRead: boolean; readAt: Date | null; receiverTeacherId: string | null; receiverParentId: string | null; }'. Did you mean 'senderId'?
+src/app/(dashboard)/list/messages/page.tsx(26,11): error TS2353: Object literal may only specify known properties, and 'receiverId' does not exist in type 'MessageWhereInput'.
+src/app/(dashboard)/list/messages/page.tsx(30,43): error TS2353: Object literal may only specify known properties, and 'img' does not exist in type 'AdminSelect<DefaultArgs>'.
+src/app/(dashboard)/list/messages/page.tsx(68,11): error TS2322: Type '{ subject: string | null; content: string; id: number; createdAt: Date; updatedAt: Date; senderId: string; isRead: boolean; readAt: Date | null; receiverTeacherId: string | null; receiverParentId: string | null; }[]' is not assignable to type '({ sender: { username: string; img: never; }; receiver: never; } & { subject: string | null; content: string; id: number; createdAt: Date; updatedAt: Date; senderId: string; isRead: boolean; readAt: Date | null; receiverTeacherId: string | null; receiverParentId: string | null; })[]'.
+  Type '{ subject: string | null; content: string; id: number; createdAt: Date; updatedAt: Date; senderId: string; isRead: boolean; readAt: Date | null; receiverTeacherId: string | null; receiverParentId: string | null; }' is not assignable to type '{ sender: { username: string; img: never; }; receiver: never; } & { subject: string | null; content: string; id: number; createdAt: Date; updatedAt: Date; senderId: string; isRead: boolean; readAt: Date | null; receiverTeacherId: string | null; receiverParentId: string | null; }'.
+    Type '{ subject: string | null; content: string; id: number; createdAt: Date; updatedAt: Date; senderId: string; isRead: boolean; readAt: Date | null; receiverTeacherId: string | null; receiverParentId: string | null; }' is missing the following properties from type '{ sender: { username: string; img: never; }; receiver: never; }': sender, receiver
+src/app/api/webhook/paystack/route.ts(80,11): error TS2322: Type '{ studentBalanceId: number; feeAllocationId: number; amountPaid: number; paymentMethod: "PAYSTACK"; reference: any; status: "FULLY_PAID"; channel: any; paymentDate: Date; }' is not assignable to type '(Without<PaymentRecordCreateInput, PaymentRecordUncheckedCreateInput> & PaymentRecordUncheckedCreateInput) | (Without<...> & PaymentRecordCreateInput)'.
+  Type '{ studentBalanceId: number; feeAllocationId: number; amountPaid: number; paymentMethod: "PAYSTACK"; reference: any; status: "FULLY_PAID"; channel: any; paymentDate: Date; }' is not assignable to type 'Without<PaymentRecordCreateInput, PaymentRecordUncheckedCreateInput> & PaymentRecordUncheckedCreateInput'.
+    Property 'schoolId' is missing in type '{ studentBalanceId: number; feeAllocationId: number; amountPaid: number; paymentMethod: "PAYSTACK"; reference: any; status: "FULLY_PAID"; channel: any; paymentDate: Date; }' but required in type 'PaymentRecordUncheckedCreateInput'.
+src/components/forms/FeeCategoryForm.tsx(24,3): error TS2322: Type '((formData: FormData) => Promise<void>) | ((formData: FormData) => Promise<{ success: boolean; error: boolean; message: string; } | undefined>)' is not assignable to type 'string | ((formData: FormData) => void | Promise<void>) | undefined'.
+  Type '(formData: FormData) => Promise<{ success: boolean; error: boolean; message: string; } | undefined>' is not assignable to type 'string | ((formData: FormData) => void | Promise<void>) | undefined'.
+    Type '(formData: FormData) => Promise<{ success: boolean; error: boolean; message: string; } | undefined>' is not assignable to type '(formData: FormData) => void | Promise<void>'.
+      Type 'Promise<{ success: boolean; error: boolean; message: string; } | undefined>' is not assignable to type 'void | Promise<void>'.
+        Type 'Promise<{ success: boolean; error: boolean; message: string; } | undefined>' is not assignable to type 'Promise<void>'.
+          Type '{ success: boolean; error: boolean; message: string; } | undefined' is not assignable to type 'void'.
+            Type '{ success: boolean; error: boolean; message: string; }' is not assignable to type 'void'.
+src/lib/actions/finance.ts(5,10): error TS2300: Duplicate identifier 'prisma'.
+src/lib/actions/finance.ts(6,10): error TS2305: Module '"@/lib/actions/paymentReceipt"' has no exported member 'generateReceiptNumber'.
+src/lib/actions/finance.ts(154,10): error TS2300: Duplicate identifier 'prisma'.
+src/lib/actions/finance.ts(166,29): error TS2339: Property 'feeStructure' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/lib/actions/finance.ts(180,9): error TS2322: Type 'string' is not assignable to type '(Without<AcademicYearRelationFilter, AcademicYearWhereInput> & AcademicYearWhereInput) | (Without<...> & AcademicYearRelationFilter) | undefined'.
+src/lib/actions/finance.ts(190,12): error TS18048: 'totalPaid._sum' is possibly 'undefined'.
+src/lib/actions/payments.ts(58,9): error TS2322: Type '"PENDING"' is not assignable to type 'PaymentStatus | undefined'.
+src/lib/actions/promotion.ts(127,28): error TS2551: Property 'stream' does not exist on type '{ level: { level: number; id: number; schoolId: string; name: string; stage: EducationStage; }; } & { id: number; levelId: number; isActive: boolean; createdAt: Date; updatedAt: Date; ... 6 more ...; streamId: number | null; }'. Did you mean 'streamId'?
+src/lib/actions/promotion.ts(246,27): error TS2554: Expected 1 arguments, but got 0.
+src/lib/actions/promotion.ts(342,27): error TS2554: Expected 1 arguments, but got 0.
+src/lib/actions/publicApply.ts(4,41): error TS2307: Cannot find module '@/lib/utils/admissionNumber' or its corresponding type declarations.
+src/lib/actions/result.ts(24,29): error TS2554: Expected 1 arguments, but got 0.
+src/lib/reportStore.ts(33,43): error TS2365: Operator '+' cannot be applied to types 'number' and 'Decimal'.

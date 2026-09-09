@@ -3,7 +3,7 @@
 import { useActionState } from "react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { createMessage } from "@/lib/actions";
+import { createMessage } from "@/lib/server-actions";
 import { Send, UserPlus, MessageSquareText, AlertCircle } from "lucide-react";
 
 const MessageForm = ({
@@ -32,11 +32,11 @@ const MessageForm = ({
   }, [state, router, setOpen]);
 
   console.log("FORM DEBUG - relatedData:", relatedData);
-const { receivers = [] } = relatedData || {};
+  const { receivers = [] } = relatedData || {};
 
   return (
-    <form 
-      action={formAction} 
+    <form
+      action={formAction}
       className="flex flex-col gap-6 w-full max-w-xl mx-auto p-1 md:p-2"
     >
       {/* HEADER */}
@@ -75,7 +75,7 @@ const { receivers = [] } = relatedData || {};
             ))}
           </select>
           <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-xs">
-             ▼
+            ▼
           </div>
         </div>
       </div>
@@ -110,11 +110,10 @@ const { receivers = [] } = relatedData || {};
         </p>
         <button
           disabled={isPending}
-          className={`w-full sm:w-auto px-12 py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2 ${
-            isPending 
-            ? "bg-slate-100 text-slate-400 cursor-not-allowed" 
-            : "bg-slate-900 hover:bg-rubixSky text-white shadow-rubixSky/20"
-          }`}
+          className={`w-full sm:w-auto px-12 py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2 ${isPending
+              ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+              : "bg-slate-900 hover:bg-rubixSky text-white shadow-rubixSky/20"
+            }`}
         >
           {isPending ? (
             <>

@@ -1,4 +1,4 @@
-import FormModal from "@/components/FormModal";
+
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
 import Pagination from "@/components/Pagination";
@@ -6,8 +6,9 @@ import { prisma } from "@/lib/prisma";
 import { ITEM_PER_PAGE } from "@/lib/settings";
 import { Level, Prisma } from "@prisma/client";
 import Image from "next/image";
+import FormModal from "@/components/FormModal";
 
-const GradeListPage = async ({
+const LevelListPage = async ({
   searchParams,
 }: {
   searchParams: Promise<{ [key: string]: string | undefined }>;
@@ -15,7 +16,9 @@ const GradeListPage = async ({
   // NEXT.JS 15 FIX: Await searchParams
   const resolvedParams = await searchParams;
   const { page, ...queryParams } = resolvedParams;
-  
+
+  const school = await prisma.school.findFirst();
+
   const p = page ? parseInt(page) : 1;
 
   // URL QUERY PARAMS CONDITION
@@ -28,9 +31,9 @@ const GradeListPage = async ({
           case "search":
             // Filter by name (e.g., "Grade 10") or the numeric level
             query.OR = [
-                { name: { contains: value, mode: 'insensitive' } },
-                // If it's a number, check the level field too
-                ...(!isNaN(parseInt(value)) ? [{ level: { equals: parseInt(value) } }] : [])
+              { name: { contains: value, mode: 'insensitive' } },
+              // If it's a number, check the level field too
+              ...(!isNaN(parseInt(value)) ? [{ level: { equals: parseInt(value) } }] : [])
             ];
             break;
           default:
@@ -75,8 +78,9 @@ const GradeListPage = async ({
       <td>
         <div className="flex items-center gap-2">
           {/* 🎯 FIX: Changed table="grade" to table="level" to match your types */}
-          <FormModal table="level" type="update" data={item} />
-          <FormModal table="level" type="delete" id={item.id} />
+          <FormModal table="level" type="update" data={item} schoolId={item.schoolId} />
+          <FormModal table="level" type="delete" id={item.id} schoolId={item.schoolId}
+          />
         </div>
       </td>
     </tr>
@@ -97,7 +101,7 @@ const GradeListPage = async ({
               <Image src="/sort.png" alt="" width={14} height={14} />
             </button>
             {/* 🎯 FIX: Changed table="grade" to table="level" */}
-            <FormModal table="level" type="create" />
+            <FormModal table="level" type="create" schoolId={school!.id} />
           </div>
         </div>
       </div>
@@ -109,4 +113,4 @@ const GradeListPage = async ({
   );
 };
 
-export default GradeListPage;
+export default LevelListPage;

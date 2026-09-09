@@ -9,6 +9,7 @@ import { Prisma } from "@prisma/client";
 import { Trophy, FileText, User, Calendar, ClipboardCheck, ArrowLeft, ArrowRight } from "lucide-react";
 import ClassSelector from "@/components/ClassSelector";
 import Link from "next/link";
+import PublishButton from "@/components/result/PublishButton";
 
 const ResultListPage = async ({
   searchParams,
@@ -82,6 +83,7 @@ const ResultListPage = async ({
 
   // --- 2. CLASS SELECTOR (FOR ADMINS/TEACHERS) ---
   if (!classId && !search && role !== "student" && role !== "parent") {
+    
     const classes = await prisma.class.findMany({
       where: { ...(role === "teacher" ? { supervisorId: userId! } : {}) },
       include: {
@@ -89,6 +91,7 @@ const ResultListPage = async ({
         supervisor: true,
         _count: {
           select: {
+            students: true,
             subjects: true,
             assignments: true,
             exams: true,
@@ -125,13 +128,16 @@ const ResultListPage = async ({
       });
       break;
     case "student":
-      andConditions.push({ studentId: userId! });
+      andConditions.push({ studentId: userId!, published: true });
       break;
     case "parent":
-      andConditions.push({
+    andConditions.push({
         studentId: selectedStudentId,
-        student: { parentId: userId! }
-      });
+        student: {
+            parentId: userId!,
+        },
+        published: true,
+    });
       break;
     default:
       andConditions.push({ id: "0" });
@@ -170,8 +176,30 @@ const ResultListPage = async ({
 
   const cid = classId ? parseInt(classId) : undefined;
 
+  const selectedClass = cid
+  ? await prisma.class.findUnique({
+      where: {
+        id: cid,
+      },
+      select: {
+        id: true,
+        levelId: true,
+        streamId: true,
+        schoolId: true,
+      },
+    })
+  : null;
+
   // --- 4. DATA FETCHING ---
-  const [data, count, exams, assignments, students, academicYears, subjects] = await prisma.$transaction([
+  const [
+  data,
+  count,
+  exams,
+  assignments,
+  students,
+  academicYears,
+  subjectAssignments,
+] = await prisma.$transaction([
     prisma.result.findMany({
       where: query,
       include: {
@@ -215,19 +243,52 @@ const ResultListPage = async ({
     prisma.academicYear.findMany({
       select: { id: true, name: true }
     }),
-    prisma.subject.findMany({
-      where: {
-        classes: {
-          some: {
-            id: cid,
+
+   prisma.subjectAssignment.findMany({
+  where: selectedClass
+    ? {
+        levelId: selectedClass.levelId,
+        schoolId: selectedClass.schoolId,
+        OR: [
+          {
+            streamId: null,
           },
-        },
+          {
+            streamId: selectedClass.streamId,
+          },
+        ],
+      }
+    : undefined,
+  select: {
+    subject: {
+      select: {
+        id: true,
+        name: true,
       },
-      select: { id: true, name: true },
-    }),
+    },
+  },
+  orderBy: {
+    subject: {
+      name: "asc",
+    },
+  },
+}),
   ]);
 
+  const subjects = subjectAssignments.map((item) => item.subject);
+
   const relatedData = { exams, assignments, students, academicYears, subjects };
+
+  console.log("📚 STUDENTS:", students);
+console.log("📚 STUDENT COUNT:", students?.length);
+
+  const serializedData = data.map((item) => ({
+  ...item,
+  testScore: Number(item.testScore),
+  assignmentScore: Number(item.assignmentScore),
+  examScore: Number(item.examScore),
+  totalScore: Number(item.totalScore),
+}));
 
   // --- 5. RENDER TABLE ---
   const columns = [
@@ -240,12 +301,17 @@ const ResultListPage = async ({
   ];
 
   const renderRow = (item: any) => {
-    const subjectName = item.subject?.name || item.exam?.subject?.name || item.assignment?.subject?.name || "Unknown";
-    const studentFullname = `${item.student.name} ${item.student.surname}`;
-    const caScore = (item.testScore ?? 0) + (item.assignmentScore ?? 0);
-    const examScore = item.examScore ?? 0;
-    const total = item.totalScore ?? 0;
-    const scoreColor = total >= 70 ? "text-emerald-600" : total >= 50 ? "text-amber-600" : "text-rose-600";
+  const subjectName = item.subject?.name || item.exam?.subject?.name || item.assignment?.subject?.name || "Unknown";
+  
+  // Use firstName and lastName instead of name and surname
+  const studentFullname = `${item.student.name} ${item.student.surname}`;
+  
+  // Convert Decimals to numbers before math or rendering
+  const caScore = Number(item.testScore ?? 0) + Number(item.assignmentScore ?? 0);
+  const examScore = Number(item.examScore ?? 0);
+  const total = Number(item.totalScore ?? 0);
+  
+  const scoreColor = total >= 70 ? "text-emerald-600" : total >= 50 ? "text-amber-600" : "text-rose-600";
 
     return (
       <tr key={item.id} className="border-b border-slate-100 last:border-0 text-sm hover:bg-slate-50 transition-all">
@@ -299,7 +365,7 @@ const ResultListPage = async ({
                 <FileText size={14} />
               </button>
             </Link>
-            {(role === "admin" || role === "teacher") && (
+            {(role === "admin" || role === "teacher") &&  !item.published &&(
               <>
                 <FormContainer table="result" type="update" data={item} relatedData={relatedData} />
                 <FormContainer table="result" type="delete" id={item.id} />
@@ -328,6 +394,8 @@ const ResultListPage = async ({
         </div>
         <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end">
           <TableSearch />
+
+          {role === "admin" && <PublishButton />}
           {(role === "admin" || role === "teacher") && (
             <FormContainer table="result" type="create" relatedData={relatedData} />
           )}
@@ -365,7 +433,7 @@ const ResultListPage = async ({
       {/* 🎯 FIX: Applied overflow wrapper constraints around your generic custom Table layout */}
       <div className="rounded-3xl border border-slate-50 overflow-hidden bg-white shadow-sm w-full">
         <div className="w-full overflow-x-auto">
-          <Table columns={columns} renderRow={renderRow} data={data} />
+          <Table columns={columns} renderRow={renderRow} data={serializedData} />
         </div>
       </div>
 

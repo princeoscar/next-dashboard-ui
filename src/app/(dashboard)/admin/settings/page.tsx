@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { updateActiveSession, createAcademicYear } from "@/lib/actions/session";
+import { updateActiveSession, createAcademicYear, closeAcademicSession, } from "@/lib/actions/session";
 import { revalidatePath } from "next/cache";
 
 const SettingsPage = async () => {
@@ -35,6 +35,34 @@ const SettingsPage = async () => {
           </button>
         </form>
       </section>
+
+      <section className="mb-10 rounded-xl border border-red-200 bg-red-50 p-5">
+
+  <h2 className="text-sm font-semibold uppercase tracking-wider text-red-700">
+    Close Current Academic Session
+  </h2>
+
+  <p className="mt-2 text-sm text-gray-600">
+    Closing the current session locks it permanently. Results, promotions,
+    attendance and finance records become archived for that academic year.
+  </p>
+
+  <form
+    action={async () => {
+      "use server";
+
+      await closeAcademicSession();
+    }}
+    className="mt-5"
+  >
+    <button
+      className="rounded-lg bg-red-600 px-5 py-2 font-semibold text-white hover:bg-red-700"
+    >
+      Close Current Session
+    </button>
+  </form>
+
+</section>
 
       {/* --- SESSION LIST SECTION --- */}
       <section>

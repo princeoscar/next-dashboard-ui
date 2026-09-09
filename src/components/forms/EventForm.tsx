@@ -4,10 +4,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import InputField from "../InputField";
 import { Dispatch, SetStateAction, useActionState, useEffect, startTransition } from "react"; // Added startTransition
-import { eventSchema, EventSchema } from "@/lib/formValidationSchema";
+import { eventSchema, EventSchema } from "@/lib/validation";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
-import { createEvent, updateEvent } from "@/lib/actions";
+import { createEvent, updateEvent } from "@/lib/server-actions";
 import { CalendarClock, AlignLeft, Globe } from "lucide-react";
 
 const EventForm = ({
@@ -26,7 +26,7 @@ const EventForm = ({
   const formatDate = (date: Date | string) => {
     if (!date) return "";
     const d = new Date(date);
-    if (isNaN(d.getTime())) return ""; 
+    if (isNaN(d.getTime())) return "";
     d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
     return d.toISOString().slice(0, 16);
   };
@@ -45,9 +45,9 @@ const EventForm = ({
   });
 
   const [state, formAction] = useActionState(
-  type === "create" ? createEvent : updateEvent,
-  { success: false, error: false }
-);
+    type === "create" ? createEvent : updateEvent,
+    { success: false, error: false,  message: "", }
+  );
 
   // Handle server response
   useEffect(() => {
@@ -101,7 +101,7 @@ const EventForm = ({
           register={register}
           error={errors.title}
         />
-        
+
         <div className="flex flex-col gap-2">
           <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
             Target Audience
@@ -171,13 +171,13 @@ const EventForm = ({
       <div className="flex flex-col gap-4 mt-2">
         {state.error && (
           <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl text-center">
-             <span className="text-rose-600 text-[10px] font-black uppercase tracking-widest">
-               Sync Error: Event could not be saved
-             </span>
+            <span className="text-rose-600 text-[10px] font-black uppercase tracking-widest">
+              Sync Error: Event could not be saved
+            </span>
           </div>
         )}
-        
-        <button 
+
+        <button
           type="submit"
           className="bg-slate-900 hover:bg-purple-600 text-white py-4 px-10 rounded-2xl font-black text-[12px] uppercase tracking-widest shadow-xl transition-all active:scale-95 self-end"
         >

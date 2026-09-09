@@ -3,11 +3,11 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import InputField from "../InputField";
-import { announcementSchema, AnnouncementSchema } from "@/lib/formValidationSchema";
+import { announcementSchema, AnnouncementSchema } from "@/lib/validation";
 import { Dispatch, SetStateAction, useEffect, useActionState, startTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
-import { createAnnouncement, updateAnnouncement } from "@/lib/actions";
+import { createAnnouncement, updateAnnouncement } from "@/lib/server-actions";
 import { Megaphone, Info, Loader2, Send } from "lucide-react";
 
 const AnnouncementForm = ({
@@ -32,7 +32,10 @@ const AnnouncementForm = ({
 
   const [state, formAction, isPending] = useActionState(
     type === "create" ? createAnnouncement : updateAnnouncement,
-    { success: false, error: false }
+    {
+      success: false, error: false, message: "",
+
+    }
   );
 
   const router = useRouter();
@@ -50,24 +53,28 @@ const AnnouncementForm = ({
   const { classes } = relatedData || {};
 
   const onSubmit = handleSubmit(
-  (formData) => {
-    // 🔍 This log helped us with Results - check it in the F12 console
-    console.log("🚀 SUBMITTING ANNOUNCEMENT:", formData); 
+    (formData) => {
+      console.log("FORM VALUES:", formData);
+      // 🔍 This log helped us with Results - check it in the F12 console
+      console.log("🚀 SUBMITTING ANNOUNCEMENT:", formData);
 
-    startTransition(() => {
-      formAction({
-        ...formData,
-        // 🎯 Logic used in Results: Ensure numbers are numbers
-        classId: formData.classId ? Number(formData.classId) : null,
-        ...(type === "update" && { id: data.id }),
+      startTransition(() => {
+        formAction({
+          ...formData,
+          // 🎯 Logic used in Results: Ensure numbers are numbers
+          classId: formData.classId ? Number(formData.classId) : null,
+          levelId: formData.levelId ? Number(formData.levelId) : null,
+          ...(type === "update" && { id: data.id }),
+        });
       });
-    });
-  },
-  (validationErrors) => {
-    // 🔍 If this triggers, your form UI is blocking the save!
-    console.log("❌ FORM VALIDATION FAILED:", validationErrors);
-  }
-);
+    },
+    (validationErrors) => {
+      console.error(
+        "❌ FORM VALIDATION FAILED:",
+        JSON.stringify(validationErrors, null, 2)
+      );
+    }
+  );
 
   // 🎯 THE CRITICAL PART: Log validation errors
   // This is the "Method" we used for Results
@@ -91,7 +98,7 @@ const AnnouncementForm = ({
       </div>
 
       {/* INPUTS GRID */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 gap-5">
         <InputField
           label="Bulletin Title"
           name="title"
@@ -101,15 +108,6 @@ const AnnouncementForm = ({
           placeholder="e.g. Science Fair 2026"
         />
 
-        <InputField
-          label="Display Date"
-          name="date"
-          type="date"
-          defaultValue={data?.date ? new Date(data.date).toISOString().split("T")[0] : ""}
-          register={register}
-          error={errors.date}
-        />
-
         <div className="flex flex-col gap-2 md:col-span-2">
           <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
             Target Audience
@@ -117,13 +115,15 @@ const AnnouncementForm = ({
           <div className="relative group">
             <select
               className="w-full p-4 pr-10 rounded-2xl bg-slate-50 border border-slate-200 text-sm font-semibold text-slate-700 focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 focus:bg-white outline-none transition-all appearance-none cursor-pointer"
-              {...register("classId")}
-              defaultValue={data?.classId || ""}
+              {...register("levelId", {
+                setValueAs: (value) => (value === "" || value === "0" || value === 0 ? null : Number(value)),
+              })}
+              defaultValue={data?.levelId || ""}
             >
               <option value="">All Students (Global School-Wide)</option>
-              {classes?.map((item: { id: number; name: string }) => (
+              {relatedData.levels?.map((item: { id: number; name: string }) => (
                 <option value={item.id} key={item.id}>
-                  Class Segment: {item.name}
+                  Level: {item.name}
                 </option>
               ))}
             </select>

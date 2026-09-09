@@ -3,11 +3,11 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import InputField from "../InputField";
-import { createSubject, updateSubject } from "@/lib/actions";
+import { createSubject, updateSubject } from "@/lib/server-actions";
 import { Dispatch, SetStateAction, startTransition, useActionState, useEffect } from "react";
 import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
-import { subjectSchema, SubjectSchema } from "@/lib/formValidationSchema";
+import { subjectSchema, SubjectSchema } from "@/lib/validation";
 
 const SubjectForm = ({
   type,
@@ -26,30 +26,72 @@ const SubjectForm = ({
     formState: { errors },
   } = useForm<SubjectSchema>({
     resolver: zodResolver(subjectSchema) as any,
+  defaultValues: {
+    name: data?.name ?? "",
+    teachers: data?.teachers?.map((t: any) => t.id) ?? [],
+    generalLevels:
+      data?.curriculum
+        ?.filter((c: any) => c.streamId === null)
+        .map((c: any) => String(c.levelId)) ?? [],
+    assignments:
+      data?.curriculum
+        ?.filter((c: any) => c.streamId !== null)
+        .map((c: any) => `${c.levelId}-${c.streamId}`) ?? [],
+  },
   });
 
   const [state, formAction] = useActionState(
     type === "create" ? createSubject : updateSubject,
-    { success: false, error: false }
+    { success: false, error: false, message: "", }
   );
-
-  const onSubmit = handleSubmit((data) => {
-    startTransition(() => {
-      formAction({ ...data });
-    });
-  });
 
   const router = useRouter();
 
-  useEffect(() => {
-    if (state.success) {
-      toast.success(`Subject has been ${type === "create" ? "created" : "updated"}!`);
+  const onSubmit = handleSubmit(async (values) => {
+    console.log("FORM SUBMITTED");
+    console.log(values);
+
+
+    const initialState = {
+      success: false,
+      error: false,
+      message: "",
+    };
+
+    const result =
+      type === "create"
+        ? await createSubject(initialState, values)
+        : await updateSubject(initialState, {
+          ...values,
+          id: data.id,
+        });
+
+
+
+    if (result.success) {
+      toast.success(result.message);
       setOpen(false);
       router.refresh();
+    } else {
+      toast.error(result.message);
     }
-  }, [state, router, type, setOpen]);
+  });
 
-  const { teachers, classes } = relatedData;
+  const {
+  teachers,
+  levels,
+  streams,
+} = relatedData;
+
+const juniorLevels = levels.filter(
+  (level: any) =>
+    level.name.toUpperCase().startsWith("JSS")
+);
+
+const seniorLevels = levels.filter(
+  (level: any) =>
+    level.name.toUpperCase().startsWith("SSS")
+);
 
   return (
     <form className="flex flex-col w-full" onSubmit={onSubmit}>
@@ -72,28 +114,124 @@ const SubjectForm = ({
         {data && <input type="hidden" {...register("id")} defaultValue={data?.id} />}
 
         {/* 1. ASSIGN TO CLASSES (Checkbox Grid) */}
-        <div className="flex flex-col gap-2">
-          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
-            Target Classes
+        {/* Applicable Levels */}
+        <div className="space-y-8">
+
+  {/* ===========================
+      JUNIOR SCHOOL
+  =========================== */}
+
+  <div>
+
+    <h2 className="font-black text-rubixPurple uppercase mb-4">
+      Junior Secondary School
+    </h2>
+
+    <div className="space-y-3">
+
+      {juniorLevels.map((level: any) => (
+
+        <label
+          key={level.id}
+          className="flex items-center gap-3 bg-slate-50 p-4 rounded-xl"
+        >
+
+          <input
+            type="checkbox"
+            value={level.id}
+            {...register("generalLevels")}
+            className="accent-rubixPurple"
+          />
+
+          <span>{level.name}</span>
+
+        </label>
+
+      ))}
+
+    </div>
+
+  </div>
+
+  {/* ===========================
+      SENIOR SCHOOL
+  =========================== */}
+
+  <div>
+
+    <h2 className="font-black text-rubixPurple uppercase mb-4">
+      Senior Secondary School
+    </h2>
+
+    <div className="space-y-6">
+
+      {seniorLevels.map((level: any) => (
+
+        <div
+          key={level.id}
+          className="rounded-2xl border p-5"
+        >
+
+          <label className="flex items-center gap-3 font-bold">
+
+            <input
+  type="checkbox"
+  value={level.id}
+  {...register("generalLevels")}
+  defaultChecked={
+    data?.curriculum?.some(
+      (item: any) =>
+        item.levelId === level.id &&
+        item.streamId === null
+    )
+  }
+  className="accent-rubixPurple"
+/>
+
+            {level.name} (General)
+
           </label>
-          <div className="grid grid-cols-2 gap-2 bg-slate-50 p-4 rounded-2xl ring-[1.5px] ring-gray-200 max-h-40 overflow-y-auto custom-scrollbar">
-            {classes?.map((cls: any) => (
-              <label key={cls.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-white p-2 rounded-xl transition-all border border-transparent hover:border-gray-200">
+
+          <div className="grid grid-cols-2 gap-3 mt-5 ml-7">
+
+            {streams.map((stream: any) => (
+
+              <label
+                key={`${level.id}-${stream.id}`}
+                className="flex items-center gap-2"
+              >
+
                 <input
-                  type="checkbox"
-                  value={cls.id}
-                  className="w-4 h-4 rounded accent-rubixPurple"
-                  {...register("classes")}
-                  defaultChecked={data?.classes?.some((c: any) => c.id === cls.id)}
-                />
-                <span className="text-slate-600 font-medium">Class {cls.name}</span>
+  type="checkbox"
+  value={`${level.id}-${stream.id}`}
+  {...register("assignments")}
+  defaultChecked={
+    data?.curriculum?.some(
+      (item: any) =>
+        item.levelId === level.id &&
+        item.streamId === stream.id
+    )
+  }
+  className="accent-rubixPurple"
+/>
+
+                {stream.name}
+
               </label>
+
             ))}
+
           </div>
-          {errors.classes?.message && (
-            <p className="text-[10px] text-red-400 font-medium">{errors.classes.message.toString()}</p>
-          )}
+
         </div>
+
+      ))}
+
+    </div>
+
+  </div>
+
+</div>
 
         {/* 2. ASSIGN TEACHERS (Checkbox Grid) */}
         <div className="flex flex-col gap-2">
@@ -111,8 +249,8 @@ const SubjectForm = ({
                   defaultChecked={data?.teachers?.some((t: any) => t.id === teacher.id)}
                 />
                 <div className="flex flex-col">
-                    <span className="text-slate-700 font-bold">{teacher.name} {teacher.surname}</span>
-                    <span className="text-[10px] text-slate-400">ID: {teacher.id}</span>
+                  <span className="text-slate-700 font-bold">{teacher.firstName} {teacher.lastName}</span>
+                  <span className="text-[10px] text-slate-400">ID: {teacher.username}</span>
                 </div>
               </label>
             ))}

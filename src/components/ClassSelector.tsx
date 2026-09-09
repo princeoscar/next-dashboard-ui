@@ -17,7 +17,7 @@ const ClassSelector = ({
 }) => {
 
   const grouped = classes.reduce((acc, curr) => {
-    const level = curr.level?.name;
+    const level = curr.level?.level;
     let levelName = "";
     if (level >= 7 && level <= 9) levelName = `Junior Secondary (JSS ${level - 6})`;
     else if (level >= 10) levelName = `Senior Secondary (SS ${level - 9})`;
@@ -27,6 +27,12 @@ const ClassSelector = ({
     acc[levelName].push(curr);
     return acc;
   }, {} as Record<string, any[]>);
+
+  console.log("RELATED DATA");
+console.log(relatedData);
+
+console.log("STREAMS");
+console.table(relatedData?.streams);
 
   return (
     <div className="space-y-6 md:space-y-8 pb-10 px-1 md:px-0">
@@ -77,17 +83,21 @@ const ClassSelector = ({
                   {/* 🚀 FIXED DYNAMIC COUNT LABEL */}
                   <p className="text-[10px] text-slate-400 mt-1 font-bold">
                     {target === "exams"
-                      ? `Assessments: ${cls._count?.exams || 0} Exams`
-                      : target === "subjects"
-                        ? `Curriculum: ${cls._count?.subjects || 0} Subjects`
-                        : target === "students"
-                          ? `Enrolled: ${cls._count?.students || 0} Students`
-                          : `Schedule: ${cls._count?.subjects || 0} Subjects`}
+  ? `Assessments: ${cls._count?.exams || 0} Exams`
+  : target === "subjects"
+    ? `Curriculum: ${cls.curriculumCount || 0} Subjects`
+    : target === "students"
+      ? `Enrolled: ${cls._count?.students || 0} Students`
+      : `Enrolled: ${cls._count?.students || 0} Students`}
                   </p>
                 </div>
 
                 <Link
-                  href={`/list/${target}?classId=${cls.id}`}
+                  href={
+                    target === "announcements"
+                      ? `/list/${target}?levelId=${cls.id}`
+                      : `/list/${target}?classId=${cls.id}`
+                  }
                   className="relative z-10 mt-3 md:mt-4 flex items-center justify-between bg-slate-50 group-hover:bg-rubixPurple p-2.5 md:p-3 rounded-xl md:rounded-2xl transition-all"
                 >
                   <span className="text-[10px] font-bold uppercase tracking-wider group-hover:text-white transition-colors">

@@ -15,10 +15,11 @@ export async function GET() {
 
   try {
     const [adminCount, teacherCount, studentCount, parentCount] = await prisma.$transaction([
-      prisma.user.count({ where: { role: "ADMIN" } }),
-    prisma.user.count({ where: { role: "TEACHER" } }),
-    prisma.user.count({ where: { role: "STUDENT" } }),
-    prisma.user.count({ where: { role: "PARENT" } }),
+      prisma.admin.count(),
+    prisma.teacher.count(),
+    prisma.student.count(),
+    prisma.parent.count(),
+    prisma.stream.count()
     ]);
 
     return NextResponse.json({

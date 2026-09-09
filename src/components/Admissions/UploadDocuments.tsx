@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-// 🎯 Import from your local utility file, NOT @uploadthing/react
-import { UploadDropzone } from "@/lib/uploadthing"; 
+import { UploadDropzone } from "@/lib/uploadthing";
 import { ourFileRouter } from "@/app/api/uploadthing/core";
+import { toast } from "react-toastify";
 
 interface UploadDocumentsProps {
   endpoint: keyof typeof ourFileRouter;
@@ -17,13 +17,25 @@ export default function UploadDocuments({ endpoint, label, onUploadSuccess }: Up
   return (
     <div className="flex flex-col gap-2 p-4 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50/50">
       <span className="text-sm font-medium text-gray-700">{label} *</span>
-      
+
       {fileUrl ? (
         <div className="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
-          <span className="truncate max-w-[250px]">✓ Document uploaded successfully</span>
-          <button 
-            type="button" 
-            onClick={() => { setFileUrl(null); onUploadSuccess(""); }}
+          <a
+            href={fileUrl!}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="truncate max-w-[250px] text-blue-600 hover:underline"
+          >
+            ✓ {fileUrl?.split("/").pop()}
+          </a>
+
+          <button
+            type="button"
+            onClick={() => {
+              setFileUrl(null);
+              onUploadSuccess("");
+               toast.info("Document removed.");
+            }}
             className="text-xs font-semibold text-red-500 hover:underline ml-2"
           >
             Remove
@@ -31,24 +43,25 @@ export default function UploadDocuments({ endpoint, label, onUploadSuccess }: Up
         </div>
       ) : (
         <UploadDropzone
-  endpoint={endpoint}
- onClientUploadComplete={(res) => {
-  if (res && res[0]) {
-    // 🎯 Check serverData first, then fallback to appUrl or url safely typed
-    const uploadedUrl = res[0].serverData?.url || (res[0] as any).url || (res[0] as any).appUrl;
-    
-    if (uploadedUrl) {
-      setFileUrl(uploadedUrl);
-      onUploadSuccess(uploadedUrl);
-    }
-  }
-}}
-  // 🎯 Fix: Let TypeScript infer 'error' or explicitly read error.message
- onUploadError={(error: any) => {
-    alert(`Upload failed: ${error.message || "An unexpected error occurred"}`);
-  }}
-  className="ut-button:bg-blue-600 ut-label:text-blue-600 border-none p-4"
-/>
+          endpoint={endpoint}
+          onClientUploadComplete={(res) => {
+            if (res && res[0]) {
+              // 🎯 Check serverData first, then fallback to appUrl or url safely typed
+              const uploadedUrl = res[0].serverData?.url || (res[0] as any).url || (res[0] as any).appUrl;
+
+              if (uploadedUrl) {
+                setFileUrl(uploadedUrl);
+                onUploadSuccess(uploadedUrl);
+                toast.success("Document uploaded successfully.");
+              }
+            }
+          }}
+          // 🎯 Fix: Let TypeScript infer 'error' or explicitly read error.message
+          onUploadError={(error: Error) => {
+            toast.error(error.message || "Upload failed.");
+          }}
+          className="ut-button:bg-blue-600 ut-label:text-blue-600 border-none p-4"
+        />
       )}
     </div>
   );

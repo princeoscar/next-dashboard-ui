@@ -18,7 +18,7 @@ const StudentAttendanceCard = async ({ id }: { id: string }) => {
 
   // 2. Derive Stats from the array
   const totalDays = attendance.length;
-  const presentDays = attendance.filter((day) => day.present).length;
+  const presentDays = attendance.filter((day) => day.status).length;
   const totalPercentage = totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 0;
 
   // 3. Trend Logic

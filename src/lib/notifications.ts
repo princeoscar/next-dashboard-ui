@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { auth } from "@clerk/nextjs/server";
 
 // 1. Attendance Specific
 export async function sendAttendanceAlert(parentPhone: string, studentName: string, studentId: string) {
@@ -6,13 +7,20 @@ export async function sendAttendanceAlert(parentPhone: string, studentName: stri
   
   const isSuccess = await triggerTermiiSms(parentPhone, message);
 
+const { sessionClaims } = await auth();
+
+const schoolId = (sessionClaims?.metadata as any)?.schoolId;
+
   await prisma.notificationLog.create({
     data: {
       type: "ATTENDANCE",
       recipient: parentPhone,
-      status: isSuccess ? "SUCCESS" : "FAILED",
+      status: isSuccess ? "SENT" : "FAILED",
       message: message,
       studentId: studentId,
+      channel: "SMS",
+      schoolId,
+      
     },
   });
   return isSuccess;
@@ -30,13 +38,20 @@ export async function sendResultNotification(
   
   const isSuccess = await triggerTermiiSms(parentPhone, message);
 
+  const { sessionClaims } = await auth();
+
+const schoolId = (sessionClaims?.metadata as any)?.schoolId;
+
   await prisma.notificationLog.create({
     data: {
       type: "RESULT",
       recipient: parentPhone,
-      status: isSuccess ? "SUCCESS" : "FAILED",
+      status: isSuccess ? "SENT" : "FAILED",
       message: message,
       studentId: studentId,
+      channel: "EMAIL",
+      schoolId,
+      
     },
   });
   return isSuccess;

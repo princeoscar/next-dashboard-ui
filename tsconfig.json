@@ -1,9 +1,10 @@
 {
   "compilerOptions": {
+    "types": ["node"],
     "lib": [
       "dom",
       "dom.iterable",
-      "esnext"
+      "esnext",
     ],
     "allowJs": true,
     "skipLibCheck": true,
@@ -37,6 +38,6 @@
     ".next/types/**/*.ts",
     "src/components/AttendanceChartContainer",
     ".next/dev/types/**/*.ts"
-, "src/app/(dashboard)/list/students/[id]/studen"  ],
+, "src/app/(dashboard)/list/students/[id]/studen", "src/lib/notifications/actions"  ],
   "exclude": ["node_modules", "prisma/seed.ts"]
 }

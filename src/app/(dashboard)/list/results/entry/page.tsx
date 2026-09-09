@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
-import { saveBulkResultsAction } from "@/lib/actions";
+import { saveBulkResultsAction } from "@/lib/server-actions";
 import BulkResultForm from "@/components/forms/BulkResultForm";
 import { auth } from "@clerk/nextjs/server";
 import { ArrowLeft, ClipboardCheck, GraduationCap } from "lucide-react";
@@ -22,25 +22,25 @@ const ResultEntryPage = async ({
 
   if (!examId) redirect("/list/exams");
 
- const exam = await prisma.exam.findUnique({
-  where: { id: parseInt(examId) },
-  include: {
-    // 🎯 Directly include the subject instead of through a 'lesson'
-    subject: {
-      include: {
-        // 🎯 A subject now has 'classes' (plural)
-        classes: {
-          include: {
-            // 🎯 Get the students for each of those classes
-            students: {
-              orderBy: { name: "asc" },
+  const exam = await prisma.exam.findUnique({
+    where: { id: parseInt(examId) },
+    include: {
+      // 🎯 Directly include the subject instead of through a 'lesson'
+      subject: {
+        include: {
+          // 🎯 A subject now has 'classes' (plural)
+          classes: {
+            include: {
+              // 🎯 Get the students for each of those classes
+              students: {
+                orderBy: { name: "asc" },
+              },
             },
           },
         },
       },
     },
-  },
-});
+  });
 
   if (!exam) return notFound();
 
@@ -52,8 +52,8 @@ const ResultEntryPage = async ({
       {/* HEADER SECTION */}
       <div className="flex items-center justify-between mb-10">
         <div className="flex items-center gap-4">
-          <Link 
-            href="/list/exams" 
+          <Link
+            href="/list/exams"
             className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400"
           >
             <ArrowLeft size={20} />
@@ -66,15 +66,15 @@ const ResultEntryPage = async ({
               </h1>
             </div>
             <div className="flex items-center gap-2 mt-1">
-               <span className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-[9px] font-black uppercase">
-                 {exam.subject.name}
-               </span>
-               <span className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded text-[9px] font-black uppercase">
-                 Class {exam.subject.classes[0]?.name || "N/A"}
-               </span>
-               <span className="text-[10px] text-slate-400 font-bold italic ml-1">
-                 — {exam.title}
-               </span>
+              <span className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-[9px] font-black uppercase">
+                {exam.subject.name}
+              </span>
+              <span className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded text-[9px] font-black uppercase">
+                Class {exam.subject.classes[0]?.name || "N/A"}
+              </span>
+              <span className="text-[10px] text-slate-400 font-bold italic ml-1">
+                — {exam.title}
+              </span>
             </div>
           </div>
         </div>
@@ -86,9 +86,9 @@ const ResultEntryPage = async ({
 
       {/* THE FORM COMPONENT */}
       <div className="mt-4">
-        <BulkResultForm 
+        <BulkResultForm
           students={exam.subject.classes.flatMap((c) => c.students)}
-          action={updateActionWithId} 
+          action={updateActionWithId}
         />
       </div>
     </div>

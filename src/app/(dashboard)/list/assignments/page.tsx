@@ -5,13 +5,28 @@ import TableSearch from "@/components/TableSearch";
 import { prisma } from "@/lib/prisma";
 import { ITEM_PER_PAGE } from "@/lib/settings";
 import { auth } from "@clerk/nextjs/server";
-import { Assignment, Class, Prisma, Subject, Teacher } from "@prisma/client";
+import { Assignment, Prisma, } from "@prisma/client";
 import { FileText, User, Clock, ArrowLeft, ArrowRight } from "lucide-react";
 import ClassSelector from "@/components/ClassSelector";
 import Link from "next/link";
 
 type AssignmentList = Assignment & {
-   subject: Subject; class: Class; teacher: Teacher
+  subject: {
+    name: string;
+  };
+
+  class: {
+    id: number;
+    name: string;
+    _count: {
+      students: number;
+    };
+  };
+
+  teacher: {
+    firstName: string;
+    lastName: string;
+  };
 };
 
 const AssignmentListPage = async ({
@@ -87,6 +102,7 @@ const AssignmentListPage = async ({
         supervisor: true,
         _count: {
           select: {
+            students: true,
             subjects: true,
             exams: true,
           }
@@ -114,32 +130,32 @@ const AssignmentListPage = async ({
     case "admin": break;
     case "teacher":
       andConditions.push({
-          OR: [
-            { teacherId: userId! }, 
-            { class: { supervisorId: userId! } }
-          ]
+        OR: [
+          { teacherId: userId! },
+          { class: { supervisorId: userId! } }
+        ]
       });
       break;
 
     case "student":
-      andConditions.push({  
-         class: { 
-          students: { some: { id: userId! } }
-         } });
-      break;
-
-    case "parent":
-      // 🔒 Lockdown: Parent sees assignments for the class their selected child belongs to
       andConditions.push({
-          class: {
-            students: {
-              some: { id: selectedStudentId, parentId: userId! }
-            }
-          }
+        class: {
+          students: { some: { id: userId! } }
+        }
       });
       break;
 
-      
+    case "parent":
+      andConditions.push({
+        class: {
+          students: {
+            some: { id: selectedStudentId, parentId: userId! }
+          }
+        }
+      });
+      break;
+
+
 
     default:
       andConditions.push({ id: -1 });
@@ -150,42 +166,100 @@ const AssignmentListPage = async ({
     andConditions.push({
       OR: [
         { title: { contains: search, mode: "insensitive" } },
-        { subject: { name: { contains: search, mode: "insensitive" } } } 
+        { subject: { name: { contains: search, mode: "insensitive" } } }
       ]
     });
   }
 
   if (classId) {
-  const cid = parseInt(classId);
-  // 🎯 Direct classId check on the Assignment
-  if (!isNaN(cid)) andConditions.push({ classId: cid });
-}
+    const cid = parseInt(classId);
+    // 🎯 Direct classId check on the Assignment
+    if (!isNaN(cid)) andConditions.push({ classId: cid });
+  }
 
-if (andConditions.length > 0) query.AND = andConditions;
+  if (andConditions.length > 0) query.AND = andConditions;
 
   // --- 4. DATA FETCHING ---
-  const [data, count, subjects, classes, teachers] = await prisma.$transaction([
-  prisma.assignment.findMany({
-    where: query,
-    include: {
-      subject: { select: { name: true } },
-      class: { select: { name: true } },
-      teacher: { select: { name: true, surname: true } },
-    },
-    take: ITEM_PER_PAGE,
-    skip: ITEM_PER_PAGE * (p - 1),
-    orderBy: { dueDate: "asc" },
-  }),
-  prisma.assignment.count({ where: query }),
-  // 🎯 1. Fetch Subjects
-  prisma.subject.findMany({ select: { id: true, name: true } }),
-  // 🎯 2. Fetch Classes (This fixes your error!)
-  prisma.class.findMany({ select: { id: true, name: true } }),
-  // 🎯 3. Fetch Teachers
-  prisma.teacher.findMany({ select: { id: true, name: true, surname: true } }),
-]);
+  const [data, count, subjects, classes, teachers, levels, streams] = await prisma.$transaction([
+    prisma.assignment.findMany({
+      where: query,
 
-  const relatedData = { subjects, classes, teachers };
+      include: {
+        subject: {
+          select: {
+            name: true
+          }
+        },
+
+        class: {
+          select: {
+            id: true,
+            name: true,
+
+            _count: {
+              select: {
+                students: true,
+              },
+            },
+          },
+        },
+        teacher: {
+          select: {
+            firstName: true,
+            lastName: true
+          }
+        },
+      },
+
+      take: ITEM_PER_PAGE,
+      skip: ITEM_PER_PAGE * (p - 1),
+
+      orderBy: {
+        dueDate: "asc",
+      },
+    }),
+
+    prisma.assignment.count({ where: query }),
+
+    prisma.subject.findMany({ select: { id: true, name: true } }),
+
+
+    prisma.class.findMany({
+      select: {
+        id: true,
+        name: true,
+        levelId: true,
+        streamId: true,
+      },
+      orderBy: {
+        name: "asc",
+      },
+    }),
+
+    prisma.teacher.findMany({ select: { id: true, firstName: true, lastName: true } }),
+
+    prisma.level.findMany({
+      select: {
+        id: true,
+        name: true,
+      },
+      orderBy: {
+        id: "asc",
+      },
+    }),
+
+    prisma.stream.findMany({
+      select: {
+        id: true,
+        name: true,
+      },
+      orderBy: {
+        name: "asc",
+      },
+    }),
+  ]);
+
+  const relatedData = { subjects, classes, teachers, levels, streams, };
 
   // --- 5. RENDER TABLE ---
   const columns = [
@@ -206,19 +280,32 @@ if (andConditions.length > 0) query.AND = andConditions;
               <FileText size={16} />
             </div>
             <div className="flex flex-col">
-              <span className="font-black text-slate-700 block tracking-tight leading-tight uppercase text-[11px]">
+              <Link
+                href={`/list/assignments/${item.id}`}
+                className="font-black text-slate-700 block tracking-tight leading-tight uppercase text-[11px] hover:text-sky-500 transition-colors"
+              >
                 {item.title || "Coursework"}
-              </span>
+              </Link>
               <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">
                 {item.subject.name}
               </span>
             </div>
           </div>
         </td>
+
         <td className="hidden md:table-cell p-4 text-center">
-          <span className="px-2 py-0.5 bg-slate-50 rounded border border-slate-100 text-[10px] font-black uppercase text-slate-400">
-            {item.class.name}
-          </span>
+          <div className="flex flex-col items-center gap-1">
+            <span className="px-2 py-0.5 bg-slate-50 rounded border border-slate-100 text-[10px] font-black uppercase text-slate-500">
+              {item.class.name}
+            </span>
+
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wide">
+              {item.class._count.students}{" "}
+              {item.class._count.students === 1
+                ? "Student"
+                : "Students"}
+            </span>
+          </div>
         </td>
         <td className="hidden lg:table-cell p-4">
           <div className={`flex items-center gap-2 font-black ${isOverdue ? 'text-rose-400' : 'text-slate-500'}`}>
@@ -254,8 +341,8 @@ if (andConditions.length > 0) query.AND = andConditions;
         <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end">
           <TableSearch />
           {(role === "admin" || role === "teacher") && (
-                      <FormContainer table="assignment" type="create" relatedData={relatedData} />
-                    )}
+            <FormContainer table="assignment" type="create" relatedData={relatedData} />
+          )}
         </div>
       </div>
 

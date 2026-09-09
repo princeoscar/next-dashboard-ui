@@ -1,10 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { sendReply } from "@/lib/actions"; // Adjust path as needed
+import { sendMessage } from "@/lib/server-actions";
 import { Send } from "lucide-react";
 
-export const ReplyBox = ({ receiverId }: { receiverId: string }) => {
+type ReplyBoxProps = {
+  receiverTeacherId: string | null;
+  receiverParentId: string | null;
+};
+
+export const ReplyBox = ({
+  receiverTeacherId,
+  receiverParentId,
+}: ReplyBoxProps) => {
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -12,9 +20,24 @@ export const ReplyBox = ({ receiverId }: { receiverId: string }) => {
     if (!text.trim()) return;
     setLoading(true);
     try {
-      await sendReply(receiverId, text);
+     const formData = new FormData();
+
+formData.append("content", text);
+formData.append("subject", "Reply");
+
+if (receiverTeacherId) {
+  formData.append("receiverTeacherId", receiverTeacherId);
+}
+
+if (receiverParentId) {
+  formData.append("receiverParentId", receiverParentId);
+}
+
+await sendMessage(formData);
+
+
       setText(""); // Clear input on success
-      alert("Message sent!"); 
+      alert("Message sent!");
     } catch (err) {
       console.error(err);
     } finally {

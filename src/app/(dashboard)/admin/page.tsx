@@ -15,13 +15,33 @@ const AdminPage = async ({ searchParams }: SearchParamsProps) => {
   const resolvedSearchParams = await searchParams;
   const { userId } = await auth();
 
+  console.log("Clerk userId:", userId);
+
   const currentAdmin = await prisma.admin.findUnique({
-    where: { id: userId! },
+    where: {
+      clerkId: userId!,
+    },
+    select: {
+      schoolId: true,
+    },
   });
+
+  if (!currentAdmin) {
+    return (
+      <div className="p-8 text-center text-red-500">
+        Admin not found.
+      </div>
+    );
+  }
+
+  const schoolId = currentAdmin.schoolId;
 
   // 1. Get the Active Session
   const activeSession = await prisma.academicYear.findFirst({
-    where: { isCurrent: true },
+    where: {
+      schoolId,
+      isCurrent: true,
+    },
   });
 
   try {
@@ -33,15 +53,7 @@ const AdminPage = async ({ searchParams }: SearchParamsProps) => {
     endOfRange.setMonth(endOfRange.getMonth() + 3);
 
     // 2. Fetch Data
-    const { stats, genderData, announcements } = await getCachedDashboardData(startOfToday, endOfRange);
-
-    const messages = await prisma.message.findMany({
-      where: { receiverId: userId! },
-      include: { sender: { select: { username: true } } },
-      take: 5,
-      orderBy: { createdAt: "desc" },
-    });
-
+   
     // 3. ATTENDANCE CHART LOGIC (Weekly)
     let finalAttendanceMap = [
       { name: "Mon", present: 0, absent: 0 },
@@ -57,16 +69,35 @@ const AdminPage = async ({ searchParams }: SearchParamsProps) => {
     lastMonday.setDate(today.getDate() - daysSinceMonday);
     lastMonday.setHours(0, 0, 0, 0);
 
-    const weeklyRecords = await prisma.attendance.findMany({
-      where: { date: { gte: lastMonday } },
-      select: { date: true, present: true },
-    });
+    const [dashboardData, weeklyRecords] = await Promise.all([
+  getCachedDashboardData(
+    schoolId,
+    startOfToday,
+    endOfRange
+  ),
 
+  prisma.attendance.findMany({
+    where: {
+      schoolId,
+      date: {
+        gte: lastMonday,
+      },
+    },
+    select: {
+      date: true,
+      status: true,
+    },
+  }),
+]);
+
+const { stats, genderData, announcements } = dashboardData;
+
+    
     weeklyRecords.forEach((item) => {
       const itemDate = new Date(item.date);
       const dayIndex = (itemDate.getDay() + 6) % 7;
       if (dayIndex >= 0 && dayIndex < 5) {
-        if (item.present) finalAttendanceMap[dayIndex].present += 1;
+        if (item.status === "PRESENT") finalAttendanceMap[dayIndex].present += 1;
         else finalAttendanceMap[dayIndex].absent += 1;
       }
     });
@@ -89,12 +120,10 @@ const AdminPage = async ({ searchParams }: SearchParamsProps) => {
         {/* DASHBOARD CONTENT */}
         <AdminClientPage
           counts={{
-            ...stats, // Spreads existing counts (student, teacher, etc.)
+            ...stats,
           }}
           searchParams={resolvedSearchParams}
           announcements={announcements}
-          messages={messages as any}
-
           chart={<CountChartContainer data={genderData} />}
           attendanceChart={<AttendanceChartContainer data={finalAttendanceMap} />}
           eventList={<EventCalendarContainer searchParams={searchParams} />}

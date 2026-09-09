@@ -29,7 +29,13 @@ export default async function DashboardLayout({
     const [profile, msgCount, announceCount] = await Promise.all([
       currentUser(),
       prisma.message.count({
-        where: { receiverId: userId, isRead: false },
+        where: {
+    OR: [
+      { receiverTeacherId: userId },
+      { receiverParentId: userId },
+    ],
+    isRead: false,
+  },
       }).catch(() => 0),
       prisma.announcement.count({
         where: {

@@ -36,9 +36,12 @@ export const getCachedUser = unstable_cache(
 
 // 2. GET DASHBOARD DATA (The Unified Fix)
 export const getCachedDashboardData = unstable_cache(
-  async (start: Date, end: Date) => {
+  async (
+    schoolId: string,
+    start: Date,
+    end: Date
+  ) => {
     try {
-      // ONE transaction to rule them all (prevents pool timeouts)
       const [
         studentCount,
         teacherCount,
@@ -51,25 +54,97 @@ export const getCachedDashboardData = unstable_cache(
         femaleCount,
         latestAnnouncements,
       ] = await prisma.$transaction([
-        prisma.student.count(),
-        prisma.teacher.count(),
-        prisma.parent.count(),
-        prisma.admin.count(),
-        prisma.class.count(),
-        prisma.announcement.count(),
-        prisma.message.count(),
-        prisma.student.count({ where: { sex: "MALE" } }),
-        prisma.student.count({ where: { sex: "FEMALE" } }),
+        prisma.student.count({
+          where: {
+            schoolId,
+          },
+        }),
+
+        prisma.teacher.count({
+          where: {
+            schoolId,
+          },
+        }),
+
+        prisma.parent.count({
+          where: {
+            schoolId,
+          },
+        }),
+
+        prisma.admin.count({
+          where: {
+            schoolId,
+          },
+        }),
+
+        prisma.class.count({
+          where: {
+            schoolId,
+          },
+        }),
+
+        // Announcement count
+        prisma.announcement.count({
+          where: {
+            schoolId,
+          },
+        }),
+
+        prisma.message.count({
+          where: {
+            sender: {
+              schoolId,
+            },
+          },
+        }),
+
+        prisma.student.count({
+          where: {
+            schoolId,
+            sex: "MALE",
+          },
+        }),
+
+        prisma.student.count({
+          where: {
+            schoolId,
+            sex: "FEMALE",
+          },
+        }),
+
+        // Latest announcements for admin dashboard
         prisma.announcement.findMany({
-          take: 3,
-          orderBy: { date: "desc" },
+          where: {
+            schoolId,
+          },
+          take: 5,
+          orderBy: {
+            publishedAt: "desc",
+          },
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            publishedAt: true,
+            classId: true,
+            levelId: true,
+            teacherId: true,
+          },
         }),
       ]);
 
-      // Format gender data for Recharts
       const genderData = [
-        { name: "MALE", count: maleCount, fill: "#C3EBFA" },
-        { name: "FEMALE", count: femaleCount, fill: "#CFCEFF" },
+        {
+          name: "MALE",
+          count: maleCount,
+          fill: "#C3EBFA",
+        },
+        {
+          name: "FEMALE",
+          count: femaleCount,
+          fill: "#CFCEFF",
+        },
       ];
 
       return {
@@ -82,20 +157,28 @@ export const getCachedDashboardData = unstable_cache(
           announcementCount,
           msgCount,
         },
+
         genderData,
+
         announcements: latestAnnouncements,
       };
     } catch (error) {
       console.error("Dashboard Data Fetch Error:", error);
-      throw new Error("Failed to fetch dashboard metrics.");
+
+      throw new Error(
+        "Failed to fetch dashboard metrics."
+      );
     }
   },
-  ["dashboard-stats-main"], // The Cache Key
+
+  ["dashboard-stats-main"],
+
   {
-    revalidate: 3600,
-   tags: ["dashboard-announcements", "dashboard-stats"],
-  },
+    revalidate: 60,
+    tags: ["dashboard-stats"],
+  }
 );
+
 
 // 3. GET TEACHERS LIST
 export const getCachedTeachers = unstable_cache(
@@ -108,7 +191,7 @@ export const getCachedTeachers = unstable_cache(
       },
       take: ITEM_PER_PAGE,
       skip: ITEM_PER_PAGE * (page - 1),
-      orderBy: { name: "asc" },
+      orderBy: [{ firstName: "asc" }, { lastName: "asc" }],
     });
   },
   ["teachers-list"],

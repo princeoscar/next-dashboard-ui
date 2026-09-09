@@ -51,3 +51,12 @@ export const adjustScheduleToCurrentWeek = (
     };
   });
 };
+
+export function generateReceiptNumber() {
+  return (
+    "RCT-" +
+    new Date().getFullYear() +
+    "-" +
+    Math.floor(100000 + Math.random() * 900000)
+  );
+}

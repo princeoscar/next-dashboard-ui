@@ -19,19 +19,35 @@ const MessageListPage = async () => {
 console.log("USERS FETCHED:", users);
 
   // 2. FETCH MESSAGES
-  const realMessages = await prisma.message.findMany({
-    where: {
-      OR: [
-        { senderId: userId! },
-        { receiverId: userId! }
-      ]
-    },
-    include: {
-      sender: { select: { username: true, img: true } },
-      receiver: { select: { username: true, img: true } },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+ const rawMessages = await prisma.message.findMany({
+  where: {
+    OR: [
+      { senderId: userId! },
+      { receiverTeacherId: userId! },
+      { receiverParentId: userId! },
+    ],
+  },
+  orderBy: { createdAt: "desc" },
+});
+
+// Map the data so it matches what MessageListClient expects
+const realMessages = rawMessages.map((msg) => {
+  const isMe = msg.senderId === userId;
+  const otherPartyId = isMe 
+    ? (msg.receiverTeacherId || msg.receiverParentId) 
+    : msg.senderId;
+
+  const userStub = {
+    username: otherPartyId ? `User_${otherPartyId.slice(0, 5)}` : "Unknown",
+    img: "/noAvatar.png",
+  };
+
+  return {
+    ...msg,
+    sender: isMe ? { username: "Me", img: "/noAvatar.png" } : userStub,
+    receiver: isMe ? userStub : { username: "Me", img: "/noAvatar.png" },
+  };
+});
 
   return (
     <div className="bg-white p-4 md:p-8 rounded-[2.5rem] flex-1 m-2 md:m-4 mt-0 shadow-sm border border-slate-100 min-h-[700px]">
@@ -58,7 +74,7 @@ console.log("USERS FETCHED:", users);
                 table="message" 
                 type="create" 
                 relatedData={{ receivers: users }} 
-             />
+               />
           </div>
         </div>
       </div>

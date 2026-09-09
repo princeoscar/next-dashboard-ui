@@ -55,7 +55,9 @@ export async function startOnlinePaymentInvoice(studentBalanceId: number, parent
         amountPaid: ledger.outstanding,
         paymentMethod: "PAYSTACK",
         reference: uniqueTxRef,
-        status: "PENDING",
+        status: "UNPAID",
+        schoolId: ledger.schoolId,
+        paymentDate: new Date(),
       },
     });
 

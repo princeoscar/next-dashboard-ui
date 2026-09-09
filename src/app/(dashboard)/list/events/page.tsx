@@ -113,7 +113,7 @@ const EventListPage = async ({
       where: role === "teacher" ? { supervisorId: userId! } : {},
       include: {
         level: true,
-        _count: { select: { events: true } },
+        _count: { select: { events: true, students: true, } },
       },
       orderBy: { name: "asc" },
     });

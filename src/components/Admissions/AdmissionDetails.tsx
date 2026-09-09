@@ -1,7 +1,7 @@
 "use client";
 
 import { AdmissionStatus } from "@prisma/client";
-import { updateAdmissionStatus, promoteApplicantToStudent } from "@/lib/actions/admission";
+import { updateAdmissionStatus, promoteApplicantToStudent } from "@/lib/dashboard/admission";
 import { useState, useTransition } from "react";
 import Link from "next/link"; // 🎯 FIXED: Changed import route from next/navigation to next/link
 
@@ -73,15 +73,25 @@ export default function AdmissionDetails({ application, availableClasses = [] }:
           >
             Reject Application
           </button>
-          
-          {currentStatus !== AdmissionStatus.ACCEPTED && !showApprovalWizard && (
-            <button
-              disabled={isPending}
-              onClick={() => setShowApprovalWizard(true)}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50"
+
+          {application.student ? (
+            <Link
+              href={`/list/students/${application.student.id}`}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
             >
-              Approve Application...
-            </button>
+              View Student
+            </Link>
+          ) : (
+            currentStatus !== AdmissionStatus.ACCEPTED &&
+            !showApprovalWizard && (
+              <button
+                disabled={isPending}
+                onClick={() => setShowApprovalWizard(true)}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50"
+              >
+                Approve Application...
+              </button>
+            )
           )}
         </div>
       </div>
@@ -137,13 +147,27 @@ export default function AdmissionDetails({ application, availableClasses = [] }:
             <h3 className="mt-3 font-bold text-gray-900">{application.firstName} {application.lastName}</h3>
             <p className="text-xs font-mono text-blue-600 mt-1">{application.applicationNumber}</p>
             <div className="mt-2">
-              <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${
-                currentStatus === AdmissionStatus.ACCEPTED ? "bg-green-100 text-green-800" :
+              <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${currentStatus === AdmissionStatus.ACCEPTED ? "bg-green-100 text-green-800" :
                 currentStatus === AdmissionStatus.REJECTED ? "bg-red-100 text-red-800" : "bg-yellow-100 text-yellow-800"
-              }`}>
+                }`}>
                 {currentStatus}
               </span>
             </div>
+            {application.student && (
+              <div className="mt-3 rounded-lg bg-green-50 border border-green-200 p-3 text-sm">
+                <p className="font-semibold text-green-800">
+                  Student Successfully Enrolled
+                </p>
+
+                <p className="text-green-700 mt-1">
+                  Admission No: {application.student.admissionNumber}
+                </p>
+
+                <p className="text-green-700">
+                  Username: {application.student.username}
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="border-t pt-4 space-y-3">

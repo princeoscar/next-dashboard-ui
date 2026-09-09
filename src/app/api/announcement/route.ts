@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
         include: { class: true },
         take: ITEM_PER_PAGE,
         skip: ITEM_PER_PAGE * (p - 1),
-        orderBy: { date: "desc" },
+        orderBy: {  publishedAt: "desc" },
       }),
       prisma.announcement.count({ where: query }),
     ]);

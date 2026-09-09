@@ -6,7 +6,7 @@ interface AnnouncementProps {
     id: number | string;
     title: string;
     description: string;
-    date: Date | string;
+    publishedAt: Date | string;
   }[];
   onSelect?: (announcement: any) => void;
 }
@@ -25,7 +25,7 @@ const Announcements = ({ data = [] }: AnnouncementProps) => {
       {data.length > 0 ? (
         data.map((announcement, index) => {
           // Move logic outside the return for cleaner JSX
-          const dateObj = announcement.date ? new Date(announcement.date) : null;
+          const dateObj = announcement.publishedAt ? new Date(announcement.publishedAt) : null;
           const formattedDate = dateObj 
             ? new Intl.DateTimeFormat("en-GB", { day: '2-digit', month: 'short' }).format(dateObj)
             : "No Date";

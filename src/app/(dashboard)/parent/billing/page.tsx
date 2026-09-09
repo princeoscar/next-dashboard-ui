@@ -1,17 +1,54 @@
-
 import { prisma } from "@/lib/prisma";
 import PaymentButton from "../../../../components/Finance/PaymentButton";
+import { auth } from "@clerk/nextjs/server";
+import { notFound } from "next/navigation";
+import Link from "next/link";
 
 export default async function ParentBillingDashboard({ searchParams }: { searchParams: Promise<{ studentId: string }> }) {
+
+  const { userId } = await auth();
+
+  if (!userId) notFound();
+
+  const parent = await prisma.parent.findFirst({
+    where: {
+      clerkId: userId,
+    },
+    include: {
+      students: {
+        select: {
+          id: true,
+        },
+      },
+    },
+  });
+
+  if (!parent) notFound();
+
+  const { studentId } = await searchParams;
+
+const ownsStudent = parent.students.some((s) => s.id === studentId);
+
+if (!ownsStudent) notFound();
+
   // Query child statements from database using Prisma engine
   const financialStatements = await prisma.studentBalance.findMany({
-    where: { studentId: (await searchParams).studentId },
+  where: {
+    studentId,
+  },
     include: {
       allocation: {
-        include: { category: true }
+        include: {
+          category: true,
+          academicYear: true,
+        }
       }
     }
   });
+
+
+
+
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto p-4">
@@ -24,18 +61,17 @@ export default async function ParentBillingDashboard({ searchParams }: { searchP
         {financialStatements.map((invoice) => {
           const outstanding = Number(invoice.outstanding);
           const paid = Number(invoice.paidAmount);
-          
+
           return (
             <div key={invoice.id} className="bg-white border rounded-2xl p-5 shadow-sm flex flex-col justify-between space-y-4">
               <div>
-                <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${
-                  invoice.status === "FULLY_PAID" ? "bg-green-50 text-green-700" :
+                <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${invoice.status === "FULLY_PAID" ? "bg-green-50 text-green-700" :
                   invoice.status === "PARTIAL" ? "bg-yellow-50 text-yellow-700" : "bg-red-50 text-red-700"
-                }`}>
+                  }`}>
                   {invoice.status}
                 </span>
                 <h4 className="font-bold text-gray-800 text-sm mt-3">{invoice.allocation.category.name}</h4>
-                <p className="text-[11px] text-gray-400 font-medium">{invoice.allocation.term} Term • {invoice.allocation.academicYear}</p>
+                <p className="text-[11px] text-gray-400 font-medium">{invoice.allocation.term} Term • {invoice.allocation.academicYear?.name}</p>
               </div>
 
               <div className="border-t pt-3 space-y-1.5">
@@ -54,7 +90,15 @@ export default async function ParentBillingDashboard({ searchParams }: { searchP
               </div>
 
               {outstanding > 0 && (
-                <PaymentButton studentBalanceId={invoice.id} parentEmail="parent@example.com" />
+                <PaymentButton studentBalanceId={invoice.id} parentEmail={parent.email ?? ""} />
+              )}
+              {invoice.status === "FULLY_PAID" && (
+                <Link
+                  href={`/parent/receipt?studentBalanceId=${invoice.id}`}
+                  className="block text-center rounded-xl bg-green-600 text-white py-2 text-sm font-semibold hover:bg-green-700"
+                >
+                  Download Receipt
+                </Link>
               )}
             </div>
           );

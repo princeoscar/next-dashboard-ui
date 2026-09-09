@@ -27,23 +27,63 @@ const ClassListPage = async ({
   // --- 1. SEGMENT VIEW (CLASS CARDS) ---
   // Teachers only see the class they supervise. Admins see all.
   if (!classId && !search && role !== "student" && role !== "parent") {
-    const classes = await prisma.class.findMany({
-      where: {
-        ...(role === "teacher" ? { supervisorId: userId! } : {}),
-      },
-      include: { 
-        level: true,
-        supervisor: true,
-        _count: { select: { students: true, } } 
-      },
-      orderBy: { name: "asc" },
-    });
+ const classes = await prisma.class.findMany({
+  where: {
+    ...(role === "teacher" ? { supervisorId: userId! } : {}),
+  },
+  include: {
+    level: true,
+    supervisor: true,
 
-    const [teachers, levels] = await prisma.$transaction([
-    prisma.teacher.findMany({ select: { id: true, name: true, surname: true } }),
-    prisma.level.findMany({ select: { id: true, name: true } }), // changed 'level' to 'name' based on common schema
-  ]);
-  const relatedData = { teachers, levels };
+    _count: {
+      select: {
+        students: true,
+        exams: true,
+      },
+    },
+  },
+  });
+
+  classes.sort((a, b) => {
+  if (a.level.level !== b.level.level) {
+    return a.level.level - b.level.level;
+  }
+
+  return a.name.localeCompare(b.name, undefined, {
+    numeric: true,
+    sensitivity: "base",
+  });
+});
+
+
+
+    const [teachers, levels, streams] = await prisma.$transaction([
+  prisma.teacher.findMany({
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+    },
+  }),
+  prisma.level.findMany({
+    select: {
+      id: true,
+      name: true,
+      level: true,
+       stage: true,
+    },
+  }),
+  prisma.stream.findMany({
+    orderBy: {
+      name: "asc",
+    },
+  }),
+]);
+  const relatedData = {
+     teachers,
+      levels,
+       streams
+       };
 
     return (
       <div className="bg-white p-8 rounded-[2.5rem] flex-1 m-4 mt-0 shadow-sm border border-slate-100">
@@ -86,7 +126,7 @@ const ClassListPage = async ({
     query.id = parseInt(classId);
   }
 
-  const [data, count, teachers, levels] = await prisma.$transaction([
+  const [data, count, teachers, levels,streams] = await prisma.$transaction([
     prisma.class.findMany({
       where: query,
       include: { level: true, supervisor: true, _count: { select: { students: true } } },
@@ -95,11 +135,28 @@ const ClassListPage = async ({
       orderBy: { name: "asc" },
     }),
     prisma.class.count({ where: query }),
-    prisma.teacher.findMany({ select: { id: true, name: true, surname: true } }),
-    prisma.level.findMany({ select: { id: true, level: true } }),
+    prisma.teacher.findMany({ select: { id: true, firstName: true, lastName: true } }),
+    prisma.level.findMany({
+  select: {
+    id: true,
+    name: true,
+    level: true,
+    stage: true,
+  },
+}),
+
+   prisma.stream.findMany({
+  orderBy: {
+    name: "asc",
+  },
+}),
   ]);
 
-  const relatedData = { teachers, levels };
+  const relatedData = {
+  teachers,
+  levels,
+  streams,
+};
 
   const columns = [
     { header: "Class Name", accessor: "name", className: "pl-4" },
@@ -134,7 +191,9 @@ const ClassListPage = async ({
             <div className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400">
               <UserCog size={14} />
             </div>
-            <span className="font-medium text-xs">{item.supervisor.name} {item.supervisor.surname}</span>
+            <span className="font-medium text-xs">
+  {item.supervisor.firstName} {item.supervisor.lastName}
+</span>
           </div>
         ) : (
           <span className="text-xs italic text-slate-300">Unassigned</span>

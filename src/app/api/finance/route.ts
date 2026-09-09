@@ -7,12 +7,27 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     const { sessionClaims } = await auth();
-    const role = (sessionClaims?.metadata as { role?: string })?.role;
+    
+
+    const metadata = sessionClaims?.metadata as {
+  role?: string;
+  schoolId?: string;
+};
+
+const role = metadata?.role;
+const schoolId = metadata?.schoolId;
 
     // 1. Security Check
     if (role !== "admin") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
+
+    if (!schoolId) {
+  return NextResponse.json(
+    { error: "School not found" },
+    { status: 400 }
+  );
+}
 
     const currentYear = new Date().getFullYear();
     
@@ -24,21 +39,25 @@ export async function GET() {
     const [incomeData, expenseData] = await prisma.$transaction([
       prisma.income.findMany({
         where: {
-          date: {
-            gte: startDate,
-            lte: endDate,
-          },
-        },
-        select: { amount: true, date: true },
+  schoolId,
+
+  createdAt: {
+    gte: startDate,
+    lte: endDate,
+  },
+},
+        select: { amount: true, receivedAt: true },
       }),
       prisma.expense.findMany({
         where: {
-          date: {
-            gte: startDate,
-            lte: endDate,
-          },
-        },
-        select: { amount: true, date: true },
+  schoolId,
+
+  createdAt: {
+    gte: startDate,
+    lte: endDate,
+  },
+},
+        select: { amount: true, spentAt: true },
       }),
     ]);
 
@@ -54,26 +73,26 @@ export async function GET() {
 
     // 4. Group income
     incomeData.forEach((item) => {
-      const itemDate = new Date(item.date);
+      const itemDate = new Date(item.receivedAt);
       if (!isNaN(itemDate.getTime())) { // ✅ Safety check for valid dates
         const monthIndex = itemDate.getMonth();
-        financeMap[monthIndex].income += item.amount;
+        financeMap[monthIndex].income += item.amount.toNumber();
       }
     });
 
     // 5. Group expenses
     expenseData.forEach((item) => {
-      const itemDate = new Date(item.date);
+      const itemDate = new Date(item.spentAt);
       if (!isNaN(itemDate.getTime())) { // ✅ Safety check for valid dates
         const monthIndex = itemDate.getMonth();
-        financeMap[monthIndex].expense += item.amount;
+        financeMap[monthIndex].expense += item.amount.toNumber();
       }
     });
 
     return NextResponse.json(financeMap);
 
   } catch (err) {
-    console.error("FINANCE_API_ERROR:", err); // 👈 This will show the REAL error in your terminal
+    console.error("FINANCE_API_ERROR:", err); 
     return NextResponse.json(
       { error: "Internal Server Error", details: err instanceof Error ? err.message : "Unknown error" },
       { status: 500 }

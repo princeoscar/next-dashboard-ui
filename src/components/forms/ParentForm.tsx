@@ -4,10 +4,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import InputField from "../InputField";
 import { Dispatch, SetStateAction, startTransition, useActionState, useEffect } from "react";
-import { createParent, updateParent } from "@/lib/actions";
+import { createParent, updateParent } from "@/lib/server-actions";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
-import { parentSchema, ParentSchema } from "@/lib/formValidationSchema";
+import { parentSchema, ParentSchema } from "@/lib/validation";
 import { useFormStatus } from "react-dom";
 
 const SubmitButton = ({ type }: { type: "create" | "update" }) => {
@@ -56,25 +56,34 @@ const ParentForm = ({
 
   const router = useRouter();
 
-  useEffect(() => {
-    if (state.success) {
-      toast.success(`Parent has been ${type === "create" ? "created" : "updated"}!`);
-      const timer = setTimeout(() => {
-        setOpen(false);
-        router.refresh();
-      }, 200);
-      return () => clearTimeout(timer);
-    }
-    if (state.error) {
-      toast.error(state.message || "Something went wrong!");
-    }
-  }, [state, router, type, setOpen]);
+  const onSubmit = handleSubmit(async (values) => {
+    console.log("FORM SUBMITTED");
+    console.log(values);
 
-  const onSubmit = handleSubmit((formData) => {
-    console.log("Form is valid! Sending data:", formData);
-    startTransition(() => {
-      formAction({ ...formData, id: data?.id });
-    });
+
+    const initialState = {
+      success: false,
+      error: false,
+      message: "",
+    };
+
+    const result =
+      type === "create"
+        ? await createParent(initialState, values)
+        : await updateParent(initialState, {
+          ...values,
+          id: data.id,
+        });
+
+
+
+    if (result.success) {
+      toast.success(result.message);
+      setOpen(false);
+      router.refresh();
+    } else {
+      toast.error(result.message);
+    }
   });
 
   // ✅ FIX: Ensure students is at least an empty array to prevent .map() errors
@@ -82,7 +91,7 @@ const ParentForm = ({
   console.log("Validation Errors:", errors);
   return (
     <form className="flex flex-col w-full max-w-2xl mx-auto" onSubmit={onSubmit}>
-      <div className="sticky top-0 text-center bg-white z-50 px-6 py-4 border-b">
+      <div className=" top-0 text-center bg-white z-50 px-6 py-4 border-b">
         <h1 className="text-xl md:text-2xl font-black text-slate-800 tracking-tight uppercase">
           {type === "create" ? "Create New" : "Update"}{" "}
           <span className="text-rubixPurple">Parent</span>
@@ -110,10 +119,33 @@ const ParentForm = ({
           </span>
 
           <div className="flex justify-between flex-wrap gap-4 t-6">
-            <InputField label="First Name" name="name" defaultValue={data?.name} register={register} error={errors.name} />
-            <InputField label="Last Name" name="surname" defaultValue={data?.surname} register={register} error={errors.surname} />
+            <InputField label="First Name" name="firstName" defaultValue={data?.firstName} register={register} error={errors.firstName} />
+            <InputField label="Last Name" name="lastName" defaultValue={data?.lastName} register={register} error={errors.lastName} />
             <InputField label="Phone" name="phone" defaultValue={data?.phone} register={register} error={errors.phone} />
             <InputField label="Address" name="address" defaultValue={data?.address} register={register} error={errors.address} />
+
+            <div className="flex flex-col gap-2 w-full md:w-1/4">
+              <label className="text-xs text-gray-500">
+                Relationship
+              </label>
+
+              <select
+                {...register("relationship")}
+                defaultValue={data?.relationship || "FATHER"}
+                className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm"
+              >
+                <option value="FATHER">Father</option>
+                <option value="MOTHER">Mother</option>
+                <option value="GUARDIAN">Guardian</option>
+                <option value="OTHER">Other</option>
+              </select>
+
+              {errors.relationship && (
+                <p className="text-xs text-red-500">
+                  {errors.relationship.message}
+                </p>
+              )}
+            </div>
             <input type="hidden" value={relatedData?.schoolId || data?.schoolId || "1"} {...register("schoolId")} />
 
             {data && <InputField label="Id" name="id" defaultValue={data?.id} register={register} error={errors?.id} hidden />}
@@ -140,7 +172,7 @@ const ParentForm = ({
       </div>
 
 
-      <div className="sticky bottom-0 bg-white px-6 py-4 border-t z-50 mt-4">
+      <div className=" bottom-0 bg-white px-6 py-4 border-t z-50 mt-4">
         {state.error && <p className="text-red-500 text-xs mb-2 font-bold text-center">Update failed. Please check inputs.</p>}
         <button className="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold hover:bg-rubixPurple transition-all shadow-lg active:scale-[0.98]">
           {type === "create" ? "Confirm & Create Parent" : "Save Parent Changes"}

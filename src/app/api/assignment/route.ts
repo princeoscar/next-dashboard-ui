@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
           subject: {
             select: {
               name: true, 
-              teachers: { select: { name: true, surname: true } },
+              teachers: { select: { firstName: true, lastName: true } },
               classes: { select: { name: true } },
             },
           },

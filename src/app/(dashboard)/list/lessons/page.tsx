@@ -2,17 +2,29 @@ import FormContainer from "@/components/FormContainer";
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
-import ClassFilter from "@/components/ClassFilter"; // 🎯 Import the new component
 import { prisma } from "@/lib/prisma";
 import { ITEM_PER_PAGE } from "@/lib/settings";
 import { Lesson, Prisma } from "@prisma/client";
 import Image from "next/image";
 import { auth } from "@clerk/nextjs/server";
+import ClassFilter from "@/components/ClassFilter";
 
 export type LessonList = Lesson & {
-  subject: { name: string };
-  class: { name: string };
-  teacher: { name: string; surname: string };
+  subject: {
+    id: number;
+    name: string;
+  };
+
+  class: {
+    id: number;
+    name: string;
+  };
+
+  teacher: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
 };
 
 const LessonListPage = async ({
@@ -47,42 +59,126 @@ const LessonListPage = async ({
             query.teacherId = value;
             break;
           case "search":
-            query.OR = [
-              { subject: { name: { contains: value, mode: "insensitive" } } },
-              { teacher: { name: { contains: value, mode: "insensitive" } } },
-            ];
+           query.OR = [
+  {
+    subject: {
+      name: {
+        contains: value,
+        mode: "insensitive",
+      },
+    },
+  },
+  {
+    teacher: {
+      firstName: {
+        contains: value,
+        mode: "insensitive",
+      },
+    },
+  },
+  {
+    teacher: {
+      lastName: {
+        contains: value,
+        mode: "insensitive",
+      },
+    },
+  },
+  {
+    class: {
+      name: {
+        contains: value,
+        mode: "insensitive",
+      },
+    },
+  },
+];
             break;
         }
       }
     }
   }
 
-  const [data, count, subjects, classes, teachers] = await prisma.$transaction([
+  const [data, count, subjects, classes, teachers, levels, streams,] = await prisma.$transaction([
     prisma.lesson.findMany({
       where: query,
-      include: {
-        subject: { select: { id: true, name: true } },
-        class: { select: { id: true, name: true } },
-        teacher: { select: { id: true, name: true, surname: true } },
-      },
+     include: {
+  subject: {
+    select: {
+      id: true,
+      name: true,
+    },
+  },
+
+  class: {
+  select: {
+    id: true,
+    name: true,
+  },
+},
+
+  teacher: {
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+    },
+  },
+},
       take: ITEM_PER_PAGE,
       skip: ITEM_PER_PAGE * (p - 1),
     }),
+
+
+
     prisma.lesson.count({ where: query }),
+
+
     prisma.subject.findMany({ select: { id: true, name: true } }),
+    
     prisma.class.findMany({
-      select: {
-        id: true,
-        name: true
-      },
-      orderBy: {
-        name: "asc",
-      },
-    }),
-    prisma.teacher.findMany({ select: { id: true, name: true, surname: true } }),
+  select: {
+    id: true,
+    name: true,
+    levelId: true,
+    streamId: true,
+  },
+  orderBy: {
+    name: "asc",
+  },
+}),
+
+    prisma.teacher.findMany({ select: { id: true, firstName: true, lastName: true } }),
+
+    prisma.level.findMany({
+  select: {
+    id: true,
+    name: true,
+  },
+  orderBy: {
+    id: "asc",
+  },
+}),
+
+prisma.stream.findMany({
+  select: {
+    id: true,
+    name: true,
+  },
+  orderBy: {
+    name: "asc",
+  },
+}),
   ]);
 
-  const relatedData = { subjects, classes, teachers };
+  const relatedData = { subjects, classes, teachers, levels, streams };
+
+  const formatTime = (date: Date) =>
+  date.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
 
   const dayColors: { [key: string]: string } = {
     MONDAY: "bg-blue-100 text-blue-700",
@@ -96,7 +192,7 @@ const LessonListPage = async ({
     <tr key={item.id} className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-lamaPurpleLight">
       <td className="flex items-center gap-4 p-4">{item.subject.name}</td>
       <td>{item.class.name}</td>
-      <td className="hidden md:table-cell">{item.teacher.name + " " + item.teacher.surname}</td>
+      <td className="hidden md:table-cell">{item.teacher.firstName + " " + item.teacher.lastName}</td>
 
       {/* 1. Day Column */}
       <td className="hidden lg:table-cell">
@@ -107,9 +203,8 @@ const LessonListPage = async ({
 
       {/* 2. Time Column */}
       <td className="hidden lg:table-cell">
-        {new Date(item.startTime).toISOString().substr(11, 5)} - 
-{new Date(item.endTime).toISOString().substr(11, 5)}
-      </td>
+  {formatTime(item.startTime)} - {formatTime(item.endTime)}
+</td>
 
       {/* 3. Actions Column */}
       <td>
@@ -126,35 +221,43 @@ const LessonListPage = async ({
   );
 
   return (
-    <div className="bg-white p-4 rounded-md flex-1 m-4 mt-0 flex flex-col gap-4">
-      {/* TOP SECTION */}
-      <div className="flex items-center justify-between">
-        <h1 className="hidden md:block text-lg font-semibold">Timetable Periods</h1>
-        <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
-          <TableSearch />
-          <div className="flex items-center gap-4 self-end">
-            <button className="w-8 h-8 flex items-center justify-center rounded-full bg-lamaYellow">
-              <Image src="/filter.png" alt="" width={14} height={14} />
-            </button>
-            {role === "admin" && (
-              <FormContainer table="lesson" type="create" relatedData={relatedData} />
-            )}
-          </div>
-        </div>
-      </div>
+   <div className="bg-white p-4 rounded-md flex-1 m-4 mt-0">
 
-      {/* 🎯 THE CLASS FILTER */}
-      <div className="border-b border-slate-100 pb-2">
-        <p className="text-[10px] text-slate-400 mb-2 font-bold uppercase tracking-widest">Select Class Timetable</p>
-        <ClassFilter classes={classes} />
-      </div>
+  {/* TOP SECTION */}
+  <div className="flex items-center justify-between mb-4">
+    <h1 className="text-lg font-semibold">
+      Timetable Periods
+    </h1>
 
-      {/* LIST SECTION */}
-      <Table columns={columns} renderRow={renderRow} data={data} />
+    <div className="flex items-center gap-2">
+      <TableSearch />
 
-      {/* PAGINATION */}
-      <Pagination page={p} count={count} />
+      <ClassFilter classes={classes} />
+
+      {role === "admin" && (
+        <FormContainer
+          table="lesson"
+          type="create"
+          relatedData={relatedData}
+        />
+      )}
     </div>
+  </div>
+
+  {/* LESSON LIST */}
+  <Table
+    columns={columns}
+    renderRow={renderRow}
+    data={data}
+  />
+
+  {/* PAGINATION */}
+  <Pagination
+    page={p}
+    count={count}
+  />
+
+</div>
   );
 };
 

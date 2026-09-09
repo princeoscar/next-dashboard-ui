@@ -4,10 +4,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useFieldArray } from "react-hook-form";
 import InputField from "../InputField";
 import { Dispatch, SetStateAction, startTransition, useActionState, useEffect } from "react";
-import { attendanceSchema, AttendanceSchema } from "@/lib/formValidationSchema";
+import { attendanceSchema, AttendanceSchema } from "@/lib/validation";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
-import { createAttendance } from "@/lib/actions";
+import { createAttendance } from "@/lib/server-actions";
 import { UserCheck, ListChecks, CheckCircle2, Calendar, BookOpen } from "lucide-react";
 
 const AttendanceForm = ({
@@ -24,8 +24,8 @@ const AttendanceForm = ({
   const fallbackStudent = relatedData?.students?.[0];
 
   // 🎯 FIX 1: Format Date to a clean YYYY-MM-DD string format so the HTML input can bind it
-  const initialDateString = data?.date 
-    ? new Date(data.date).toISOString().split("T")[0] 
+  const initialDateString = data?.date
+    ? new Date(data.date).toISOString().split("T")[0]
     : new Date().toISOString().split("T")[0];
 
   const {

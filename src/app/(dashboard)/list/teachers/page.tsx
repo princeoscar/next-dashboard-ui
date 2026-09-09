@@ -53,7 +53,7 @@ const TeacherListPage = async ({
           />
         </div>
         <div className="flex flex-col">
-          <h3 className="font-black text-slate-700 uppercase text-[11px] tracking-tight">{item.name}</h3>
+          <h3 className="font-black text-slate-700 uppercase text-[11px] tracking-tight">{item.firstName} {item.lastName}</h3>
           <div className="flex items-center gap-1 text-slate-400">
              <Mail size={10} />
              <p className="text-[10px] font-bold">{item?.email}</p>
@@ -119,7 +119,7 @@ const TeacherListPage = async ({
 
   const query: Prisma.TeacherWhereInput = {};
   if (queryParams.search) {
-    query.name = { contains: queryParams.search, mode: "insensitive" };
+    query.firstName = { contains: queryParams.search, mode: "insensitive" };
   }
   if (queryParams.classId) {
     query.classes = { some: { id: parseInt(queryParams.classId) } };

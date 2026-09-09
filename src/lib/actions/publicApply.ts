@@ -1,9 +1,10 @@
 "use server";
 
 import { PrismaClient, AdmissionStatus } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import { generateAdmissionNumber } from "@/lib/utils/admissionNumber";
 
-const prisma = new PrismaClient();
+
 
 export async function submitPublicApplication(formData: {
   firstName: string;
@@ -24,13 +25,14 @@ export async function submitPublicApplication(formData: {
   reportCard: string;
 }) {
   try {
-    // Basic verification check before creating a record
     if (!formData.passportPhoto || !formData.birthCertificate || !formData.reportCard) {
       return { success: false, error: "Please ensure all required credentials have finished uploading." };
     }
 
-    // Generate our type-safe sequential custom tracking reference code safely
-    const uniqueAppNumber = await generateAdmissionNumber();
+    const schoolId = "1";
+
+   
+    const uniqueAppNumber = await generateAdmissionNumber(schoolId);
 
     const newApplication = await prisma.admission.create({
       data: {
@@ -55,7 +57,7 @@ export async function submitPublicApplication(formData: {
 
         state: "Pending Review", 
         lga: "Pending Review",
-        schoolId: "1",
+        schoolId: schoolId,
       },
     });
 

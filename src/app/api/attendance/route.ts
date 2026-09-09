@@ -29,7 +29,7 @@ export async function GET() {
       },
       select: {
         date: true,
-        present: true,
+        status: true,
       },
     });
 
@@ -45,7 +45,7 @@ export async function GET() {
       const dayIndex = itemDate.getDay() - 1; // 0 for Mon, 4 for Fri
 
       if (dayIndex >= 0 && dayIndex < 5) {
-        if (item.present) {
+        if (item.status) {
           attendanceMap[dayIndex].present++;
         } else {
           attendanceMap[dayIndex].absent++;

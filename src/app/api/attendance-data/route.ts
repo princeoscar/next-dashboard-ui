@@ -20,7 +20,7 @@ export async function GET() {
       },
       select: {
         date: true,
-        present: true,
+        status: true,
       },
     });
     

@@ -4,10 +4,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import InputField from "../InputField";
 import { Dispatch, SetStateAction, useActionState, useEffect, startTransition } from "react";
-import { lessonSchema, LessonSchema } from "@/lib/formValidationSchema";
+import { lessonSchema, LessonSchema } from "@/lib/validation";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
-import { createLesson, updateLesson } from "@/lib/actions";
+import { createLesson, updateLesson } from "@/lib/server-actions";
 
 const LessonForm = ({
   type,
@@ -23,6 +23,8 @@ const LessonForm = ({
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<LessonSchema>({
     // @ts-ignore
@@ -36,6 +38,14 @@ const LessonForm = ({
 
   const router = useRouter();
 
+  const {
+    subjects = [],
+    classes = [],
+    teachers = [],
+    levels = [],
+    streams = [],
+  } = relatedData || {};
+
   useEffect(() => {
     if (state.success) {
       toast.success(`Timetable has been ${type === "create" ? "updated" : "modified"}!`);
@@ -48,16 +58,87 @@ const LessonForm = ({
   }, [state, router, type, setOpen]);
 
   const onSubmit = handleSubmit((formData) => {
-    // 🇳🇬 Localization: If 'name' is empty, default it to the Subject Name 
-    // so the Admin doesn't have to type "Mathematics" twice.
-    const selectedSubject = relatedData?.subjects?.find(
-      (s: any) => s.id === formData.subjectId
+    const selectedSubject = subjects.find(
+      (s: any) => Number(s.id) === Number(formData.subjectId)
     );
+
+    const selectedClassIds = new Set<string>();
+
+for (const selection of formData.classes) {
+
+  // ==========================================
+  // JSS LEVEL-WIDE SELECTION
+  // Example: LEVEL-7
+  // Selects every class belonging to JSS 1
+  // ==========================================
+  if (selection.startsWith("LEVEL-")) {
+    const levelId = Number(selection.replace("LEVEL-", ""));
+
+    classes.forEach((c: any) => {
+      if (Number(c.levelId) === levelId) {
+        selectedClassIds.add(String(c.id));
+      }
+    });
+
+    continue;
+  }
+
+  // ==========================================
+  // SSS GENERAL
+  // Example: GENERAL-10
+  // ==========================================
+  if (selection.startsWith("GENERAL-")) {
+    const levelId = Number(selection.replace("GENERAL-", ""));
+
+    classes.forEach((c: any) => {
+      if (
+        Number(c.levelId) === levelId &&
+        (c.streamId === null || c.streamId === undefined)
+      ) {
+        selectedClassIds.add(String(c.id));
+      }
+    });
+
+    continue;
+  }
+
+  // ==========================================
+  // INDIVIDUAL CLASS
+  // Example: CLASS-25
+  // Used for SSS Science / Art / Commercial
+  // ==========================================
+  if (selection.startsWith("CLASS-")) {
+    const classId = Number(selection.replace("CLASS-", ""));
+
+    const selectedClass = classes.find(
+      (c: any) => Number(c.id) === classId
+    );
+
+    if (selectedClass) {
+      selectedClassIds.add(String(selectedClass.id));
+    }
+
+    continue;
+  }
+}
+
+const resolvedClasses = Array.from(selectedClassIds);
+
+console.log("========== LESSON SUBMISSION ==========");
+console.log("Selected groups:", formData.classes);
+console.log("Resolved class IDs:", resolvedClasses);
+console.log("Subject:", selectedSubject?.name);
+console.log("Teacher:", formData.teacherId);
+console.log("========================================");
 
     const payload = {
       ...formData,
       id: data?.id,
-      name: formData.name || selectedSubject?.name || "New Period",
+      classes: resolvedClasses,
+      title:
+        formData.title ||
+        selectedSubject?.name ||
+        "New Period",
     };
 
     startTransition(() => {
@@ -65,7 +146,17 @@ const LessonForm = ({
     });
   });
 
-  const { subjects, classes, teachers } = relatedData || {};
+
+
+  const juniorLevels = levels?.filter(
+    (level: any) =>
+      level.name.toUpperCase().startsWith("JSS")
+  );
+
+  const seniorLevels = levels?.filter(
+    (level: any) =>
+      level.name.toUpperCase().startsWith("SSS")
+  );
 
   return (
     <form className="flex flex-col w-full max-w-2xl mx-auto mt-6 text-center" onSubmit={onSubmit}>
@@ -77,15 +168,16 @@ const LessonForm = ({
         <p className="text-xs text-slate-400 font-medium mt-1">Assign subjects to classes and teachers</p>
       </div>
 
-      <div className="px-6 py-6 space-y-8 pb-28 mt-5">
+      <div className="px-6 py-6 space-y-8">
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
           {/* DESCRIPTION */}
           <InputField
             label="Period Description (Optional)"
-            name="name"
-            defaultValue={data?.name}
+            name="title"
+            defaultValue={data?.title}
             register={register}
-            error={errors.name}
+            error={errors.title}
             placeholder="e.g. Algebra Intro"
           />
 
@@ -130,7 +222,7 @@ const LessonForm = ({
         </div>
 
         {/* RELATIONS */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
           {/* SUBJECT */}
           <div className="flex flex-col gap-2">
             <label className="text-xs font-bold text-slate-500 uppercase">Subject</label>
@@ -151,60 +243,208 @@ const LessonForm = ({
             )}
           </div>
 
-          {/* TARGET CLASSES (Group Session Support) */}
-          <div className="flex flex-col gap-2">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-              Target Classes (Group Session)
-            </label>
-            <div className="grid grid-cols-2 gap-2 bg-slate-50 p-4 rounded-2xl ring-[1.5px] ring-gray-200 max-h-48 overflow-y-auto custom-scrollbar">
-              {classes?.map((c: any) => (
+          {/* TARGET CLASSES */}
+<div className="md:col-span-2 flex flex-col gap-3">
+
+  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+    Target Classes
+  </label>
+
+  <div className="bg-slate-50 rounded-2xl ring-1 ring-slate-200 p-5 space-y-6">
+
+    {/* =========================
+        JUNIOR SECONDARY SCHOOL
+    ========================== */}
+    <div>
+  <h3 className="text-sm font-black text-rubixPurple uppercase mb-3">
+    Junior Secondary School
+  </h3>
+
+  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+    {juniorLevels.map((level: any) => {
+      const levelClasses = classes.filter(
+        (c: any) =>
+          Number(c.levelId) === Number(level.id)
+      );
+
+      if (levelClasses.length === 0) {
+        return null;
+      }
+
+      return (
+        <label
+          key={level.id}
+          className="flex items-center gap-3 bg-white border border-slate-200 rounded-xl p-4 cursor-pointer hover:border-rubixPurple transition-all"
+        >
+          <input
+            type="checkbox"
+            value={`LEVEL-${level.id}`}
+            {...register("classes")}
+            className="w-4 h-4 accent-rubixPurple"
+          />
+
+          <span className="font-semibold text-slate-700">
+            {level.name}
+          </span>
+        </label>
+      );
+    })}
+  </div>
+</div>
+
+
+    {/* =========================
+        SENIOR SECONDARY SCHOOL
+    ========================== */}
+    <div>
+
+  <h3 className="text-sm font-black text-rubixPurple uppercase mb-3">
+    Senior Secondary School
+  </h3>
+
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+    {seniorLevels.map((level: any) => {
+
+      const levelClasses = classes.filter(
+        (c: any) =>
+          Number(c.levelId) === Number(level.id)
+      );
+
+      if (levelClasses.length === 0) {
+        return null;
+      }
+
+      const generalClass = levelClasses.find(
+        (c: any) =>
+          c.streamId === null ||
+          c.streamId === undefined
+      );
+
+      const streamClasses = levelClasses.filter(
+        (c: any) =>
+          c.streamId !== null &&
+          c.streamId !== undefined
+      );
+
+      return (
+        <div
+          key={level.id}
+          className="bg-white border border-slate-200 rounded-xl p-4"
+        >
+
+          <h4 className="font-bold text-slate-800 mb-4">
+            {level.name}
+          </h4>
+
+          <div className="space-y-3">
+
+            {/* ==========================
+                GENERAL
+            =========================== */}
+            {generalClass && (
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  value={`GENERAL-${level.id}`}
+                  {...register("classes")}
+                  className="w-4 h-4 accent-rubixPurple"
+                />
+
+                <span className="text-sm text-slate-600">
+                  General
+                </span>
+              </label>
+            )}
+
+            {/* ==========================
+                STREAMS
+            =========================== */}
+            {streamClasses.map((classItem: any) => {
+
+              const stream = streams.find(
+                (s: any) =>
+                  Number(s.id) === Number(classItem.streamId)
+              );
+
+              if (!stream) {
+                return null;
+              }
+
+              return (
                 <label
-                  key={c.id}
-                  className="flex items-center gap-2 text-sm cursor-pointer hover:bg-white p-2 rounded-xl transition-all border border-transparent hover:border-gray-200"
+                  key={classItem.id}
+                  className="flex items-center gap-3 cursor-pointer"
                 >
                   <input
                     type="checkbox"
-                    value={c.id}
-                    className="w-4 h-4 rounded accent-rubixPurple"
-                    {...register("classes")} // 🎯 Notice we changed "classId" to "classes" (plural)
-                    defaultChecked={type === "update" ? data?.classId === c.id : false}
+                    value={`CLASS-${classItem.id}`}
+                    {...register("classes")}
+                    className="w-4 h-4 accent-rubixPurple"
                   />
-                  <span className="text-slate-600 font-medium">Class {c.name}</span>
+
+                  <span className="text-sm text-slate-600">
+                    {stream.name}
+                  </span>
                 </label>
-              ))}
-            </div>
-            <p className="text-[10px] text-slate-400 italic px-1">
-              Check multiple classes to assign this subject/time to all of them at once.
-            </p>
-            {errors.classes?.message && (
-              <p className="text-[10px] text-red-500">{errors.classes.message.toString()}</p>
-            )}
+              );
+            })}
+
           </div>
 
+        </div>
+      );
+    })}
+
+  </div>
+</div>
+
+  </div>
+
+  <p className="text-[10px] text-slate-400 italic px-1">
+    Select a JSS level to teach all classes in that level, or select
+    individual SSS streams such as Science, Art, or Commercial.
+  </p>
+
+  {errors.classes?.message && (
+    <p className="text-[10px] text-red-500">
+      {errors.classes.message.toString()}
+    </p>
+  )}
+
+</div>
+
           {/* TEACHER */}
-          <div className="flex flex-col gap-2">
-            <label className="text-xs font-bold text-slate-500 uppercase">Teacher</label>
-            <select
-              className="ring-1 ring-slate-200 p-3 rounded-xl text-sm focus:ring-2 focus:ring-blue-400 outline-none bg-white"
-              {...register("teacherId")}
-              defaultValue={data?.teacherId}
-            >
-              <option value="">Select Teacher</option>
-              {teachers?.map((t: any) => (
-                <option value={t.id} key={t.id}>
-                  {t.name} {t.surname}
-                </option>
-              ))}
-            </select>
-            {errors.teacherId?.message && (
-              <p className="text-[10px] text-red-500">{errors.teacherId.message.toString()}</p>
-            )}
-          </div>
+         <div className="flex flex-col gap-2">
+  <label className="text-xs font-bold text-slate-500 uppercase">
+    Teacher
+  </label>
+
+  <select
+    className="ring-1 ring-slate-200 p-3 rounded-xl text-sm focus:ring-2 focus:ring-blue-400 outline-none bg-white"
+    {...register("teacherId")}
+    defaultValue={data?.teacherId || ""}
+  >
+    <option value="">Select Teacher</option>
+
+    {teachers?.map((teacher: any) => (
+      <option value={teacher.id} key={teacher.id}>
+        {teacher.firstName} {teacher.lastName}
+      </option>
+    ))}
+  </select>
+
+  {errors.teacherId?.message && (
+    <p className="text-[10px] text-red-500">
+      {errors.teacherId.message.toString()}
+    </p>
+  )}
+</div>
         </div>
       </div>
 
       {/* FOOTER BUTTON */}
-      <div className="sticky bottom-0 bg-white px-6 py-4 border-t z-50">
+      <div className="shrink-0 bg-white px-6 py-4 border-t border-slate-100">
         <button className="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold hover:bg-blue-600 transition-all shadow-lg active:scale-95">
           {type === "create" ? "Confirm Schedule" : "Update Schedule"}
         </button>

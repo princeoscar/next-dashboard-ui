@@ -7,7 +7,7 @@ interface SubjectResult {
   name: string;
   ca: number;
   exam: number;
-  total: string;
+  total: number | string;
   level: string;
 }
 
@@ -30,10 +30,25 @@ interface ReportCardProps {
 const ReportCardSheet = ({ data }: ReportCardProps) => {
   if (!data || !data.subjects) return <div className="p-10 text-red-500 font-bold text-center uppercase tracking-widest border-2 border-dashed border-red-200 rounded-3xl">Critical Error: Student Data Not Found</div>;
 
-  const average = (data.subjects.reduce((acc, curr) => acc + parseFloat(curr.total), 0) / data.subjects.length).toFixed(2);
-  const isSSS = data.className.toLowerCase().includes("sss");
-  const attendancePct = data.attendance?.total
-    ? Math.round((data.attendance.present / data.attendance.total) * 100)
+
+ 
+  const average =
+  data.subjects.length > 0
+    ? (
+        data.subjects.reduce(
+          (sum, subject) => sum + Number(subject.total),
+          0
+        ) / data.subjects.length
+      ).toFixed(2)
+    : "0.00";
+
+const isSSS = data.className.toLowerCase().includes("sss");
+
+const attendancePct =
+  data.attendance && data.attendance.total > 0
+    ? Math.round(
+        (data.attendance.present / data.attendance.total) * 100
+      )
     : 0;
 
   return (
@@ -110,20 +125,26 @@ const ReportCardSheet = ({ data }: ReportCardProps) => {
               {data.subjects.map((sub, i) => (
                 <tr key={i} className="border-b border-slate-100 last:border-0 even:bg-slate-50/50">
                   <td className="p-4 font-black text-slate-800 text-sm uppercase whitespace-normal">{sub.name}</td>
-                  <td className="p-4 text-center font-bold text-slate-500 tabular-nums">{sub.ca}</td>
-                  <td className="p-4 text-center font-bold text-slate-500 tabular-nums">{sub.exam}</td>
-                  <td className="p-4 text-center font-black text-slate-900 tabular-nums text-base">{sub.total}%</td>
+                  <td className="p-4 text-center font-bold text-slate-500 tabular-nums">
+  {Number(sub.ca).toFixed(0)}
+</td>
+                  <td className="p-4 text-center font-bold text-slate-500 tabular-nums">
+  {Number(sub.exam).toFixed(0)}
+</td>
+                  <td className="p-4 text-center font-black text-slate-900 tabular-nums text-base">
+  {Number(sub.total).toFixed(0)}%
+</td>
                   <td className="p-4 text-center">
-                    <span className={`font-black text-xs uppercase ${parseFloat(sub.total) >= 70
+                    <span className={`font-black text-xs uppercase ${Number(sub.total) >= 70
                         ? "text-green-600"
-                        : parseFloat(sub.total) >= 50
+                        : Number(sub.total) >= 50
                           ? "text-blue-600"
                           : "text-red-600"
                       }`}>
                       {sub.level || (
-                        parseFloat(sub.total) >= 70
+                        Number(sub.total) >= 70
                           ? "Excellent"
-                          : parseFloat(sub.total) >= 50
+                          : Number(sub.total) >= 50
                             ? "Pass"
                             : "Fail"
                       )}

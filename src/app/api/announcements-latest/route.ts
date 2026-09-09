@@ -19,7 +19,7 @@ export async function GET() {
   try {
     const data = await prisma.announcement.findMany({
       take: 3,
-      orderBy: { date: "desc" },
+      orderBy: { publishedAt: "desc" },
       where: {
         ...(role !== "admin" && {
           OR: [

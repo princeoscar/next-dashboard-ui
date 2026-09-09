@@ -5,8 +5,8 @@ import FinanceChart from "@/components/FinanceChart";
 import UserCard from "@/components/UserCard";
 import Image from "next/image";
 import React, { useState } from "react";
-import { MessageSquare, Send, Calendar, CheckCircle2 } from "lucide-react"; 
-import { createAnnouncement, sendReplyMessage, createEvent } from "@/lib/actions";
+import { sendMessage, createEvent, createAnnouncement } from "@/lib/server-actions";
+import { MessageSquare, Send, Calendar, CheckCircle2 } from "lucide-react";
 import { toast } from "react-toastify";
 
 interface AdminClientProps {
@@ -20,18 +20,6 @@ interface AdminClientProps {
   };
   searchParams: { [key: string]: string | undefined };
   announcements: any[];
-  messages: {
-    id: number;
-    content: string;
-    createdAt: Date;
-    senderId: string;
-    receiverId: string;
-    isRead: boolean;
-    readAt: Date | null;
-    sender: {
-      username: string;
-    };
-  }[];
   chart: React.ReactNode;
   attendanceChart: React.ReactNode;
   eventList: React.ReactNode;
@@ -41,31 +29,13 @@ const AdminClientPage = ({
   counts,
   searchParams,
   announcements = [],
-  messages = [],
   chart,
   attendanceChart,
   eventList,
 }: AdminClientProps) => {
-  const [selectedMessage, setSelectedMessage] = useState<typeof messages[0] | null>(null);
-  const [replyText, setReplyText] = useState("");
-  const [isSending, setIsSending] = useState(false);
   const [isPostMode, setIsPostMode] = useState(false);
   const [isEventMode, setIsEventMode] = useState(false);
 
-  const handleSendReply = async () => {
-    if (!selectedMessage || !replyText.trim()) return;
-    setIsSending(true);
-    const result = await sendReplyMessage(selectedMessage.senderId, replyText);
-    setIsSending(false);
-
-    if (result.success) {
-      setReplyText("");
-      setSelectedMessage(null);
-      toast.success("Message sent successfully!");
-    } else {
-      toast.error("Failed to send message");
-    }
-  };
 
   return (
     <div className="flex flex-col gap-4 lg:flex-row p-4">
@@ -99,53 +69,53 @@ const AdminClientPage = ({
 
       {/* RIGHT SIDE - Events, Inbox, Announcements */}
       <div className="w-full lg:w-1/3 flex flex-col gap-8">
-        
+
         {/* EVENTS SECTION */}
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
           {isEventMode ? (
-            <form 
+            <form
               action={async (formData) => {
                 const res = await createEvent({ success: false, error: false }, formData);
-                
+
                 if (res.success) {
                   toast.success("Event Scheduled!");
                   setIsEventMode(false);
                 }
-              }} 
+              }}
               className="space-y-3 mb-6 animate-in fade-in slide-in-from-top-2"
             >
-              <input 
-                name="title" 
-                placeholder="Event Name" 
-                className="w-full bg-slate-50 p-3 rounded-xl text-xs border border-slate-100 outline-none" 
-                required 
+              <input
+                name="title"
+                placeholder="Event Name"
+                className="w-full bg-slate-50 p-3 rounded-xl text-xs border border-slate-100 outline-none"
+                required
               />
               <div className="grid grid-cols-2 gap-2">
-                <input 
-                  name="startTime" 
-                  type="datetime-local" 
-                  className="bg-slate-50 p-2 rounded-lg text-[10px] border border-slate-100 outline-none" 
-                  required 
+                <input
+                  name="startTime"
+                  type="datetime-local"
+                  className="bg-slate-50 p-2 rounded-lg text-[10px] border border-slate-100 outline-none"
+                  required
                 />
-                <input 
-                  name="endTime" 
-                  type="datetime-local" 
-                  className="bg-slate-50 p-2 rounded-lg text-[10px] border border-slate-100 outline-none" 
-                  required 
+                <input
+                  name="endTime"
+                  type="datetime-local"
+                  className="bg-slate-50 p-2 rounded-lg text-[10px] border border-slate-100 outline-none"
+                  required
                 />
               </div>
-              <textarea 
-                name="description" 
+              <textarea
+                name="description"
                 placeholder="Event Description"
                 className="w-full bg-slate-50 p-3 rounded-xl text-xs border border-slate-100 outline-none h-20 resize-none"
               />
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 className="w-full bg-blue-600 text-white font-bold py-2 rounded-xl text-[10px] uppercase tracking-widest hover:bg-blue-700 shadow-md transition-all active:scale-95"
               >
                 Schedule Event
               </button>
-              <button 
+              <button
                 type="button"
                 onClick={() => setIsEventMode(false)}
                 className="w-full bg-slate-100 text-slate-500 font-bold py-2 rounded-xl text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-all"
@@ -154,94 +124,63 @@ const AdminClientPage = ({
               </button>
             </form>
           ) : (
-            eventList 
+            eventList
           )}
         </div>
 
-        {/* MESSAGES HUB */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-2">
-              <div className="p-2 bg-blue-50 text-blue-500 rounded-lg">
-                <MessageSquare size={20} />
-              </div>
-              <h1 className="text-xl font-black text-slate-800 tracking-tight uppercase">Inbox</h1>
-            </div>
-            <span className="text-[10px] font-black bg-slate-100 text-slate-400 px-2 py-1 rounded-full uppercase tracking-widest tabular-nums">
-              {messages.length} New
-            </span>
-          </div>
 
-          <div className="flex flex-col gap-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-            {messages.length > 0 ? (
-              messages.map((message) => (
-                <div
-                  key={message.id}
-                  onClick={() => setSelectedMessage(message)}
-                  className={`p-4 rounded-xl border transition-all cursor-pointer group ${selectedMessage?.id === message.id ? "bg-slate-900 border-slate-900 shadow-lg scale-[1.02]" : "bg-slate-50/50 border-slate-100 hover:border-blue-200"}`}
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <span className={`text-[10px] font-black uppercase tracking-tight ${selectedMessage?.id === message.id ? "text-white" : "text-slate-700"}`}>
-                      {message.sender.username}
-                    </span>
-                    <span className="text-[9px] text-slate-400 font-bold tabular-nums">
-                      {new Intl.DateTimeFormat("en-GB", { hour: '2-digit', minute: '2-digit' }).format(new Date(message.createdAt))}
-                    </span>
-                  </div>
-                  <p className={`text-xs line-clamp-2 leading-relaxed ${selectedMessage?.id === message.id ? "text-slate-400" : "text-slate-500"}`}>
-                    {message.content}
-                  </p>
-                </div>
-              ))
-            ) : (
-              <div className="text-center py-10 opacity-20 italic text-xs">No recent messages</div>
-            )}
-          </div>
-
-          {selectedMessage && (
-            <div className="mt-6 pt-6 border-t border-slate-100 animate-in fade-in slide-in-from-bottom-2">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Reply to {selectedMessage.sender.username}</span>
-                <button onClick={() => setSelectedMessage(null)} className="text-[10px] font-bold text-slate-300 hover:text-rose-500 uppercase transition-colors">Cancel</button>
-              </div>
-              <div className="relative">
-                <textarea
-                  value={replyText}
-                  onChange={(e) => setReplyText(e.target.value)}
-                  placeholder="Type response..."
-                  disabled={isSending}
-                  className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-xs focus:ring-2 focus:ring-blue-500 outline-none transition-all resize-none min-h-[80px]"
-                />
-                <button
-                  onClick={handleSendReply}
-                  disabled={isSending || !replyText.trim()}
-                  className={`absolute bottom-2 right-2 p-2 rounded-lg transition-all ${isSending ? "bg-slate-400" : "bg-blue-500 hover:bg-blue-600 shadow-md active:scale-90"} text-white`}
-                >
-                  <Send size={14} className={isSending ? "animate-pulse" : ""} />
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
 
         {/* ANNOUNCEMENTS SECTION */}
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
           {isPostMode ? (
-            <form action={async (formData) => {
-              const res = await createAnnouncement({ success: false, error: false }, {
-                title: formData.get("title") as string,
-                description: formData.get("description") as string,
-                date: new Date().toISOString()
-              } as any);
-              if(res.success) {
-                toast.success("Announcement Posted!");
-                setIsPostMode(false);
-              }
-            }} className="flex flex-col gap-3 animate-in fade-in slide-in-from-top-2">
-              <input name="title" placeholder="Headline" className="bg-slate-50 p-3 rounded-xl text-xs border border-slate-100 outline-none" required />
-              <textarea name="description" placeholder="Write announcement content here..." className="bg-slate-50 p-3 rounded-xl text-xs border border-slate-100 outline-none min-h-[100px] resize-none" required />
-              <button type="submit" className="bg-blue-600 text-white font-bold py-2 rounded-xl text-xs hover:bg-blue-700 transition-all shadow-md active:scale-95">Publish to School</button>
+            <form
+              action={async (formData) => {
+                const res = await createAnnouncement(
+                  {
+                    success: false,
+                    error: false,
+                  },
+                  {
+                    title: formData.get("title") as string,
+                    description: formData.get("description") as string,
+                    classId: null,
+                    levelId: null,
+                    teacherId: null,
+                  }
+                );
+
+                if (res.success) {
+                  toast.success("Announcement Posted!");
+                  setIsPostMode(false);
+                } else {
+                  toast.error(res.message || "Failed to post announcement.");
+                }
+              }}
+              className="flex flex-col gap-3 animate-in fade-in slide-in-from-top-2"
+            >
+              <input
+                name="title"
+                placeholder="Headline"
+                className="bg-slate-50 p-3 rounded-xl text-xs border border-slate-100 outline-none"
+                required
+              />
+
+              <textarea
+                name="description"
+                placeholder="Write announcement content here..."
+                className="bg-slate-50 p-3 rounded-xl text-xs border border-slate-100 outline-none min-h-[100px] resize-none"
+                required
+              />
+
+              <button
+                type="submit"
+                className="bg-blue-600 text-white font-bold py-2 rounded-xl text-xs hover:bg-blue-700 transition-all shadow-md active:scale-95"
+              >
+                Publish to School
+              </button>
             </form>
+
+
           ) : (
             <Announcements data={announcements} />
           )}

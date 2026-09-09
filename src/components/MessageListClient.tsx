@@ -7,12 +7,26 @@ import Link from "next/link";
 import { Prisma } from "@prisma/client";
 
 // 1. Unified Type: Uses username for sender and receiver to match your DB
-type MessageWithRelations = Prisma.MessageGetPayload<{
-  include: {
-    sender: { select: { username: true; img: true } }; 
-    receiver: { select: { username: true; img: true } }; 
+type MessageWithRelations = {
+  id: number;
+  subject: string | null;
+  content: string;
+  createdAt: Date;
+  updatedAt: Date;
+  senderId: string;
+  receiverTeacherId: string | null;
+  receiverParentId: string | null;
+  isRead: boolean;
+  readAt: Date | null;
+  sender: {
+    username: string;
+    img: string;
   };
-}>;
+  receiver: {
+    username: string;
+    img: string;
+  };
+};
 
 const MessageListClient = ({
   initialMessages,

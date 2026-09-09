@@ -18,6 +18,29 @@ const StudentListPage = async ({
 }) => {
   const params = await searchParams;
   const { sessionClaims, userId } = await auth();
+
+
+  const admin = await prisma.admin.findUnique({
+    where: {
+      clerkId: userId!,
+    },
+    select: {
+      schoolId: true,
+    },
+  });
+
+  if (!admin) {
+  throw new Error("Admin not found.");
+}
+
+  const schoolId = admin.schoolId;
+
+  if (!schoolId) {
+  throw new Error("School not found.");
+}
+
+
+
   const role = (sessionClaims?.metadata as { role?: string })?.role?.toLowerCase();
 
   const { page, classId, search } = params;
@@ -26,18 +49,45 @@ const StudentListPage = async ({
   // --- PRE-FETCH COMMON DATA FOR FORMS ---
   // This prevents the "relatedData is undefined" error in StudentForm
   const [levels, classesList, parentsList] = await prisma.$transaction([
-    prisma.level.findMany({ select: { id: true, level: true } }),
-    prisma.class.findMany({
+    prisma.level.findMany({
+      where: {
+        schoolId,
+      },
       select: {
         id: true,
-        name: true,
-        capacity: true, // You likely need this too if you're showing "X / Capacity"
-        _count: {
-          select: { students: true }
-        }
-      }
+        level: true,
+      },
     }),
-    prisma.parent.findMany({ select: { id: true, name: true, surname: true } }),
+
+    prisma.class.findMany({
+  where: {
+    schoolId,
+  },
+  select: {
+    id: true,
+    name: true,
+    levelId: true,
+    streamId: true,
+    capacity: true,
+    _count: {
+      select: {
+        students: true,
+      },
+    },
+  },
+}),
+
+    prisma.parent.findMany({
+      where: {
+        schoolId,
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true
+      }
+    }
+    ),
   ]);
 
   const relatedData = { levels, classes: classesList, parents: parentsList };
@@ -46,7 +96,11 @@ const StudentListPage = async ({
   if (!classId && !search && role !== "student" && role !== "parent") {
     const classes = await prisma.class.findMany({
       where: {
-        ...(role === "teacher" ? { supervisorId: userId! } : {}),
+        schoolId,
+
+        ...(role === "teacher"
+          ? { supervisorId: userId! }
+          : {}),
       },
       include: {
         level: true,
@@ -82,6 +136,7 @@ const StudentListPage = async ({
   const columns = [
     { header: "Info", accessor: "info", className: "pl-2 md:pl-4" },
     { header: "Username", accessor: "username", className: "hidden md:table-cell" },
+    { header: "Admission No.", accessor: "admissionNumber", className: "hidden lg:table-cell" },
     { header: "Level", accessor: "level", className: "hidden md:table-cell" },
     { header: "Phone", accessor: "phone", className: "hidden lg:table-cell" },
     { header: "Address", accessor: "address", className: "hidden lg:table-cell" },
@@ -89,6 +144,7 @@ const StudentListPage = async ({
   ];
 
   const query: Prisma.StudentWhereInput = {};
+  query.schoolId = schoolId;
 
   if (role === "teacher") {
     query.class = { supervisorId: userId! };
@@ -129,14 +185,25 @@ const StudentListPage = async ({
           <p className="text-xs text-slate-400 font-medium">{item.class?.name || "Unassigned"}</p>
         </div>
       </td>
+
       <td className="hidden md:table-cell text-slate-500">{item.username}</td>
+
+      <td className="hidden lg:table-cell">
+        <span className="font-mono text-xs font-bold text-rubixPurple">
+          {item.admissionNumber}
+        </span>
+      </td>
+
       <td className="hidden md:table-cell">
         <span className="px-2 py-1 bg-slate-100 rounded text-[10px] font-black uppercase text-slate-500">
           {item.class?.name.charAt(0) || "-"}
         </span>
       </td>
+
       <td className="hidden md:table-cell text-slate-500">{item.phone || "-"}</td>
+
       <td className="hidden lg:table-cell text-slate-500">{item.address || "-"}</td>
+
       <td className="p-2 md:p-4 text-right">
         <div className="flex items-center gap-2 justify-end">
           <Link href={`/list/students/${item.id}`}>
@@ -152,6 +219,7 @@ const StudentListPage = async ({
           )}
         </div>
       </td>
+
     </tr>
   );
 

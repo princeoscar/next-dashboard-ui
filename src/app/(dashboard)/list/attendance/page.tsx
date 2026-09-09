@@ -10,13 +10,25 @@ import { UserCheck, Calendar, ArrowLeft, ArrowRight, User } from "lucide-react";
 import ClassSelector from "@/components/ClassSelector";
 import Link from "next/link";
 
-export type AttendanceList = Attendance & {
-  student: { name: string; surname: string };
-  subject: Subject & {
-    classes: { name: string }[];
-    teachers: { id: string }[];
+type AttendanceList = Prisma.AttendanceGetPayload<{
+  include: {
+    student: {
+      select: {
+        name: true;
+        surname: true;
+      };
+    };
+    Subject: {
+      include: {
+        classes: {
+          select: {
+            name: true;
+          };
+        };
+      };
+    };
   };
-};
+}>;
 
 const AttendanceListPage = async ({
   searchParams,
@@ -88,7 +100,9 @@ const AttendanceListPage = async ({
   if (!classId && !search && role !== "student" && role !== "parent") {
     const classes = await prisma.class.findMany({
       where: { ...(role === "teacher" ? { supervisorId: userId! } : {}) },
-      include: { level: true, supervisor: true, _count: { select: { subjects: true } } },
+      include: { level: true, supervisor: true, _count: {
+         select: {
+           students: true } } },
       orderBy: { name: "asc" },
     });
 
@@ -118,9 +132,13 @@ const AttendanceListPage = async ({
 
     const records = studentData?.attendances || [];
     const uniqueDaysOpened = Array.from(new Set(records.map((a) => a.date.toISOString().split("T")[0])));
-    const daysPresent = uniqueDaysOpened.filter((date) =>
-      records.some((a) => a.date.toISOString().split("T")[0] === date && a.present === true)
-    ).length;
+   const daysPresent = uniqueDaysOpened.filter((date) =>
+  records.some(
+    (a) =>
+      a.date.toISOString().split("T")[0] === date &&
+      a.status === "PRESENT"
+  )
+).length;
 
     attendanceSummary = { present: daysPresent, total: uniqueDaysOpened.length };
   }
@@ -134,7 +152,7 @@ const AttendanceListPage = async ({
     case "teacher":
       andConditions.push({
         OR: [
-          { subject: { teachers: { some: { id: userId! } } } },
+          { Subject: { teachers: { some: { id: userId! } } } },
           { student: { class: { supervisorId: userId! } } }
         ]
       });
@@ -176,7 +194,7 @@ const AttendanceListPage = async ({
       where: query,
       include: {
         student: { select: { name: true, surname: true } },
-        subject: { include: { classes: { select: { name: true } } } },
+        Subject: { include: { classes: { select: { name: true } } } },
       },
       take: ITEM_PER_PAGE,
       skip: ITEM_PER_PAGE * (p - 1),
@@ -206,7 +224,7 @@ const AttendanceListPage = async ({
     id: sub.id,
     name: sub.name,
     classIds: sub.classes.map(c => c.id)
-  }));
+  }))
 
   const students = rawStudents.map(stud => ({
     id: stud.id,
@@ -249,19 +267,40 @@ const AttendanceListPage = async ({
         </div>
       </td>
       <td className="p-4">
-        <div className={`flex items-center gap-2 w-fit px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border ${item.present ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-rose-50 text-rose-600 border-rose-100"}`}>
-          <div className={`w-1.5 h-1.5 rounded-full ${item.present ? "bg-emerald-500" : "bg-rose-500"}`} />
-          {item.present ? "Present" : "Absent"}
-        </div>
+        <div
+  className={`flex items-center gap-2 w-fit px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border ${
+    item.status === "PRESENT"
+      ? "bg-emerald-50 text-emerald-600 border-emerald-100"
+      : item.status === "LATE"
+      ? "bg-amber-50 text-amber-600 border-amber-100"
+      : item.status === "EXCUSED"
+      ? "bg-blue-50 text-blue-600 border-blue-100"
+      : "bg-rose-50 text-rose-600 border-rose-100"
+  }`}
+>
+  <div
+    className={`w-1.5 h-1.5 rounded-full ${
+      item.status === "PRESENT"
+        ? "bg-emerald-500"
+        : item.status === "LATE"
+        ? "bg-amber-500"
+        : item.status === "EXCUSED"
+        ? "bg-blue-500"
+        : "bg-rose-500"
+    }`}
+  />
+
+  {item.status}
+</div>
       </td>
       <td className="hidden lg:table-cell p-4">
         <div className="flex flex-col">
           {/* 🎯 FIX: Added item.subject?. to safely fallback if it's a general daily log */}
           <span className="text-slate-700 font-bold text-xs">
-            {item.subject?.classes?.[0]?.name || "General"}
+            {item.Subject?.classes?.[0]?.name || "General"}
           </span>
           <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-            {item.subject?.name || "Daily Attendance"}
+            {item.Subject?.name || "Daily Attendance"}
           </span>
         </div>
       </td>

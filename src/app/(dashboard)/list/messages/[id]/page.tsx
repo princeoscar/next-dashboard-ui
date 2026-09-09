@@ -1,4 +1,4 @@
-import {prisma} from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -23,12 +23,39 @@ const SingleMessagePage = async (props: {
   const message = await prisma.message.findUnique({
     where: { id },
     include: {
-      sender: { select: { username: true,  img: true } },
-      receiver: { select: { username: true,  img: true } },
+      sender: {
+        select: {
+          id: true,
+          username: true,
+        },
+      },
+      receiverTeacher: {
+        select: {
+          id: true,
+          username: true,
+          firstName: true,
+          lastName: true,
+        },
+      },
+      receiverParent: {
+        select: {
+          id: true,
+          username: true,
+          firstName: true,
+          lastName: true,
+        },
+      },
     },
   });
 
-   if (!message || (message.receiverId !== userId && message.senderId !== userId)) {
+  if (
+    !message ||
+    (
+      message.receiverTeacherId !== userId &&
+      message.receiverParentId !== userId &&
+      message.senderId !== userId
+    )
+  ) {
     return notFound();
   }
 
@@ -40,24 +67,30 @@ const SingleMessagePage = async (props: {
   //   });
   // }
 
-  if (message.receiverId === userId && !message.isRead) {
-  await prisma.message.update({
-    where: { id: message.id }, // Use message.id or the parsed 'id'
-    data: { 
-      isRead: true,
-      readAt: new Date() // Records exactly when they opened it
-    },
-  });
-}
+  const isReceiver =
+    message.receiverTeacherId === userId ||
+    message.receiverParentId === userId;
 
+  if (isReceiver && !message.isRead) {
+    await prisma.message.update({
+      where: { id: message.id },
+      data: {
+        isRead: true,
+        readAt: new Date(),
+      },
+    });
+  }
 
   const isMe = message.senderId === userId;
-  const otherPerson = isMe ? message.receiver : message.sender;
+  const otherPerson =
+    message.senderId === userId
+      ? (message.receiverTeacher ?? message.receiverParent)
+      : message.sender;
   const displayName = `${otherPerson?.username ?? "User"}`;
 
   // 3. Security & Existence Check
   // If the message doesn't exist OR you aren't part of the conversation -> 404
- 
+
   return (
     <div className="p-6 md:p-10 bg-[#F7F8FA] min-h-screen">
       <div className="max-w-4xl mx-auto">
@@ -83,12 +116,13 @@ const SingleMessagePage = async (props: {
             <div className="flex items-center gap-5">
               {/* ✅ Use actual user image if it exists */}
               <div className="w-16 h-16 rounded-[1.5rem] overflow-hidden shadow-lg shadow-indigo-100 border-2 border-white relative bg-slate-100">
-                {otherPerson?.img ? (
-                  <Image src={otherPerson.img}
-                   alt={displayName}
-                   fill
+               {(otherPerson as any)?.img ? (
+                  <Image 
+                    src={(otherPerson as any).img}
+                    alt={displayName}
+                    fill
                     className="object-cover"
-                     />
+                  />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600 text-white">
                     <User size={32} />
@@ -114,8 +148,8 @@ const SingleMessagePage = async (props: {
               </div>
             </div>
             <span className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-full border ${isMe
-                ? "bg-indigo-50 text-indigo-500 border-indigo-100"
-                : "bg-slate-50 text-slate-400 border-slate-100"
+              ? "bg-indigo-50 text-indigo-500 border-indigo-100"
+              : "bg-slate-50 text-slate-400 border-slate-100"
               }`}>
               {isMe ? "Sent by you" : "Received"}
             </span>
@@ -128,7 +162,10 @@ const SingleMessagePage = async (props: {
             </div>
           </div>
 
-          <ReplyBox receiverId={isMe ? message.receiverId : message.senderId} />
+          <ReplyBox
+            receiverTeacherId={message.receiverTeacherId}
+            receiverParentId={message.receiverParentId}
+          />
         </div>
       </div>
     </div>

@@ -4,7 +4,7 @@ import { SignIn, useUser } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import Image from 'next/image';
-import Link from 'next/link'; // 🎯 FIXED: Added missing import
+import Link from 'next/link'; 
 
 const LoginPage = () => {
     const { isLoaded, isSignedIn, user } = useUser()

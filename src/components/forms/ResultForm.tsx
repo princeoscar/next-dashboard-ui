@@ -4,10 +4,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import InputField from "../InputField";
 import { Dispatch, SetStateAction, startTransition, useActionState, useEffect } from "react";
-import { resultSchema, ResultSchema } from "@/lib/formValidationSchema";
+import { resultSchema, ResultSchema } from "@/lib/validation";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
-import { createResult, updateResult } from "@/lib/actions";
+import { saveResult } from "@/lib/server-actions";
 import { Trophy, User, FileText, ClipboardCheck, Info } from "lucide-react";
 
 const ResultForm = ({
@@ -38,14 +38,20 @@ const ResultForm = ({
   const watchExamScore = watch("examScore");
 
   // 🎯 Instantly calculate total as variables change
-  const liveTotal = 
-    (Number(watchTestScore) || 0) + 
-    (Number(watchAssignmentScore) || 0) + 
+  const liveTotal =
+    (Number(watchTestScore) || 0) +
+    (Number(watchAssignmentScore) || 0) +
     (Number(watchExamScore) || 0);
 
+    const initialState = {
+  success: false,
+  error: false,
+  message: "",
+};
+
   const [state, formAction] = useActionState(
-    type === "create" ? createResult : updateResult,
-    { success: false, error: false }
+    saveResult,
+    initialState
   );
 
   const router = useRouter();
@@ -59,6 +65,9 @@ const ResultForm = ({
   }, [state, router, setOpen, type]);
 
   const { students, exams, assignments, academicYears, subjects } = relatedData || {};
+
+  console.log("📚 RESULT FORM RELATED DATA:", relatedData);
+console.log("📚 SUBJECTS:", subjects);
 
   const onSubmit = handleSubmit(
     (formData) => {
@@ -77,22 +86,37 @@ const ResultForm = ({
       else if (total >= 50) autoGrade = "D7";
       else if (total >= 45) autoGrade = "E8";
 
-      console.log("✅ FORM VALIDATED. SENDING PAYLOAD...");
+      console.log("=================================");
+console.log("👤 STUDENT ID:", formData.studentId);
+console.log("📚 SUBJECT ID:", formData.subjectId);
+console.log("📅 ACADEMIC YEAR:", formData.academicYearId);
+console.log("📝 TERM:", formData.term);
+console.log("📊 TEST:", formData.testScore);
+console.log("📊 ASSIGNMENT:", formData.assignmentScore);
+console.log("📊 EXAM:", formData.examScore);
+console.log("=================================");
 
       startTransition(() => {
         formAction({
           ...formData,
           id: type === "update" ? data?.id : undefined,
-          testScore: test,
-          assignmentScore: assignment,
-          examScore: exam,
-          totalScore: total,
-          grade: autoGrade,
-          subjectId: Number(formData.subjectId),
-          academicYearId: Number(formData.academicYearId),
-          term: Number(formData.term),
-          examId: formData.examId ? Number(formData.examId) : null,
-          assignmentId: formData.assignmentId ? Number(formData.assignmentId) : null,
+
+  testScore: test,
+  assignmentScore: assignment,
+  examScore: exam,
+
+  subjectId: Number(formData.subjectId),
+  academicYearId: Number(formData.academicYearId),
+
+  term: formData.term,
+
+  examId: formData.examId
+    ? Number(formData.examId)
+    : null,
+
+  assignmentId: formData.assignmentId
+    ? Number(formData.assignmentId)
+    : null,
         });
       });
     },
@@ -127,17 +151,24 @@ const ResultForm = ({
           </label>
           <div className="relative group">
             <select
-              {...register("studentId")}
-              className="w-full p-4 rounded-2xl bg-white border border-slate-200 text-sm font-medium focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500 outline-none transition-all appearance-none"
-              defaultValue={data?.studentId}
-            >
-              <option value="">Select Student...</option>
-              {students?.map((s: any) => (
-                <option value={s.id} key={s.id}>
-                  {s.name} {s.surname}
-                </option>
-              ))}
-            </select>
+  {...register("studentId")}
+  defaultValue={data?.studentId ?? ""}
+  onChange={(e) => {
+    setValue("studentId", e.target.value, {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
+  }}
+  className="w-full p-4 rounded-2xl bg-white border border-slate-200 text-sm font-medium focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500 outline-none transition-all appearance-none"
+>
+  <option value="">Select Student...</option>
+
+  {students?.map((student: any) => (
+    <option key={student.id} value={student.id}>
+      {student.name} {student.surname}
+    </option>
+  ))}
+</select>
             <User className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none group-focus-within:text-amber-500 transition-colors" size={18} />
           </div>
           {errors.studentId?.message && (
@@ -183,11 +214,11 @@ const ResultForm = ({
           <select
             {...register("term")}
             className="w-full p-4 rounded-2xl bg-white border border-slate-200 text-sm font-medium outline-none"
-            defaultValue={data?.term || "1"}
+            defaultValue={data?.term ?? "FIRST"}
           >
-            <option value="1">First Term</option>
-            <option value="2">Second Term</option>
-            <option value="3">Third Term</option>
+            <option value="FIRST">First Term</option>
+            <option value="SECOND">Second Term</option>
+            <option value="THIRD">Third Term</option>
           </select>
         </div>
 
@@ -233,8 +264,7 @@ const ResultForm = ({
             className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 text-sm font-black text-slate-700 outline-none cursor-not-allowed shadow-inner"
             placeholder="0"
           />
-          {/* Hidden field so React Hook Form still passes totalScore on submit */}
-          <input type="hidden" value={liveTotal} {...register("totalScore")} />
+          
         </div>
 
         {data && (
@@ -251,12 +281,12 @@ const ResultForm = ({
         </div>
 
         {state.error && (
-          <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl text-center">
-            <span className="text-rose-600 text-[10px] font-black uppercase tracking-widest">
-              Submission Failed: Check database constraints
-            </span>
-          </div>
-        )}
+  <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl text-center">
+    <span className="text-rose-600 text-[10px] font-black uppercase tracking-widest">
+      {state.message || "Submission failed. Please check your entries."}
+    </span>
+  </div>
+)}
 
         <button type="submit"
           className="bg-slate-900 hover:bg-amber-500 text-white py-4 px-10 rounded-2xl font-black text-[12px] uppercase tracking-widest shadow-xl shadow-slate-200 transition-all active:scale-95 self-end">

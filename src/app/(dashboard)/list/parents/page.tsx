@@ -18,18 +18,39 @@ const ParentListPage = async ({
   const { page, search } = await searchParams;
   const p = page ? parseInt(page) : 1;
 
-  // 1. AUTH & ROLE CHECK
-  const { sessionClaims } = await auth();
+
+  const { userId, sessionClaims } = await auth();
+
   const role = (sessionClaims?.metadata as { role?: string })?.role?.toLowerCase();
-  
+
   if (role !== "admin") {
     return <div className="p-8 text-center font-bold">Access Denied</div>;
   }
 
-  // 2. SEARCH LOGIC
-  const query: Prisma.ParentWhereInput = {};
+  const admin = await prisma.admin.findUnique({
+    where: {
+      clerkId: userId!,
+    },
+    select: {
+      schoolId: true,
+    },
+  });
+
+  if (!admin) {
+    return <div className="p-8 text-center">Admin not found.</div>;
+  }
+
+  const query: Prisma.ParentWhereInput = {
+    schoolId: admin.schoolId,
+  };
+
   if (search) {
-    query.name = { contains: search, mode: "insensitive" };
+    query.OR = [
+      { firstName: { contains: search, mode: "insensitive" } },
+      { lastName: { contains: search, mode: "insensitive" } },
+      { email: { contains: search, mode: "insensitive" } },
+      { phone: { contains: search, mode: "insensitive" } },
+    ];
   }
 
   // 3. FETCH DATA (Using Transaction for efficiency)
@@ -42,13 +63,23 @@ const ParentListPage = async ({
     }),
     prisma.parent.count({ where: query }),
     prisma.student.findMany({
-    select: { id: true, name: true, surname: true }
-  }),
+      where: {
+        schoolId: admin?.schoolId,
+      },
+      select: {
+        id: true,
+        name: true,
+        surname: true,
+      },
+    }),
   ]);
 
-  const relatedData = { students, schoolId: "1" };
+  const relatedData = {
+    students,
+    schoolId: admin?.schoolId,
+  };
 
-  // 4. TABLE COLUMNS
+
   const columns = [
     { header: "Guardian Info", accessor: "info" },
     { header: "Contact", accessor: "phone", className: "hidden lg:table-cell" },
@@ -60,7 +91,7 @@ const ParentListPage = async ({
     <tr key={item.id} className="border-b border-slate-100 last:border-0 text-sm hover:bg-slate-50/50 transition-all">
       <td className="p-4">
         <div className="flex flex-col">
-          <span className="font-black text-slate-700">{item.name} {item.surname}</span>
+          <span className="font-black text-slate-700">{item.firstName} {item.lastName}</span>
           <span className="text-[10px] text-slate-400">{item.email || "No Email"}</span>
         </div>
       </td>

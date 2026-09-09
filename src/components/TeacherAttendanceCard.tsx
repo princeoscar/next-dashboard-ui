@@ -19,8 +19,9 @@ const totalAssignedSubjects = await prisma.subject.count({
 // We query the Attendance table directly to see how many unique dates/sessions were recorded
 const conductedSessionsCount = await prisma.attendance.count({
   where: {
-    // 🎯 If your Attendance model now links to Subject or Teacher
-    teacherId: id, 
+   class:{
+    supervisorId:id
+  }, 
     date: { 
       gte: startOfYear 
     },

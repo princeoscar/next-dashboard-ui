@@ -30,7 +30,7 @@ export const getStudentReportData = async (studentId: string) => {
     .map((s) => ({
       id: s.id,
       // 🎯 FIX: Changed 'r.score' to 'r.totalScore'
-      total: s.results.reduce((sum, r) => sum + (r.totalScore || 0), 0),
+      total: s.results.reduce((sum, r) => sum + (r.totalScore?.toNumber() || 0), 0),
     }))
     .sort((a, b) => b.total - a.total);
 

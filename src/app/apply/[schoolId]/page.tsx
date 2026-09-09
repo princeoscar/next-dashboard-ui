@@ -2,14 +2,14 @@
 
 import React, { useState } from "react";
 import { useParams } from "next/navigation";
-import { submitAdmissionApplication, AdmissionInput } from "../../../lib/actions/admission";
+import { submitAdmissionApplication, AdmissionInput } from "../../../lib/dashboard/admission";
 import { UserSex } from "@prisma/client";
 // 🎯 Import your UploadDocuments component built in Phase 1
-import UploadDocuments from "@/components/Admissions/UploadDocuments"; 
+import UploadDocuments from "@/components/Admissions/UploadDocuments";
 
 export default function PublicAdmissionForm() {
   const params = useParams();
-  
+
   // Clean fallback if schoolId parameter is missing from route
   const schoolId = (params?.schoolId as string) || "school1";
 
@@ -44,7 +44,7 @@ export default function PublicAdmissionForm() {
       parentPhone: formData.get("parentPhone") as string,
       parentEmail: (formData.get("parentEmail") as string) || undefined,
       parentOccupation: (formData.get("parentOccupation") as string) || undefined,
-      applyingLevelId: 1, 
+      applyingLevelId: 1,
       applyingClassId: 1,
       // 🎯 Appending the live asset strings to the Server Action payload
       passportPhoto: passportPhoto || undefined,
@@ -60,7 +60,7 @@ export default function PublicAdmissionForm() {
         text: `Application submitted successfully! Your tracking reference number is: ${result.applicationNumber}`,
       });
       (e.target as HTMLFormElement).reset();
-      
+
       // Clear file states on success
       setPassportPhoto("");
       setBirthCertificate("");
@@ -86,7 +86,7 @@ export default function PublicAdmissionForm() {
       )}
 
       <form onSubmit={handleSubmit} method="POST" className="space-y-6">
-        
+
 
         {/* SECTION 2: CONTACT & ADDRESS */}
         <div>
@@ -138,22 +138,22 @@ export default function PublicAdmissionForm() {
         <div>
           <h3 className="text-lg font-semibold text-blue-600 mb-3 border-b pb-1">4. Required Credentials Upload</h3>
           <p className="text-xs text-gray-400 mb-4">Upload clean digital scans or photo proofs (.jpg, .png, .pdf under 4MB).</p>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <UploadDocuments 
-              endpoint="passportUploader" 
-              label="Passport Photograph" 
-              onUploadSuccess={(url) => setPassportPhoto(url)} 
+            <UploadDocuments
+              endpoint="passportUploader"
+              label="Passport Photograph"
+              onUploadSuccess={(url) => setPassportPhoto(url)}
             />
-            <UploadDocuments 
-              endpoint="documentUploader" 
-              label="Birth Certificate Scan" 
-              onUploadSuccess={(url) => setBirthCertificate(url)} 
+            <UploadDocuments
+              endpoint="documentUploader"
+              label="Birth Certificate Scan"
+              onUploadSuccess={(url) => setBirthCertificate(url)}
             />
-            <UploadDocuments 
-              endpoint="documentUploader" 
-              label="Last Term Academic Result" 
-              onUploadSuccess={(url) => setReportCard(url)} 
+            <UploadDocuments
+              endpoint="documentUploader"
+              label="Last Term Academic Result"
+              onUploadSuccess={(url) => setReportCard(url)}
             />
           </div>
 
