@@ -229,7 +229,8 @@ export default function AdmissionDashboard({ applications, schoolId, stats }: Da
               </div>
             ))}
           </div>
-{/* DESKTOP TABLE VIEW (md+ screens) */}
+
+          {/* DESKTOP TABLE VIEW (md+ screens) */}
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
