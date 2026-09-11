@@ -26,18 +26,18 @@ const getMenuItems = (role: string) => [
     title: "MENU",
     items: [
       {
-  icon: <Home size={20} />,
-  label: "Home",
-  href:
-    role === "admin"
-      ? "/admin"
-      : role === "teacher"
-      ? "/teacher"
-      : role === "student"
-      ? "/student"
-      : "/parent",
-  visible: ["admin", "teacher", "student", "parent"],
-},
+        icon: <Home size={20} />,
+        label: "Home",
+        href:
+          role === "admin"
+            ? "/admin"
+            : role === "teacher"
+              ? "/teacher"
+              : role === "student"
+                ? "/student"
+                : "/parent",
+        visible: ["admin", "teacher", "student", "parent"],
+      },
       { icon: <ClipboardListIcon size={20} />, label: "Admissions", href: "/list/admissions", visible: ["admin"] },
 
       { icon: <Users size={20} />, label: "Teachers", href: "/list/teachers", visible: ["admin", "teacher"] },
@@ -66,7 +66,7 @@ const getMenuItems = (role: string) => [
 
       { icon: <Banknote size={20} />, label: "Finance Dashboard", href: "/admin/finance/balances", visible: ["admin"] },
       { icon: <Calculator size={20} />, label: "Allocate Fees", href: "/admin/finance/allocate", visible: ["admin"] },
-       { icon: <Wallet size={20} />, label: "Fee categories", href: "/admin/finance/categories", visible: ["admin"] },
+      { icon: <Wallet size={20} />, label: "Fee categories", href: "/admin/finance/categories", visible: ["admin"] },
 
 
 
@@ -176,14 +176,9 @@ group-hover:scale-110
                         >
                           {item.icon}
                         </span>
-                        <span
-                          className="
-hidden
-lg:block
-tracking-wide
-font-semibold
-"
-                        >{item.label}</span>
+                        <span className="tracking-wide font-semibold whitespace-nowrap">
+  {item.label}
+</span>
                       </button>
                     </SignOutButton>
                   );
@@ -226,14 +221,9 @@ group-hover:scale-110
                     >
                       {item.icon}
                     </span>
-                    <span
-                      className="
-hidden
-lg:block
-tracking-wide
-font-semibold
-"
-                    >{item.label}</span>
+                    <span className="tracking-wide font-semibold whitespace-nowrap">
+  {item.label}
+</span>
                   </Link>
                 );
               }
