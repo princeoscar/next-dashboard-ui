@@ -8,7 +8,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
 import { getCachedTeachers } from "@/lib/data-fetchers";
-import { redirect } from "next/navigation";
 import { Mail, Fingerprint, Eye } from "lucide-react"; 
 
 type TeacherList = Teacher & { subjects: Subject[] } & { classes: Class[] };

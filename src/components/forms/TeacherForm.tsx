@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import InputField from "../InputField";
 import Image from "next/image";
-import { Dispatch, SetStateAction, useEffect, useState, useActionState, startTransition } from "react";
+import { Dispatch, SetStateAction, useState } from "react";
 import { createTeacher, updateTeacher } from "@/lib/server-actions";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
@@ -26,15 +26,27 @@ const TeacherForm = ({ type, data, setOpen, relatedData }: TeacherFormProps) => 
     handleSubmit,
     formState: { errors },
   } = useForm<TeacherSchema>({
-    resolver: zodResolver(teacherSchema) as any
+    resolver: zodResolver(teacherSchema) as any,
+    defaultValues: {
+      username: data?.username || "",
+      email: data?.email || "",
+      firstName: data?.firstName || "",
+      lastName: data?.lastName || "",
+      phone: data?.phone || "",
+      address: data?.address || "",
+      bloodType: data?.bloodType || "",
+      sex: data?.sex || "MALE",
+      staffId: data?.staffId || "",
+      birthday: data?.birthday ? new Date(data.birthday).toISOString().split("T")[0] : "",
+      employmentDate: data?.employmentDate ? new Date(data.employmentDate).toISOString().split("T")[0] : "",
+      subjects: data?.subjects?.map((s: { id: number }) => String(s.id)) || [],
+    }
   });
 
   const [img, setImg] = useState<any>();
   const router = useRouter();
 
   const onSubmit = handleSubmit(async (values) => {
-    console.log("FORM SUBMITTED");
-
     const payload = {
       ...values,
       img: img?.secure_url || data?.img || "",
@@ -50,9 +62,9 @@ const TeacherForm = ({ type, data, setOpen, relatedData }: TeacherFormProps) => 
       type === "create"
         ? await createTeacher(initialState, payload)
         : await updateTeacher(initialState, {
-          ...payload,
-          id: data.id,
-        });
+            ...payload,
+            id: data.id,
+          });
 
     if (result.success) {
       toast.success(result.message);
@@ -61,43 +73,14 @@ const TeacherForm = ({ type, data, setOpen, relatedData }: TeacherFormProps) => 
     } else {
       toast.error(result.message);
     }
+  }, (errors) => {
+    console.log("VALIDATION ERRORS:", errors);
   });
 
   const { subjects = [] } = relatedData || {};
 
   return (
-    <form
-  onSubmit={handleSubmit(
-    async (values) => {
-      console.log("FORM SUBMITTED", values);
-
-      const payload = {
-        ...values,
-        img: img?.secure_url || data?.img || "",
-      };
-
-      const result =
-        type === "create"
-          ? await createTeacher(
-              { success: false, error: false, message: "" },
-              payload
-            )
-          : await updateTeacher(
-              { success: false, error: false, message: "" },
-              {
-                ...payload,
-                id: data.id,
-              }
-            );
-
-      console.log(result);
-    },
-    (errors) => {
-      console.log("VALIDATION ERRORS:", errors);
-    }
-  )}
-  className="flex flex-col gap-6"
->
+    <form onSubmit={onSubmit} className="flex flex-col gap-5 max-h-[75vh] overflow-y-auto px-1 custom-scrollbar">
 
       {/* AUTHENTICATION SECTION */}
       <div className="flex flex-col gap-3">
@@ -182,7 +165,6 @@ const TeacherForm = ({ type, data, setOpen, relatedData }: TeacherFormProps) => 
             register={register}
             error={errors.birthday}
           />
-
           <InputField
             label="Staff ID"
             name="staffId"
@@ -190,19 +172,18 @@ const TeacherForm = ({ type, data, setOpen, relatedData }: TeacherFormProps) => 
             register={register}
             error={errors.staffId}
           />
-
           <InputField
-  label="Employment Date"
-  name="employmentDate"
-  type="date"
-  defaultValue={data?.employmentDate ? new Date(data.employmentDate).toISOString().split("T")[0] : ""}
-  register={register}
-  error={errors.employmentDate}
-/>
+            label="Employment Date"
+            name="employmentDate"
+            type="date"
+            defaultValue={data?.employmentDate ? new Date(data.employmentDate).toISOString().split("T")[0] : ""}
+            register={register}
+            error={errors.employmentDate}
+          />
         </div>
       </div>
 
-      {/* ADDITIONAL OPTIONS & UPLOAD */}
+      {/* ADDITIONAL OPTIONS */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
         <div className="flex flex-col gap-2">
           <label className="text-xs text-slate-500 font-medium">Sex</label>
@@ -223,9 +204,8 @@ const TeacherForm = ({ type, data, setOpen, relatedData }: TeacherFormProps) => 
           <label className="text-xs text-slate-500 font-medium">Subjects</label>
           <select
             multiple
-            className="ring-[1.5px] ring-slate-200 p-2 rounded-xl text-sm w-full bg-white text-slate-700 outline-none focus:ring-blue-400 transition h-10"
+            className="ring-[1.5px] ring-slate-200 p-2 rounded-xl text-sm w-full bg-white text-slate-700 outline-none focus:ring-blue-400 transition h-20"
             {...register("subjects")}
-            defaultValue={data?.subjects?.map((s: { id: number }) => s.id)}
           >
             {subjects.map((subject) => (
               <option value={String(subject.id)} key={subject.id}>{subject.name}</option>
@@ -249,7 +229,7 @@ const TeacherForm = ({ type, data, setOpen, relatedData }: TeacherFormProps) => 
           {({ open }) => {
             return (
               <div
-                className="text-xs text-slate-600 flex items-center gap-2 cursor-pointer border border-dashed border-slate-300 p-3 rounded-xl hover:bg-slate-50 transition w-max"
+                className="text-xs text-slate-600 flex items-center justify-center gap-2 cursor-pointer border border-dashed border-slate-300 p-3.5 rounded-xl hover:bg-slate-50 transition w-full"
                 onClick={() => open()}
               >
                 <Image src="/upload.png" alt="" width={20} height={20} />
@@ -263,17 +243,17 @@ const TeacherForm = ({ type, data, setOpen, relatedData }: TeacherFormProps) => 
       {data && <InputField label="Id" name="id" defaultValue={data?.id} register={register} error={errors?.id} hidden />}
 
       {/* FORM FOOTER BUTTONS */}
-      <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 mt-2">
+      <div className="flex flex-col-reverse sm:flex-row items-center justify-end gap-3 pt-4 border-t border-slate-100 mt-2">
         <button
           type="button"
           onClick={() => setOpen(false)}
-          className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium hover:bg-slate-100 transition text-sm"
+          className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium hover:bg-slate-100 transition text-sm text-center"
         >
           Cancel
         </button>
         <button
           type="submit"
-          className="bg-amber-400 hover:bg-amber-500 text-slate-900 font-semibold px-6 py-2.5 rounded-xl transition shadow-sm text-sm"
+          className="w-full sm:w-auto bg-amber-400 hover:bg-amber-500 text-slate-900 font-semibold px-6 py-2.5 rounded-xl transition shadow-sm text-sm text-center"
         >
           {type === "create" ? "Create Teacher" : "Update Teacher"}
         </button>
