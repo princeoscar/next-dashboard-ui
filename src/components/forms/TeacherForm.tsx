@@ -69,7 +69,7 @@ const TeacherForm = ({ type, data, setOpen, relatedData }: TeacherFormProps) => 
   const { subjects = [] } = relatedData || {};
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-4 max-h-[75vh] overflow-y-auto px-1 custom-scrollbar text-xs">
+    <form onSubmit={onSubmit} className="flex flex-col gap-3.5 max-h-[72vh] overflow-y-auto px-1 custom-scrollbar text-xs">
 
       {/* AUTHENTICATION SECTION */}
       <div className="flex flex-col gap-2">

@@ -9,6 +9,7 @@ import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
 import { getCachedTeachers } from "@/lib/data-fetchers";
 import { Mail, Fingerprint, Eye } from "lucide-react"; 
+import { redirect } from "next/navigation"; // ✅ Correct import
 
 type TeacherList = Teacher & { subjects: Subject[] } & { classes: Class[] };
 
@@ -22,7 +23,7 @@ const TeacherListPage = async ({
   const role = (sessionClaims?.metadata as { role?: string })?.role?.toLowerCase();
 
   if (role !== "admin" && role !== "teacher") {
-    redirect(`/${role}`);
+    redirect(`/${role || "login"}`);
   }
 
   const columns = [
@@ -239,9 +240,5 @@ const TeacherListPage = async ({
     </div>
   );
 };
-
-export function redirect(url: string) {
-  // handled by next/navigation
-}
 
 export default TeacherListPage;
