@@ -91,7 +91,7 @@ const Menu = ({ role, onClose }: { role: string; onClose?: () => void }) => {
   const menuItems = getMenuItems(role);
 
   return (
-    <div className="flex flex-col justify-between h-full overflow-y-auto custom-scrollbar">
+    <div className="flex flex-col justify-between h-full">
       {/* 1. TOP SECTION: NAV LINKS */}
       <div className="text-sm flex flex-col gap-4 px-3 py-5">
         {menuItems.map((container) => (

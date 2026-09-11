@@ -9,16 +9,21 @@ import { X } from "lucide-react";
 const MobileMenu = ({ role }: { role: string }) => {
   const [isOpen, setIsOpen] = useState(false);
 
-  // 🔒 Lock body scroll when menu is open
+  // 🔒 Lock body scroll and handle ESC key when menu is open
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === "Escape") setIsOpen(false);
+      };
+      window.addEventListener("keydown", handleKeyDown);
+      return () => {
+        document.body.style.overflow = "";
+        window.removeEventListener("keydown", handleKeyDown);
+      };
     } else {
       document.body.style.overflow = "";
     }
-    return () => {
-      document.body.style.overflow = "";
-    };
   }, [isOpen]);
 
   const handleClose = () => setIsOpen(false);
@@ -29,6 +34,7 @@ const MobileMenu = ({ role }: { role: string }) => {
       <button
         onClick={() => setIsOpen(true)}
         className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+        aria-label="Open Menu"
       >
         <Image src="/logo.png" alt="logo" width={32} height={32} />
       </button>
@@ -36,46 +42,38 @@ const MobileMenu = ({ role }: { role: string }) => {
       {/* MOBILE DRAWER */}
       {isOpen && (
         <div className="fixed inset-0 z-[9999] flex">
-
-          {/* OVERLAY with smoother blur */}
+          {/* OVERLAY */}
           <div
             className="absolute inset-0 bg-slate-900/40 backdrop-blur-md transition-opacity duration-300"
             onClick={handleClose}
           />
 
-          {/* SIDEBAR */}
-          <div className="relative w-80 h-screen max-h-screen bg-white flex flex-col overflow-hidden animate-in slide-in-from-left duration-500 shadow-2xl">
-
-            {/* HEADER - BEAUTIFIED LOGO SECTION */}
-            <div className="flex items-center justify-between p-6 border-b border-slate-50 flex-shrink-0 bg-white z-10">
+          {/* SIDEBAR CONTAINER */}
+          <div className="relative w-80 h-screen max-h-screen bg-white flex flex-col overflow-hidden animate-in slide-in-from-left duration-300 shadow-2xl">
+            {/* HEADER */}
+            <div className="flex items-center justify-between p-5 border-b border-slate-100 flex-shrink-0 bg-white z-10">
               <Link
                 href="/"
                 onClick={handleClose}
                 className="flex items-center gap-2"
               >
-                {/* Apply Premium font 'font-playfair' here */}
-                <span className="text-2xl font-bold font-playfair tracking-tight text-slate-900">
-                  <span className="text-blue-600">Rubix</span>  ERP
+                <span className="text-xl font-bold font-playfair tracking-tight text-slate-900">
+                  <span className="text-blue-600">Rubix</span> ERP
                 </span>
               </Link>
 
               <button
                 onClick={handleClose}
-                className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-100 transition-all text-slate-400 hover:text-slate-600"
+                className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-slate-100 transition-all text-slate-400 hover:text-slate-600"
+                aria-label="Close Menu"
               >
-                <X size={24} strokeWidth={2.5} />
+                <X size={22} strokeWidth={2.5} />
               </button>
             </div>
 
-            {/* SCROLLABLE MENU AREA - PERFECT ALIGNMENT */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar bg-white">
-              {/* Added a small container to ensure internal padding matches the header */}
-              <div className="py-2">
-                 <Menu role={role} onClose={handleClose} />
-              </div>
-
-              {/* Bottom Spacer for thumb-reach clearance */}
-              <div className="h-20" />
+            {/* SINGLE UNIFIED SCROLL CONTAINER */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar bg-white flex flex-col justify-between">
+              <Menu role={role} onClose={handleClose} />
             </div>
           </div>
         </div>
