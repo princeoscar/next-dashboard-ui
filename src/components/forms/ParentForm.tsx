@@ -67,7 +67,7 @@ const ParentForm = ({
 
   return (
     <form className="flex flex-col w-full max-w-2xl mx-auto pt-6 md:pt-8 max-h-[85vh] overflow-y-auto" onSubmit={onSubmit}>
-      <div className="top-0 text-center bg-white z-50 px-6 py-4 border-b">
+      <div className="sticky top-0 text-center bg-white z-50 px-6 pt-6 pb-4 border-b shadow-sm">
         <h1 className="text-xl md:text-2xl font-black text-slate-800 tracking-tight uppercase">
           {type === "create" ? "Create New" : "Update"}{" "}
           <span className="text-rubixPurple">Parent</span>
