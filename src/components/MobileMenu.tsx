@@ -36,7 +36,7 @@ const MobileMenu = ({ role }: { role: string }) => {
         className="flex items-center gap-2 hover:opacity-80 transition-opacity"
         aria-label="Open Menu"
       >
-        <Image src="/logo.png" alt="logo" width={32} height={32} />
+        <Image src="/logo2.png" alt="logo" width={32} height={32} />
       </button>
 
       {/* MOBILE DRAWER */}
