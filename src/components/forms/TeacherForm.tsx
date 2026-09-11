@@ -26,62 +26,54 @@ const TeacherForm = ({ type, data, setOpen, relatedData }: TeacherFormProps) => 
     handleSubmit,
     formState: { errors },
   } = useForm<TeacherSchema>({
-    resolver: zodResolver(teacherSchema) as any,
-    defaultValues: {
-      username: data?.username || "",
-      email: data?.email || "",
-      firstName: data?.firstName || "",
-      lastName: data?.lastName || "",
-      phone: data?.phone || "",
-      address: data?.address || "",
-      bloodType: data?.bloodType || "",
-      sex: data?.sex || "MALE",
-      staffId: data?.staffId || "",
-      birthday: data?.birthday ? new Date(data.birthday).toISOString().split("T")[0] : "",
-      employmentDate: data?.employmentDate ? new Date(data.employmentDate).toISOString().split("T")[0] : "",
-      // Ensure subject IDs are mapped correctly as numbers or strings depending on your Zod schema
-      subjects: data?.subjects?.map((s: { id: number }) => Number(s.id)) || [],
-    }
+    resolver: zodResolver(teacherSchema) as any
   });
 
   const [img, setImg] = useState<any>();
   const router = useRouter();
 
-  const onSubmit = handleSubmit(async (values) => {
-    const payload = {
-      ...values,
-      img: img?.secure_url || data?.img || "",
-    };
+  const onSubmit = handleSubmit(
+    async (values) => {
+      console.log("FORM SUBMITTED", values);
 
-    const initialState = {
-      success: false,
-      error: false,
-      message: "",
-    };
+      const payload = {
+        ...values,
+        img: img?.secure_url || data?.img || "",
+      };
 
-    const result =
-      type === "create"
-        ? await createTeacher(initialState, payload)
-        : await updateTeacher(initialState, {
-            ...payload,
-            id: data.id,
-          });
+      const result =
+        type === "create"
+          ? await createTeacher(
+              { success: false, error: false, message: "" },
+              payload
+            )
+          : await updateTeacher(
+              { success: false, error: false, message: "" },
+              {
+                ...payload,
+                id: data.id,
+              }
+            );
 
-    if (result.success) {
-      toast.success(result.message);
-      setOpen(false);
-      router.refresh();
-    } else {
-      toast.error(result.message);
+      console.log(result);
+
+      if (result.success) {
+        toast.success(result.message);
+        setOpen(false);
+        router.refresh();
+      } else {
+        toast.error(result.message);
+      }
+    },
+    (errors) => {
+      console.log("VALIDATION ERRORS:", errors);
     }
-  }, (errors) => {
-    console.log("VALIDATION ERRORS:", errors);
-  });
+  );
 
   const { subjects = [] } = relatedData || {};
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-5 max-h-[75vh] overflow-y-auto px-1 custom-scrollbar">
+    <form onSubmit={onSubmit} className="flex flex-col gap-6 max-h-[75vh] overflow-y-auto px-1 custom-scrollbar">
 
       {/* AUTHENTICATION SECTION */}
       <div className="flex flex-col gap-3">
@@ -92,12 +84,14 @@ const TeacherForm = ({ type, data, setOpen, relatedData }: TeacherFormProps) => 
           <InputField
             label="Username"
             name="username"
+            defaultValue={data?.username}
             register={register}
             error={errors.username}
           />
           <InputField
             label="Email"
             name="email"
+            defaultValue={data?.email}
             register={register}
             error={errors.email}
           />
@@ -124,30 +118,35 @@ const TeacherForm = ({ type, data, setOpen, relatedData }: TeacherFormProps) => 
           <InputField
             label="First Name"
             name="firstName"
+            defaultValue={data?.firstName}
             register={register}
             error={errors.firstName}
           />
           <InputField
             label="Last Name"
             name="lastName"
+            defaultValue={data?.lastName}
             register={register}
             error={errors.lastName}
           />
           <InputField
             label="Phone"
             name="phone"
+            defaultValue={data?.phone}
             register={register}
             error={errors.phone}
           />
           <InputField
             label="Address"
             name="address"
+            defaultValue={data?.address}
             register={register}
             error={errors.address}
           />
           <InputField
             label="Blood Type"
             name="bloodType"
+            defaultValue={data?.bloodType}
             register={register}
             error={errors.bloodType}
           />
@@ -155,32 +154,38 @@ const TeacherForm = ({ type, data, setOpen, relatedData }: TeacherFormProps) => 
             label="Birthday"
             name="birthday"
             type="date"
+            defaultValue={data?.birthday ? new Date(data.birthday).toISOString().split("T")[0] : ""}
             register={register}
             error={errors.birthday}
           />
+
           <InputField
             label="Staff ID"
             name="staffId"
+            defaultValue={data?.staffId}
             register={register}
             error={errors.staffId}
           />
+
           <InputField
             label="Employment Date"
             name="employmentDate"
             type="date"
+            defaultValue={data?.employmentDate ? new Date(data.employmentDate).toISOString().split("T")[0] : ""}
             register={register}
             error={errors.employmentDate}
           />
         </div>
       </div>
 
-      {/* ADDITIONAL OPTIONS */}
+      {/* ADDITIONAL OPTIONS & UPLOAD */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
         <div className="flex flex-col gap-2">
           <label className="text-xs text-slate-500 font-medium">Sex</label>
           <select
             className="ring-[1.5px] ring-slate-200 p-2.5 rounded-xl text-sm w-full bg-white text-slate-700 outline-none focus:ring-blue-400 transition"
             {...register("sex")}
+            defaultValue={data?.sex}
           >
             <option value="MALE">Male</option>
             <option value="FEMALE">Female</option>
@@ -195,13 +200,11 @@ const TeacherForm = ({ type, data, setOpen, relatedData }: TeacherFormProps) => 
           <select
             multiple
             className="ring-[1.5px] ring-slate-200 p-2 rounded-xl text-sm w-full bg-white text-slate-700 outline-none focus:ring-blue-400 transition h-20"
-            {...register("subjects", {
-              setValueAs: (value) =>
-                Array.isArray(value) ? value.map((v: string) => Number(v)) : value,
-            })}
+            {...register("subjects")}
+            defaultValue={data?.subjects?.map((s: { id: number }) => s.id)}
           >
             {subjects.map((subject) => (
-              <option value={subject.id} key={subject.id}>{subject.name}</option>
+              <option value={String(subject.id)} key={subject.id}>{subject.name}</option>
             ))}
           </select>
           {errors.subjects?.message && (
