@@ -1,27 +1,23 @@
-
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
 import Pagination from "@/components/Pagination";
 import { prisma } from "@/lib/prisma";
 import { ITEM_PER_PAGE } from "@/lib/settings";
 import { Level, Prisma } from "@prisma/client";
-import Image from "next/image";
 import FormModal from "@/components/FormModal";
+import Image from "next/image";
 
 const LevelListPage = async ({
   searchParams,
 }: {
   searchParams: Promise<{ [key: string]: string | undefined }>;
 }) => {
-  // NEXT.JS 15 FIX: Await searchParams
   const resolvedParams = await searchParams;
   const { page, ...queryParams } = resolvedParams;
 
   const school = await prisma.school.findFirst();
-
   const p = page ? parseInt(page) : 1;
 
-  // URL QUERY PARAMS CONDITION
   const query: Prisma.LevelWhereInput = {};
 
   if (queryParams) {
@@ -29,10 +25,8 @@ const LevelListPage = async ({
       if (value !== undefined) {
         switch (key) {
           case "search":
-            // Filter by name (e.g., "Grade 10") or the numeric level
             query.OR = [
               { name: { contains: value, mode: 'insensitive' } },
-              // If it's a number, check the level field too
               ...(!isNaN(parseInt(value)) ? [{ level: { equals: parseInt(value) } }] : [])
             ];
             break;
@@ -46,6 +40,7 @@ const LevelListPage = async ({
   const [data, count] = await prisma.$transaction([
     prisma.level.findMany({
       where: query,
+      orderBy: { level: "asc" },
       take: ITEM_PER_PAGE,
       skip: ITEM_PER_PAGE * (p - 1),
     }),
@@ -56,6 +51,7 @@ const LevelListPage = async ({
     {
       header: "Grade Name",
       accessor: "name",
+      className: "pl-6",
     },
     {
       header: "Level",
@@ -65,50 +61,69 @@ const LevelListPage = async ({
     {
       header: "Actions",
       accessor: "action",
+      className: "text-right pr-6",
     },
   ];
 
   const renderRow = (item: Level) => (
     <tr
       key={item.id}
-      className="border-b border-gray-200 dark:border-slate-800 even:bg-slate-50 dark:even:bg-slate-900/50 text-sm hover:bg-rubixPurpleLight dark:hover:bg-slate-800 transition-colors"
+      className="border-b border-slate-50 last:border-0 text-sm hover:bg-slate-50/80 transition-all group"
     >
-      <td className="flex items-center gap-4 p-4 dark:text-slate-300">{item.name}</td>
-      <td className="hidden md:table-cell dark:text-slate-400">{item.level}</td>
-      <td>
-        <div className="flex items-center gap-2">
-          {/* 🎯 FIX: Changed table="grade" to table="level" to match your types */}
+      <td className="flex items-center gap-4 p-4 pl-6 font-black text-slate-700 uppercase text-xs">
+        {item.name}
+      </td>
+      <td className="hidden md:table-cell font-mono text-xs font-bold text-rubixPurple">
+        {item.level}
+      </td>
+      <td className="p-4 pr-6 text-right">
+        <div className="flex items-center gap-2 justify-end">
           <FormModal table="level" type="update" data={item} schoolId={item.schoolId} />
-          <FormModal table="level" type="delete" id={item.id} schoolId={item.schoolId}
-          />
+          <FormModal table="level" type="delete" id={item.id} schoolId={item.schoolId} />
         </div>
       </td>
     </tr>
   );
 
   return (
-    <div className="bg-white dark:bg-slate-900 p-4 rounded-xl flex-1 m-4 mt-0 border border-slate-100 dark:border-slate-800 transition-colors">
+    <div className="bg-white p-4 md:p-8 rounded-[1.5rem] md:rounded-[2.5rem] flex-1 m-1 md:m-4 mt-0 shadow-sm border border-slate-100">
       {/* TOP */}
-      <div className="flex items-center justify-between">
-        <h1 className="hidden md:block text-lg font-semibold dark:text-slate-100">All Grades</h1>
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
+        <div className="flex items-center gap-3">
+          <div>
+            <h1 className="text-xl md:text-2xl font-black text-slate-800 tracking-tighter uppercase">
+              All <span className="text-rubixPurple">Grades</span>
+            </h1>
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Total Levels: {count}</p>
+          </div>
+        </div>
+
         <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
-          <TableSearch />
-          <div className="flex items-center gap-4 self-end">
-            <button className="w-8 h-8 flex items-center justify-center rounded-full bg-rubixYellow">
-              <Image src="/filter.png" alt="" width={14} height={14} />
+          <div className="w-full md:w-auto">
+            <TableSearch />
+          </div>
+
+          <div className="flex items-center gap-3 w-full md:w-auto justify-end">
+            <button className="w-10 h-10 flex items-center justify-center rounded-2xl bg-slate-50 hover:bg-slate-100 transition-all border border-slate-100">
+              <Image src="/filter.png" alt="" width={16} height={16} />
             </button>
-            <button className="w-8 h-8 flex items-center justify-center rounded-full bg-rubixYellow">
-              <Image src="/sort.png" alt="" width={14} height={14} />
+            <button className="w-10 h-10 flex items-center justify-center rounded-2xl bg-slate-50 hover:bg-slate-100 transition-all border border-slate-100">
+              <Image src="/sort.png" alt="" width={16} height={16} />
             </button>
-            {/* 🎯 FIX: Changed table="grade" to table="level" */}
             <FormModal table="level" type="create" schoolId={school!.id} />
           </div>
         </div>
       </div>
+
       {/* LIST */}
-      <Table columns={columns} renderRow={renderRow} data={data} />
+      <div className="rounded-[1rem] md:rounded-[2rem] border border-slate-50 overflow-x-auto bg-white shadow-sm">
+        <Table columns={columns} renderRow={renderRow} data={data} />
+      </div>
+
       {/* PAGINATION */}
-      <Pagination page={p} count={count} />
+      <div className="mt-8 border-t border-slate-50 pt-6">
+        <Pagination page={p} count={count} />
+      </div>
     </div>
   );
 };
