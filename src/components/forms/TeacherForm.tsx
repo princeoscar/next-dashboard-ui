@@ -39,7 +39,8 @@ const TeacherForm = ({ type, data, setOpen, relatedData }: TeacherFormProps) => 
       staffId: data?.staffId || "",
       birthday: data?.birthday ? new Date(data.birthday).toISOString().split("T")[0] : "",
       employmentDate: data?.employmentDate ? new Date(data.employmentDate).toISOString().split("T")[0] : "",
-      subjects: data?.subjects?.map((s: { id: number }) => String(s.id)) || [],
+      // Ensure subject IDs are mapped correctly as numbers or strings depending on your Zod schema
+      subjects: data?.subjects?.map((s: { id: number }) => Number(s.id)) || [],
     }
   });
 
@@ -91,14 +92,12 @@ const TeacherForm = ({ type, data, setOpen, relatedData }: TeacherFormProps) => 
           <InputField
             label="Username"
             name="username"
-            defaultValue={data?.username}
             register={register}
             error={errors.username}
           />
           <InputField
             label="Email"
             name="email"
-            defaultValue={data?.email}
             register={register}
             error={errors.email}
           />
@@ -125,35 +124,30 @@ const TeacherForm = ({ type, data, setOpen, relatedData }: TeacherFormProps) => 
           <InputField
             label="First Name"
             name="firstName"
-            defaultValue={data?.firstName}
             register={register}
             error={errors.firstName}
           />
           <InputField
             label="Last Name"
             name="lastName"
-            defaultValue={data?.lastName}
             register={register}
             error={errors.lastName}
           />
           <InputField
             label="Phone"
             name="phone"
-            defaultValue={data?.phone}
             register={register}
             error={errors.phone}
           />
           <InputField
             label="Address"
             name="address"
-            defaultValue={data?.address}
             register={register}
             error={errors.address}
           />
           <InputField
             label="Blood Type"
             name="bloodType"
-            defaultValue={data?.bloodType}
             register={register}
             error={errors.bloodType}
           />
@@ -161,14 +155,12 @@ const TeacherForm = ({ type, data, setOpen, relatedData }: TeacherFormProps) => 
             label="Birthday"
             name="birthday"
             type="date"
-            defaultValue={data?.birthday ? new Date(data.birthday).toISOString().split("T")[0] : ""}
             register={register}
             error={errors.birthday}
           />
           <InputField
             label="Staff ID"
             name="staffId"
-            defaultValue={data?.staffId}
             register={register}
             error={errors.staffId}
           />
@@ -176,7 +168,6 @@ const TeacherForm = ({ type, data, setOpen, relatedData }: TeacherFormProps) => 
             label="Employment Date"
             name="employmentDate"
             type="date"
-            defaultValue={data?.employmentDate ? new Date(data.employmentDate).toISOString().split("T")[0] : ""}
             register={register}
             error={errors.employmentDate}
           />
@@ -190,7 +181,6 @@ const TeacherForm = ({ type, data, setOpen, relatedData }: TeacherFormProps) => 
           <select
             className="ring-[1.5px] ring-slate-200 p-2.5 rounded-xl text-sm w-full bg-white text-slate-700 outline-none focus:ring-blue-400 transition"
             {...register("sex")}
-            defaultValue={data?.sex}
           >
             <option value="MALE">Male</option>
             <option value="FEMALE">Female</option>
@@ -205,10 +195,13 @@ const TeacherForm = ({ type, data, setOpen, relatedData }: TeacherFormProps) => 
           <select
             multiple
             className="ring-[1.5px] ring-slate-200 p-2 rounded-xl text-sm w-full bg-white text-slate-700 outline-none focus:ring-blue-400 transition h-20"
-            {...register("subjects")}
+            {...register("subjects", {
+              setValueAs: (value) =>
+                Array.isArray(value) ? value.map((v: string) => Number(v)) : value,
+            })}
           >
             {subjects.map((subject) => (
-              <option value={String(subject.id)} key={subject.id}>{subject.name}</option>
+              <option value={subject.id} key={subject.id}>{subject.name}</option>
             ))}
           </select>
           {errors.subjects?.message && (
@@ -221,8 +214,8 @@ const TeacherForm = ({ type, data, setOpen, relatedData }: TeacherFormProps) => 
       <div className="pt-2">
         <CldUploadWidget
           uploadPreset="school"
-          onSuccess={(result, { widget }) => {
-            setImg(result.info);
+          onSuccess={(result: any, { widget }) => {
+            setImg(result?.info);
             widget.close();
           }}
         >
