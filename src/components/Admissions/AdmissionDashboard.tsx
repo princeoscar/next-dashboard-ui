@@ -139,7 +139,7 @@ export default function AdmissionDashboard({ applications, schoolId, stats }: Da
         </div>
       </div>
 
-      {/* SEARCH AND FILTERS */}
+     {/* SEARCH AND FILTERS */}
       <div className="mb-6 space-y-4">
         <input
           type="text"
@@ -149,8 +149,8 @@ export default function AdmissionDashboard({ applications, schoolId, stats }: Da
           className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
         />
 
-        {/* HORIZONTAL SCROLLING FILTER PILLS WITH PADDING */}
-        <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
+        {/* WRAPPING FILTER PILLS */}
+        <div className="flex flex-wrap gap-2">
           {[
             "ALL",
             "PENDING",
@@ -162,7 +162,7 @@ export default function AdmissionDashboard({ applications, schoolId, stats }: Da
             <button
               key={status}
               onClick={() => setStatusFilter(status)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors flex-shrink-0 ${
+              className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
                 statusFilter === status
                   ? "bg-blue-600 text-white"
                   : "bg-gray-100 hover:bg-gray-200 text-gray-700"
