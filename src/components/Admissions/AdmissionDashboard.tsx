@@ -110,29 +110,30 @@ export default function AdmissionDashboard({ applications, schoolId, stats }: Da
         </button>
       </div>
 
-      {/* STATS GRID - HORIZONTAL SCROLL ON MOBILE */}
-      <div className="flex sm:grid sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8 overflow-x-auto pb-2 sm:pb-0 custom-scrollbar">
-        <div className="min-w-[160px] flex-1 bg-white border rounded-xl p-4 sm:p-5 shadow-sm">
+      {/* STATS GRID - 2 COLUMNS ON MOBILE, 3 ON TABLET, 5 ON DESKTOP */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-8">
+        {/* Total Applications spans full width on mobile if odd number of items */}
+        <div className="col-span-2 sm:col-span-1 bg-white border rounded-xl p-4 sm:p-5 shadow-sm">
           <p className="text-xs sm:text-sm text-gray-500">Total Applications</p>
           <h2 className="text-2xl sm:text-3xl font-bold mt-2">{stats.total}</h2>
         </div>
 
-        <div className="min-w-[160px] flex-1 bg-yellow-50 border border-yellow-200 rounded-xl p-4 sm:p-5 shadow-sm">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 sm:p-5 shadow-sm">
           <p className="text-xs sm:text-sm text-yellow-700">Pending</p>
           <h2 className="text-2xl sm:text-3xl font-bold mt-2 text-yellow-800">{stats.pending}</h2>
         </div>
 
-        <div className="min-w-[160px] flex-1 bg-blue-50 border border-blue-200 rounded-xl p-4 sm:p-5 shadow-sm">
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 sm:p-5 shadow-sm">
           <p className="text-xs sm:text-sm text-blue-700">Under Review</p>
           <h2 className="text-2xl sm:text-3xl font-bold mt-2 text-blue-800">{stats.underReview}</h2>
         </div>
 
-        <div className="min-w-[160px] flex-1 bg-green-50 border border-green-200 rounded-xl p-4 sm:p-5 shadow-sm">
+        <div className="bg-green-50 border border-green-200 rounded-xl p-4 sm:p-5 shadow-sm">
           <p className="text-xs sm:text-sm text-green-700">Accepted</p>
           <h2 className="text-2xl sm:text-3xl font-bold mt-2 text-green-800">{stats.accepted}</h2>
         </div>
 
-        <div className="min-w-[160px] flex-1 bg-red-50 border border-red-200 rounded-xl p-4 sm:p-5 shadow-sm">
+        <div className="col-span-2 sm:col-span-1 bg-red-50 border border-red-200 rounded-xl p-4 sm:p-5 shadow-sm">
           <p className="text-xs sm:text-sm text-red-700">Rejected</p>
           <h2 className="text-2xl sm:text-3xl font-bold mt-2 text-red-800">{stats.rejected}</h2>
         </div>
@@ -148,7 +149,7 @@ export default function AdmissionDashboard({ applications, schoolId, stats }: Da
           className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
         />
 
-        {/* HORIZONTAL SCROLLING FILTER PILLS */}
+        {/* HORIZONTAL SCROLLING FILTER PILLS WITH PADDING */}
         <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
           {[
             "ALL",
@@ -161,7 +162,7 @@ export default function AdmissionDashboard({ applications, schoolId, stats }: Da
             <button
               key={status}
               onClick={() => setStatusFilter(status)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+              className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors flex-shrink-0 ${
                 statusFilter === status
                   ? "bg-blue-600 text-white"
                   : "bg-gray-100 hover:bg-gray-200 text-gray-700"
