@@ -7,9 +7,6 @@ import { Class, Prisma, Subject, Teacher } from "@prisma/client";
 import Image from "next/image";
 import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
-import { ITEM_PER_PAGE } from "@/lib/settings";
-import { getCachedTeachers } from "@/lib/data-fetchers";
-import { redirect } from "next/navigation";
 import { Mail, Fingerprint, Eye } from "lucide-react"; 
 
 type TeacherList = Teacher & { subjects: Subject[] } & { classes: Class[] };
@@ -35,7 +32,6 @@ const TeacherListPage = async ({
     { header: "Actions", accessor: "action", className: "text-right pr-2 md:pr-6" },
   ];
 
-  // Moving data dependencies compilation logic upward so relatedData is accessible inside renderRow scope
   const subjectsData = await prisma.subject.findMany({ select: { id: true, name: true } });
   const classesData = await prisma.class.findMany({ select: { id: true, name: true } });
   
@@ -68,7 +64,6 @@ const TeacherListPage = async ({
         </div>
       </td>
 
-      {/* BEAUTIFIED SUBJECTS BADGES */}
       <td className="hidden md:table-cell">
         <div className="flex flex-wrap gap-1 max-w-[200px]">
           {item.subjects.map((s) => (
@@ -79,7 +74,6 @@ const TeacherListPage = async ({
         </div>
       </td>
 
-      {/* BEAUTIFIED CLASSES BADGES */}
       <td className="hidden lg:table-cell">
         <div className="flex flex-wrap gap-1">
           {item.classes.map((c) => (
@@ -90,22 +84,18 @@ const TeacherListPage = async ({
         </div>
       </td>
 
-      {/* ACTIONS COLUMN */}
       <td className="p-2 md:p-4 pr-2 md:pr-6">
         <div className="flex items-center gap-2 justify-end">
-          {/* View Profile Button */}
           <Link href={`/list/teachers/${item.id}`}>
             <button className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 hover:bg-slate-900 hover:text-white transition-all border border-slate-100">
               <Eye size={16} />
             </button>
           </Link>
 
-          {/* 🎯 INJECTED EDIT BUTTON CONTAINER FOR ADMINS */}
           {role === "admin" && (
             <FormContainer table="teacher" type="update" data={item} relatedData={relatedData} />
           )}
 
-          {/* Delete Button */}
           {role === "admin" && (
             <FormContainer table="teacher" type="delete" id={item.id} />
           )}
@@ -133,7 +123,7 @@ const TeacherListPage = async ({
   return (
     <div className="bg-white p-2 md:p-8 rounded-[1.5rem] md:rounded-[2.5rem] flex-1 m-1 md:m-4 mt-0 shadow-sm border border-slate-100">
       
-      {/* RESPONSIVE HEADER FIX */}
+      {/* HEADER SECTION */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
         <div>
           <h1 className="text-xl md:text-2xl font-black text-slate-800 uppercase tracking-tighter">Teachers Registry</h1>
@@ -154,9 +144,93 @@ const TeacherListPage = async ({
         </div>
       </div>
 
-      <div className="rounded-[1rem] md:rounded-[2rem] border border-slate-50 overflow-x-auto bg-white shadow-sm">
-        <Table columns={columns} renderRow={renderRow} data={teachers} />
-      </div>
+      {teachers.length === 0 ? (
+        <div className="p-8 text-center text-slate-400 border border-dashed rounded-2xl text-xs font-medium">
+          No teachers found matching your criteria.
+        </div>
+      ) : (
+        <>
+          {/* MOBILE CARD VIEW (< md screens) */}
+          <div className="space-y-4 md:hidden">
+            {teachers.map((item) => (
+              <div key={item.id} className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="relative w-10 h-10 shrink-0">
+                      <Image
+                        src={item.img || "/noAvatar.png"}
+                        alt=""
+                        fill
+                        className="rounded-xl object-cover border border-slate-100 shadow-sm"
+                      />
+                    </div>
+                    <div>
+                      <h3 className="font-black text-slate-700 uppercase text-xs tracking-tight">
+                        {item.firstName} {item.lastName}
+                      </h3>
+                      <div className="flex items-center gap-1 text-slate-400 mt-0.5">
+                        <Mail size={10} />
+                        <span className="text-[10px] font-bold">{item.email}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 text-slate-400 font-mono text-[10px] bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">
+                    <Fingerprint size={12} />
+                    {item.username}
+                  </div>
+                </div>
+
+                {/* Subject & Class Badges */}
+                <div className="space-y-2 pt-2 border-t border-slate-50 text-xs">
+                  <div>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Expertise:</span>
+                    <div className="flex flex-wrap gap-1">
+                      {item.subjects.map((s) => (
+                        <span key={s.id} className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded-md text-[9px] font-black uppercase tracking-tighter border border-blue-100">
+                          {s.name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Assignments:</span>
+                    <div className="flex flex-wrap gap-1">
+                      {item.classes.map((c) => (
+                        <span key={c.id} className="px-2 py-0.5 bg-slate-900 text-white rounded-md text-[9px] font-black uppercase tracking-tighter">
+                          {c.name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Actions Footer */}
+                <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-50">
+                  <Link
+                    href={`/list/teachers/${item.id}`}
+                    className="flex-1 text-center py-2 bg-slate-50 text-slate-600 text-xs font-bold rounded-xl hover:bg-slate-900 hover:text-white transition-all border border-slate-100"
+                  >
+                    View Profile
+                  </Link>
+
+                  {role === "admin" && (
+                    <div className="flex items-center gap-2">
+                      <FormContainer table="teacher" type="update" data={item} relatedData={relatedData} />
+                      <FormContainer table="teacher" type="delete" id={item.id} />
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* DESKTOP TABLE VIEW (md+ screens) */}
+          <div className="hidden md:block rounded-[1rem] md:rounded-[2rem] border border-slate-50 overflow-x-auto bg-white shadow-sm">
+            <Table columns={columns} renderRow={renderRow} data={teachers} />
+          </div>
+        </>
+      )}
 
       <div className="mt-8 border-t border-slate-50 pt-6">
         <Pagination page={p} count={count} />
@@ -164,5 +238,9 @@ const TeacherListPage = async ({
     </div>
   );
 };
+
+export function redirect(url: string) {
+  // handled by next/navigation
+}
 
 export default TeacherListPage;
