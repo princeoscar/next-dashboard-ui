@@ -15,7 +15,6 @@ import { toast } from "react-toastify";
 import {
   BookOpenCheck,
   CalendarClock,
-  Info,
 } from "lucide-react";
 
 type CurrentState = {
@@ -167,274 +166,285 @@ const AssignmentForm = ({
   });
 
   return (
-    <form className="flex flex-col gap-8 p-2" onSubmit={onSubmit}>
-      {/* HEADER */}
-      <div className="flex items-center gap-4 mb-2">
-        <div className="p-3 bg-rubixSky/10 text-rubixSky rounded-2xl">
-          <BookOpenCheck size={24} />
-        </div>
-        <div>
-          <h1 className="text-2xl font-black text-slate-800 tracking-tighter uppercase leading-none">
-            {type === "create" ? "Define Task" : "Edit Task"}
+    <form className="flex flex-col w-full max-w-2xl mx-auto max-h-[85vh] overflow-y-auto custom-scrollbar text-center" onSubmit={onSubmit}>
+      {/* STICKY HEADER */}
+      <div className="sticky top-0 bg-white z-50 px-6 pt-6 pb-4 border-b border-slate-100 text-center">
+        <div className="flex items-center justify-center gap-3 mb-1">
+          <div className="p-2.5 bg-rubixSky/10 text-rubixSky rounded-xl">
+            <BookOpenCheck size={20} />
+          </div>
+          <h1 className="text-xl md:text-2xl font-black text-slate-800 tracking-tight uppercase">
+            {type === "create" ? "Define" : "Edit"}{" "}
+            <span className="text-rubixSky">Task</span>
           </h1>
-          <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-1">
-            Academic Assignments & Deliverables
-          </p>
         </div>
-      </div>
-
-      {/* BASIC INFORMATION */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <InputField
-          label="Assignment Title"
-          name="title"
-          register={register}
-          error={errors.title}
-          placeholder="e.g., Mid-term Chemistry Research"
-        />
-
-        {/* SUBJECT */}
-        <div className="flex flex-col gap-2">
-          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
-            Associated Subject
-          </label>
-          <select
-            className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 text-sm font-medium focus:ring-4 focus:ring-rubixSky/10 focus:border-rubixSky outline-none transition-all appearance-none"
-            defaultValue={data?.subjectId}
-            {...register("subjectId")}
-          >
-            <option value="">Select a specific subject...</option>
-            {subjects.map((subject: { id: number; name: string }) => (
-              <option value={subject.id} key={subject.id}>
-                {subject.name}
-              </option>
-            ))}
-          </select>
-          {errors.subjectId?.message && (
-            <p className="text-[10px] text-rose-500 font-bold uppercase tracking-wide ml-1">
-              {errors.subjectId.message.toString()}
-            </p>
-          )}
-        </div>
-
-        {/* INSTRUCTIONS */}
-        <div className="flex flex-col gap-2 md:col-span-2">
-          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
-            Assignment Content & Instructions
-          </label>
-          <textarea
-            {...register("instructions")}
-            rows={6}
-            placeholder="Write assignment questions and requirements here..."
-            className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 text-sm font-medium resize-y focus:ring-4 focus:ring-rubixSky/10 focus:border-rubixSky outline-none transition-all leading-6"
-          />
-          {errors.instructions?.message && (
-            <p className="text-[10px] text-rose-500 font-bold uppercase tracking-wide ml-1">
-              {errors.instructions.message.toString()}
-            </p>
-          )}
-        </div>
-
-        {/* DESCRIPTION */}
-        <div className="flex flex-col gap-2 md:col-span-2">
-          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
-            Description <span className="text-slate-300 ml-2 normal-case tracking-normal">Optional</span>
-          </label>
-          <textarea
-            {...register("description")}
-            rows={3}
-            placeholder="Briefly describe what this assignment is about..."
-            className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 text-sm font-medium resize-y focus:ring-4 focus:ring-rubixSky/10 focus:border-rubixSky outline-none transition-all"
-          />
-        </div>
-
-        {/* RELEASE DATE */}
-        <InputField
-          label="Release Date"
-          name="assignedDate"
-          type="date"
-          register={register}
-          error={errors.assignedDate}
-        />
-
-        {/* DUE DATE */}
-        <InputField
-          label="Submission Deadline"
-          name="dueDate"
-          type="date"
-          register={register}
-          error={errors.dueDate}
-        />
-
-        {/* TOTAL MARKS */}
-        <InputField
-          label="Total Marks"
-          name="totalMarks"
-          type="number"
-          register={register}
-          error={errors.totalMarks}
-        />
-      </div>
-
-      {/* TARGET CLASSES / LEVELS SELECTION */}
-      <div className="flex flex-col gap-3">
-        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
-          Target Classes & Streams
-        </label>
-
-        <div className="bg-slate-50 rounded-2xl border border-slate-200 p-5 space-y-6">
-          {/* JUNIOR SECONDARY SCHOOL */}
-          <div>
-            <h3 className="text-sm font-black text-rubixPurple uppercase mb-3">
-              Junior Secondary School
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {juniorLevels.map((level: any) => {
-                const levelClasses = classes.filter(
-                  (c: any) => Number(c.levelId) === Number(level.id)
-                );
-                if (levelClasses.length === 0) return null;
-
-                return (
-                  <label
-                    key={level.id}
-                    className="flex items-center gap-3 bg-white border border-slate-200 rounded-xl p-4 cursor-pointer hover:border-rubixPurple transition-all"
-                  >
-                    <input
-                      type="checkbox"
-                      value={`LEVEL-${level.id}`}
-                      {...register("classes" as any)}
-                      className="w-4 h-4 accent-rubixPurple"
-                    />
-                    <span className="font-bold text-slate-700">{level.name}</span>
-                  </label>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* SENIOR SECONDARY SCHOOL */}
-          <div>
-            <h3 className="text-sm font-black text-rubixPurple uppercase mb-3">
-              Senior Secondary School
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {seniorLevels.map((level: any) => {
-                const levelClasses = classes.filter(
-                  (c: any) => Number(c.levelId) === Number(level.id)
-                );
-                if (levelClasses.length === 0) return null;
-
-                const generalClass = levelClasses.find(
-                  (c: any) => c.streamId === null || c.streamId === undefined
-                );
-                const streamClasses = levelClasses.filter(
-                  (c: any) => c.streamId !== null && c.streamId !== undefined
-                );
-
-                return (
-                  <div key={level.id} className="bg-white border border-slate-200 rounded-xl p-4">
-                    <h4 className="font-bold text-slate-800 mb-4">{level.name}</h4>
-                    <div className="space-y-3">
-                      {generalClass && (
-                        <label className="flex items-center gap-3 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            value={`GENERAL-${level.id}`}
-                            {...register("classes" as any)}
-                            className="w-4 h-4 accent-rubixPurple"
-                          />
-                          <span className="text-sm text-slate-600">General</span>
-                        </label>
-                      )}
-
-                      {streamClasses.map((classItem: any) => {
-                        const stream = streams.find(
-                          (s: any) => Number(s.id) === Number(classItem.streamId)
-                        );
-                        if (!stream) return null;
-
-                        return (
-                          <label key={classItem.id} className="flex items-center gap-3 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              value={`CLASS-${classItem.id}`}
-                              {...register("classes" as any)}
-                              className="w-4 h-4 accent-rubixPurple"
-                            />
-                            <span className="text-sm text-slate-600">{stream.name}</span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
-        {(errors as any).classes?.message && (
-          <p className="text-[10px] text-rose-500 font-bold uppercase tracking-wide ml-1">
-            {(errors as any).classes.message.toString()}
-          </p>
-        )}
-        <p className="text-[10px] text-slate-400 ml-1">
-          Select a JSS level to target all classes, or select specific SSS streams (e.g. Science, Art) individually.
+        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+          Academic Assignments & Deliverables
         </p>
       </div>
 
-      {/* TEACHER */}
-      <div className="flex flex-col gap-2">
-        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
-          Assigning Teacher
-        </label>
-        <select
-          className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 text-sm font-medium"
-          defaultValue={data?.teacherId}
-          {...register("teacherId")}
-        >
-          <option value="">Select a teacher...</option>
-          {teachers.map((teacher: any) => (
-            <option value={teacher.id} key={teacher.id}>
-              {teacher.firstName} {teacher.lastName}
-            </option>
-          ))}
-        </select>
-        {errors.teacherId?.message && (
-          <p className="text-[10px] text-rose-500 font-bold uppercase tracking-wide ml-1">
-            {errors.teacherId.message.toString()}
+      <div className="px-6 py-6 space-y-6 text-left">
+        {/* BASIC INFORMATION */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <InputField
+            label="Assignment Title"
+            name="title"
+            register={register}
+            error={errors.title}
+            placeholder="e.g., Mid-term Chemistry Research"
+          />
+
+          {/* SUBJECT */}
+          <div className="flex flex-col gap-2">
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
+              Associated Subject
+            </label>
+            <select
+              className="ring-1 ring-slate-200 p-3 rounded-2xl text-xs md:text-sm focus:ring-2 focus:ring-rubixSky outline-none bg-white w-full"
+              defaultValue={data?.subjectId}
+              {...register("subjectId")}
+            >
+              <option value="">Select a specific subject...</option>
+              {subjects.map((subject: { id: number; name: string }) => (
+                <option value={subject.id} key={subject.id}>
+                  {subject.name}
+                </option>
+              ))}
+            </select>
+            {errors.subjectId?.message && (
+              <p className="text-[10px] text-rose-500 font-bold uppercase tracking-wide ml-1">
+                {errors.subjectId.message.toString()}
+              </p>
+            )}
+          </div>
+
+          {/* INSTRUCTIONS */}
+          <div className="flex flex-col gap-2 md:col-span-2">
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
+              Assignment Content & Instructions
+            </label>
+            <textarea
+              {...register("instructions")}
+              rows={5}
+              placeholder="Write assignment questions and requirements here..."
+              className="w-full p-4 rounded-2xl bg-slate-50 ring-1 ring-slate-200 text-xs md:text-sm font-medium resize-y focus:ring-2 focus:ring-rubixSky outline-none transition-all leading-6"
+            />
+            {errors.instructions?.message && (
+              <p className="text-[10px] text-rose-500 font-bold uppercase tracking-wide ml-1">
+                {errors.instructions.message.toString()}
+              </p>
+            )}
+          </div>
+
+          {/* DESCRIPTION */}
+          <div className="flex flex-col gap-2 md:col-span-2">
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
+              Description <span className="text-slate-300 ml-2 normal-case tracking-normal">Optional</span>
+            </label>
+            <textarea
+              {...register("description")}
+              rows={3}
+              placeholder="Briefly describe what this assignment is about..."
+              className="w-full p-4 rounded-2xl bg-slate-50 ring-1 ring-slate-200 text-xs md:text-sm font-medium resize-y focus:ring-2 focus:ring-rubixSky outline-none transition-all"
+            />
+          </div>
+
+          {/* RELEASE DATE */}
+          <InputField
+            label="Release Date"
+            name="assignedDate"
+            type="date"
+            register={register}
+            error={errors.assignedDate}
+          />
+
+          {/* DUE DATE */}
+          <InputField
+            label="Submission Deadline"
+            name="dueDate"
+            type="date"
+            register={register}
+            error={errors.dueDate}
+          />
+
+          {/* TOTAL MARKS */}
+          <InputField
+            label="Total Marks"
+            name="totalMarks"
+            type="number"
+            register={register}
+            error={errors.totalMarks}
+          />
+        </div>
+
+        {/* TARGET CLASSES / LEVELS SELECTION */}
+        <div className="flex flex-col gap-2">
+          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
+            Target Classes & Streams
+          </label>
+
+          <div className="bg-slate-50 rounded-2xl ring-1 ring-slate-200 p-4 sm:p-5 space-y-6">
+            {/* JUNIOR SECONDARY SCHOOL */}
+            <div>
+              <h3 className="text-xs font-black text-rubixSky uppercase tracking-wider mb-3">
+                Junior Secondary School
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {juniorLevels.map((level: any) => {
+                  const levelClasses = classes.filter(
+                    (c: any) => Number(c.levelId) === Number(level.id)
+                  );
+                  if (levelClasses.length === 0) return null;
+
+                  return (
+                    <label
+                      key={level.id}
+                      className="flex items-center gap-3 bg-white border border-slate-200 rounded-xl p-3.5 cursor-pointer hover:border-rubixSky transition-all"
+                    >
+                      <input
+                        type="checkbox"
+                        value={`LEVEL-${level.id}`}
+                        {...register("classes" as any)}
+                        className="w-4 h-4 accent-rubixSky rounded cursor-pointer shrink-0"
+                      />
+                      <span className="font-bold text-xs text-slate-700">{level.name}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* SENIOR SECONDARY SCHOOL */}
+            <div>
+              <h3 className="text-xs font-black text-rubixSky uppercase tracking-wider mb-3">
+                Senior Secondary School
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {seniorLevels.map((level: any) => {
+                  const levelClasses = classes.filter(
+                    (c: any) => Number(c.levelId) === Number(level.id)
+                  );
+                  if (levelClasses.length === 0) return null;
+
+                  const generalClass = levelClasses.find(
+                    (c: any) => c.streamId === null || c.streamId === undefined
+                  );
+                  const streamClasses = levelClasses.filter(
+                    (c: any) => c.streamId !== null && c.streamId !== undefined
+                  );
+
+                  return (
+                    <div key={level.id} className="bg-white border border-slate-200 rounded-2xl p-4 space-y-3">
+                      <h4 className="font-bold text-xs text-slate-800 border-b border-slate-100 pb-2">{level.name}</h4>
+                      <div className="space-y-2.5">
+                        {generalClass && (
+                          <label className="flex items-center gap-2.5 cursor-pointer text-xs">
+                            <input
+                              type="checkbox"
+                              value={`GENERAL-${level.id}`}
+                              {...register("classes" as any)}
+                              className="w-4 h-4 accent-rubixSky rounded cursor-pointer shrink-0"
+                            />
+                            <span className="text-slate-600 font-medium">General</span>
+                          </label>
+                        )}
+
+                        {streamClasses.map((classItem: any) => {
+                          const stream = streams.find(
+                            (s: any) => Number(s.id) === Number(classItem.streamId)
+                          );
+                          if (!stream) return null;
+
+                          return (
+                            <label key={classItem.id} className="flex items-center gap-2.5 cursor-pointer text-xs">
+                              <input
+                                type="checkbox"
+                                value={`CLASS-${classItem.id}`}
+                                {...register("classes" as any)}
+                                className="w-4 h-4 accent-rubixSky rounded cursor-pointer shrink-0"
+                              />
+                              <span className="text-slate-600 font-medium truncate">{stream.name}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {(errors as any).classes?.message && (
+            <p className="text-[10px] text-rose-500 font-bold uppercase tracking-wide ml-1">
+              {(errors as any).classes.message.toString()}
+            </p>
+          )}
+          <p className="text-[10px] text-slate-400 italic px-1 mt-1">
+            Select a JSS level to target all classes, or select specific SSS streams (e.g. Science, Art) individually.
           </p>
-        )}
+        </div>
+
+        {/* TEACHER */}
+        <div className="flex flex-col gap-2">
+          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
+            Assigning Teacher
+          </label>
+          <select
+            className="ring-1 ring-slate-200 p-3 rounded-2xl text-xs md:text-sm focus:ring-2 focus:ring-rubixSky outline-none bg-white w-full"
+            defaultValue={data?.teacherId}
+            {...register("teacherId")}
+          >
+            <option value="">Select a teacher...</option>
+            {teachers.map((teacher: any) => (
+              <option value={teacher.id} key={teacher.id}>
+                {teacher.firstName} {teacher.lastName}
+              </option>
+            ))}
+          </select>
+          {errors.teacherId?.message && (
+            <p className="text-[10px] text-rose-500 font-bold uppercase tracking-wide ml-1">
+              {errors.teacherId.message.toString()}
+            </p>
+          )}
+        </div>
       </div>
 
-      {/* SUBMIT */}
-      <div className="flex items-center justify-between mt-4">
-        <div className="hidden md:flex items-center gap-2 text-slate-400">
+      {/* STICKY FOOTER */}
+      <div className="sticky bottom-0 bg-white px-6 py-4 border-t border-slate-100 z-50 mt-auto flex items-center justify-between gap-3">
+        <div className="hidden sm:flex items-center gap-2 text-slate-400">
           <CalendarClock size={16} />
           <span className="text-[10px] font-bold uppercase tracking-tight italic">
             Students will be notified upon publication.
           </span>
         </div>
 
-        <button
-          type="submit"
-          disabled={isPending}
-          className="group flex items-center justify-center gap-3 bg-slate-900 hover:bg-rubixSky text-white py-4 px-8 rounded-2xl font-black text-[12px] uppercase tracking-widest shadow-xl shadow-slate-200 transition-all active:scale-95"
-        >
-          {isPending
-            ? type === "create"
-              ? "Creating..."
-              : "Saving..."
-            : type === "create"
-            ? "Add Assignment"
-            : "Commit Changes"}
-        </button>
+        <div className="flex items-center justify-end gap-3 w-full sm:w-auto">
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className="px-6 py-3 text-xs md:text-sm font-bold text-slate-400 hover:bg-slate-100 rounded-2xl transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={isPending}
+            className="px-8 py-3 bg-slate-900 text-white text-xs md:text-sm font-bold rounded-2xl hover:bg-rubixSky disabled:bg-slate-400 disabled:cursor-not-allowed transition-all shadow-md active:scale-[0.98] flex items-center justify-center gap-2"
+          >
+            {isPending ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <span>Processing...</span>
+              </>
+            ) : (
+              <span>{type === "create" ? "Add Assignment" : "Commit Changes"}</span>
+            )}
+          </button>
+        </div>
       </div>
     </form>
   );
 };
-
-
 
 export default AssignmentForm;
