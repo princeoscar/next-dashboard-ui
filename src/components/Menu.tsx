@@ -64,11 +64,11 @@ const getMenuItems = (role: string) => [
       { icon: <Calculator size={20} />, label: "Allocate Fees", href: "/admin/finance/allocate", visible: ["admin"] },
       { icon: <Wallet size={20} />, label: "Fee categories", href: "/admin/finance/categories", visible: ["admin"] },
 
-      { icon: <Wallet size={20} />, label: "Student Balance", href: "/admin/finance/balance", visible: ["admin"] },
-      { icon: <CreditCard size={20} />, label: "Payment Record", href: "/admin/list/payment-record", visible: ["admin"] },
-      { icon: <TrendingUp size={20} />, label: "Income", href: "/admin/list/income", visible: ["admin"] },
-      { icon: <TrendingDown size={20} />, label: "Expense", href: "/admin/list/expense", visible: ["admin"] },
-      { icon: <FileText size={20} />, label: "Financial Reports", href: "/dashboard/finance/report", visible: ["admin"] },
+      { icon: <Wallet size={20} />, label: "Student Balance", href: "/admin/finance/balances", visible: ["admin"] },
+      { icon: <CreditCard size={20} />, label: "Payment Record", href: "/admin/finance/payments", visible: ["admin"] },
+      { icon: <TrendingUp size={20} />, label: "Income", href: "/list/income", visible: ["admin"] },
+      { icon: <TrendingDown size={20} />, label: "Expense", href: "/list/expenses", visible: ["admin"] },
+      { icon: <FileText size={20} />, label: "Financial Reports", href: "/admin/finance/reports", visible: ["admin"] },
 
       { icon: <MessageCircle size={20} />, label: "Messages", href: "/list/messages", visible: ["admin", "teacher", "student", "parent"] },
       { icon: <Megaphone size={20} />, label: "Announcements", href: "/list/announcements", visible: ["admin", "teacher", "student", "parent"] },

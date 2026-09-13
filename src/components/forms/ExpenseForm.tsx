@@ -72,9 +72,10 @@ const ExpenseForm = ({
   useEffect(() => {
     if (state.success) {
       toast.success(
-        `Expense ${type === "create"
-          ? "created"
-          : "updated"
+        `Expense ${
+          type === "create"
+            ? "created"
+            : "updated"
         } successfully.`
       );
 
@@ -92,9 +93,9 @@ const ExpenseForm = ({
   return (
     <form
       onSubmit={onSubmit}
-      className="flex flex-col gap-6"
+      className="flex flex-col gap-4 sm:gap-6 max-h-[80vh] overflow-y-auto px-3 sm:px-4 pb-6 pt-1 focus:outline-none"
     >
-      <h1 className="text-xl font-bold">
+      <h1 className="text-lg sm:text-xl font-bold">
         {type === "create"
           ? "Add Expense"
           : "Update Expense"}
@@ -144,7 +145,7 @@ const ExpenseForm = ({
         error={errors.category}
       />
 
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-1.5 sm:gap-2">
         <label className="text-xs font-bold">
           Payment Method
         </label>
@@ -154,7 +155,7 @@ const ExpenseForm = ({
           defaultValue={
             data?.paymentMethod ?? ""
           }
-          className="ring-[1.5px] ring-gray-300 rounded-md p-3"
+          className="ring-[1.5px] ring-gray-300 rounded-md p-2.5 sm:p-3 text-sm bg-white"
         >
           <option value="">
             Select Payment Method
@@ -185,15 +186,16 @@ const ExpenseForm = ({
         defaultValue={
           data?.spentAt
             ? new Date(data.spentAt)
-              .toISOString()
-              .split("T")[0]
+                .toISOString()
+                .split("T")[0]
             : undefined
         }
         error={errors.spentAt}
       />
 
       <button
-        className="bg-red-600 text-white py-3 rounded-lg font-semibold"
+        type="submit"
+        className="bg-red-600 text-white py-3 rounded-lg font-semibold mt-2 transition-opacity hover:opacity-90 active:scale-[0.99]"
       >
         {type === "create"
           ? "Create Expense"
