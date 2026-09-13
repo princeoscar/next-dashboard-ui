@@ -360,7 +360,7 @@ console.log("📚 STUDENT COUNT:", students?.length);
 
         <td className="p-4 text-right">
           <div className="flex items-center gap-2 justify-end">
-            <Link href={`/print/${item.studentId}`}>
+            <Link href={`/list/results/print/${item.studentId}`}>
               <button className="p-2 bg-slate-100 rounded-full hover:bg-amber-500 hover:text-white transition-all">
                 <FileText size={14} />
               </button>

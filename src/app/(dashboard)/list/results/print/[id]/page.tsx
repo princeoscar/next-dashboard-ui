@@ -9,14 +9,11 @@ const ReportPrintPage = async ({ params }: { params: Promise<{ id: string }> }) 
   const { userId, sessionClaims } = await auth();
   const role = (sessionClaims?.metadata as any)?.role?.toLowerCase();
 
-
-
   const getOrdinal = (n: number) => {
     const s = ["th", "st", "nd", "rd"];
     const v = n % 100;
     return n + (s[(v - 20) % 10] || s[v] || s[0]);
   };
-
 
   // 1. Get Current Academic Year
   const currentYear = await prisma.academicYear.findFirst({ where: { isCurrent: true } });
@@ -33,7 +30,6 @@ const ReportPrintPage = async ({ params }: { params: Promise<{ id: string }> }) 
           supervisor: true,
         }
       },
-      // 🎯 Fix: Ensure this matches your schema (attendance or attendances)
       attendances: {
         where: { academicYearId: academicYearId }
       },
@@ -50,26 +46,27 @@ const ReportPrintPage = async ({ params }: { params: Promise<{ id: string }> }) 
 
   if (!student) return notFound();
 
- const parent = await prisma.parent.findUnique({
-  where: { clerkId: userId! },
-  select: { id: true },
-});
+  if (role === "parent") {
+    const parent = await prisma.parent.findUnique({
+      where: { clerkId: userId! },
+      select: { id: true },
+    });
 
-if (role === "parent" && student.parentId !== parent?.id) {
-  return notFound();
-}
+    if (!parent || student.parentId !== parent.id) {
+      return notFound();
+    }
+  }
 
   // 4. Attendance Aggregation Logic
-
   const attendanceRecords = student.attendances || [];
   const uniqueDates = Array.from(new Set(attendanceRecords.map((a) => a.date.toISOString().split("T")[0])));
   const daysPresent = uniqueDates.filter((date) =>
-  attendanceRecords.some(
-    (a) =>
-      a.date.toISOString().split("T")[0] === date &&
-      a.status === "PRESENT"
-  )
-).length;
+    attendanceRecords.some(
+      (a) =>
+        a.date.toISOString().split("T")[0] === date &&
+        a.status === "PRESENT"
+    )
+  ).length;
 
   // 5. Ranking & Subject Mapping Logic
   const subjectMap: Record<string, any> = {};
@@ -77,7 +74,7 @@ if (role === "parent" && student.parentId !== parent?.id) {
     const name = res.subject?.name || res.exam?.subject?.name || "Unknown";
     if (!subjectMap[name]) {
       subjectMap[name] = {
-       ca: Number(res.testScore) + Number(res.assignmentScore),
+        ca: Number(res.testScore) + Number(res.assignmentScore),
         exam: Number(res.examScore),
         total: Number(res.totalScore),
         grade: res.grade ?? "F"
@@ -97,7 +94,6 @@ if (role === "parent" && student.parentId !== parent?.id) {
   };
 
   // --- 6.5 RANKING LOGIC ---
-  // Fetch all students in the same class to compare performance
   const allClassStudents = await prisma.student.findMany({
     where: { classId: student.classId },
     include: {
@@ -107,34 +103,26 @@ if (role === "parent" && student.parentId !== parent?.id) {
     },
   });
 
-  // Map every student to their average score
-  // Map every student to their average score
-const classRankings = allClassStudents
-  .map((s) => {
-    const total = s.results.reduce(
-      (acc, curr) => acc + Number(curr.totalScore),
-      0
-    );
+  const classRankings = allClassStudents
+    .map((s) => {
+      const total = s.results.reduce(
+        (acc, curr) => acc + Number(curr.totalScore),
+        0
+      );
+      const avg = s.results.length > 0 ? total / s.results.length : 0;
+      return {
+        id: s.id,
+        avg,
+        hasResults: s.results.length > 0,
+      };
+    })
+    .filter((s) => s.hasResults)
+    .sort((a, b) => b.avg - a.avg);
 
-    const avg = s.results.length > 0 ? total / s.results.length : 0;
-
-    return {
-      id: s.id,
-      avg,
-      hasResults: s.results.length > 0,
-    };
-  })
-  .filter((s) => s.hasResults)
-  .sort((a, b) => b.avg - a.avg);
-
-  // Find the current student's index in that sorted list
   const hasResults = student.results.length > 0;
-
-const currentPosition = hasResults
-  ? classRankings.findIndex((r) => r.id === student.id) + 1
-  : 0;
-
-const totalStudentsInClass = allClassStudents.length;
+  const currentPosition = hasResults
+    ? classRankings.findIndex((r) => r.id === student.id) + 1
+    : 0;
 
   // 7. FINAL DATA MERGE
   const finalData = {
@@ -143,10 +131,7 @@ const totalStudentsInClass = allClassStudents.length;
     className: className,
     academicYear: yearLabel,
     principalComment: getPrincipalComment(studentAverage),
-
-
     position: hasResults ? getOrdinal(currentPosition) : "-",
-
     attendance: {
       present: daysPresent,
       total: uniqueDates.length
@@ -161,13 +146,12 @@ const totalStudentsInClass = allClassStudents.length;
   };
 
   return (
-    <div className="bg-slate-100 min-h-screen py-10 print:bg-white print:py-0">
-      <div className="max-w-[210mm] mx-auto px-4 mb-6 flex justify-end print:hidden">
+    <div className="bg-slate-100 min-h-screen py-6 px-4 md:px-8 print:bg-white print:p-0">
+      <div className="max-w-[210mm] mx-auto mb-4 flex justify-end print:hidden">
         <PrintButton />
       </div>
 
-      <div className="max-w-[210mm] mx-auto bg-white shadow-2xl print:shadow-none">
-        {/* 🎯 ONLY ONE CALL TO THE COMPONENT */}
+      <div className="max-w-[210mm] mx-auto bg-white shadow-xl rounded-2xl overflow-hidden print:shadow-none print:rounded-none">
         <ReportCardSheet data={finalData} />
       </div>
     </div>
